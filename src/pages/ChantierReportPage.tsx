@@ -1231,7 +1231,11 @@ const ChantierReportPage = () => {
 
         {/* Actions */}
         <section className="bg-white rounded-xl p-4 shadow-sm space-y-3">
-          <h2 className="font-bold" style={{ color: COLORS.navyDark }}>{tr('الإرسال للعميل', 'Envoyer au client')}</h2>
+          <h2 className="font-bold" style={{ color: COLORS.navyDark }}>
+            {isTeamMode
+              ? tr('إرسال التقرير للصناعي', 'Envoyer le rapport à l\'artisan')
+              : tr('الإرسال للعميل', 'Envoyer au client')}
+          </h2>
 
           <div className="flex flex-col gap-2 pt-2">
             <Button
@@ -1249,7 +1253,10 @@ const ChantierReportPage = () => {
               className="w-full font-bold h-12"
               style={{ background: '#25D366', color: '#fff' }}
             >
-              {(generating || translating) ? <Loader2 className="h-4 w-4 animate-spin" /> : '📱'} {tr('إرسال واتساب', 'Envoyer par WhatsApp')}
+              {(generating || translating) ? <Loader2 className="h-4 w-4 animate-spin" /> : '📱'}
+              {isTeamMode
+                ? tr('إرسال التقرير للصناعي', 'Envoyer le rapport à l\'artisan')
+                : tr('إرسال واتساب', 'Envoyer par WhatsApp')}
             </Button>
 
             <Button

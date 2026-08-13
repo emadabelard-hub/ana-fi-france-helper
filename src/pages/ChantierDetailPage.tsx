@@ -242,6 +242,13 @@ const ChantierDetailPage = () => {
         </Button>
       </div>
 
+      {/* Team Section - visible before tabs */}
+      {user && id && (
+        <div className="mt-4 mb-3">
+          <ChantierTeamSection chantierId={id} userId={user.id} isRTL={isRTL} chantierName={chantier?.name || ''} />
+        </div>
+      )}
+
       {/* Synthèse financière — grille responsive */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3" dir="ltr">
         {[

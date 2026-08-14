@@ -114,7 +114,7 @@ const ChantierTeamSection = ({ chantierId, userId, isRTL, chantierName }: Props)
   return (
     <Card className="border-border/50">
       <CardContent className="p-3 space-y-3">
-        <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
+        <div className={cn('flex items-center justify-between gap-2', isRTL && 'flex-row-reverse')}>
           <h3 className={cn('text-sm font-bold', isRTL && 'font-cairo')}>
             {isRTL ? 'الفريق' : 'Équipe'}
           </h3>
@@ -125,6 +125,19 @@ const ChantierTeamSection = ({ chantierId, userId, isRTL, chantierName }: Props)
             </span>
           </Button>
         </div>
+
+        <Button
+          size="sm"
+          onClick={handleInviteSmartDevis}
+          disabled={creating}
+          className="w-full gap-1.5 bg-gradient-to-r from-blue-600 to-emerald-500 hover:from-blue-700 hover:to-emerald-600 text-white shadow-md"
+        >
+          {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
+          <span className={cn('text-xs font-bold', isRTL && 'font-cairo')}>
+            {isRTL ? '🏗️ دعوة عامل للدوفي الذكي' : 'Donner accès au Devis intelligent'}
+          </span>
+        </Button>
+
 
         {loading ? (
           <p className="text-xs text-muted-foreground text-center py-2">...</p>

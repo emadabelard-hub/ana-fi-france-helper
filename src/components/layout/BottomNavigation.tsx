@@ -149,7 +149,7 @@ const BottomNavigation = () => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border safe-area-pb">
-      <div className="flex items-center justify-between gap-0.5 py-1.5 px-1 overflow-x-auto no-scrollbar">
+      <div className="flex items-center justify-around gap-0.5 py-1.5 px-1">
         {items.map((item) => {
           const isActive =
             item.path === '/accounting/supplier-invoices'
@@ -163,8 +163,8 @@ const BottomNavigation = () => {
               key={item.path}
               onClick={() => navigate(item.path)}
               className={cn(
-                "flex flex-col items-center justify-center px-1.5 py-1 rounded-xl transition-all duration-200 shrink-0",
-                "min-w-[48px] gap-0.5 relative",
+                "flex flex-col items-center justify-center px-0.5 py-1 rounded-xl transition-all duration-200",
+                "flex-1 basis-0 min-w-0 gap-0.5 relative",
                 isActive ? item.activeBg : "hover:bg-muted/50"
               )}
             >
@@ -178,7 +178,7 @@ const BottomNavigation = () => {
               />
               <span
                 className={cn(
-                  "text-[10px] font-semibold transition-all",
+                  "text-[10px] font-semibold transition-all w-full text-center truncate",
                   language === 'ar' && "font-cairo",
                   isActive ? item.color : "text-muted-foreground"
                 )}

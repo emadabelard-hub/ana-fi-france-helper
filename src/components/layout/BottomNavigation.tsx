@@ -178,7 +178,7 @@ const BottomNavigation = () => {
               />
               <span
                 className={cn(
-                  "text-[10px] font-semibold transition-all",
+                  "text-[10px] font-semibold transition-all w-full text-center truncate",
                   language === 'ar' && "font-cairo",
                   isActive ? item.color : "text-muted-foreground"
                 )}

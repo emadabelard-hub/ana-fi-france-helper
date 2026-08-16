@@ -691,28 +691,16 @@ const ChantierReportPage = () => {
     return { blob, base64, fileName, generatedAt };
   };
 
-  const translateField = async (text: string): Promise<string> => {
+  const translateField = async (text: string, accessToken: string): Promise<string> => {
     const t = (text || '').trim();
     if (!t || !hasArabic(t)) return text;
 
-    const { data: { session } } = await supabase.auth.getSession();
-    let accessToken = session?.access_token;
-    if (!accessToken) {
-      const { data: refreshed } = await supabase.auth.refreshSession();
-      accessToken = refreshed.session?.access_token;
-    }
-    if (!accessToken) {
-      toast({
-        variant: 'destructive',
-        title: 'Erreur de traduction',
-        description: 'Votre session est invalide. Veuillez vous reconnecter.',
-      });
-      throw new Error('NO_SESSION');
-    }
-
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 180000);
     try {
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/btp-translate`, {
         method: 'POST',
+        signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`,
@@ -729,12 +717,42 @@ const ChantierReportPage = () => {
       return fr || text;
     } catch (e) {
       console.error('[ChantierReport] translation failed:', e);
+      throw e;
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+  };
+
+  const translateReportFields = async (): Promise<{ workDone: string; materials: string; observations: string }> => {
+    const originals = { workDone, materials, observations };
+    let sessionTimeoutId: number | undefined;
+    try {
+      const sessionResult = await Promise.race([
+        supabase.auth.getSession(),
+        new Promise<never>((_, reject) => {
+          sessionTimeoutId = window.setTimeout(() => reject(new Error('SESSION_TIMEOUT')), 10000);
+        }),
+      ]);
+      if (sessionTimeoutId !== undefined) window.clearTimeout(sessionTimeoutId);
+
+      const accessToken = sessionResult.data.session?.access_token;
+      if (!accessToken) throw new Error('NO_SESSION');
+
+      const [wd, mt, ob] = await Promise.all([
+        translateField(workDone, accessToken),
+        translateField(materials, accessToken),
+        translateField(observations, accessToken),
+      ]);
+      return { workDone: wd, materials: mt, observations: ob };
+    } catch (e) {
+      if (sessionTimeoutId !== undefined) window.clearTimeout(sessionTimeoutId);
+      console.error('[ChantierReport] translation unavailable, using original text:', e);
       toast({
         variant: 'destructive',
-        title: 'Erreur de traduction',
-        description: e instanceof Error ? e.message : 'La traduction a échoué. Le PDF ne sera pas généré.',
+        title: 'Traduction indisponible',
+        description: 'La traduction n’a pas pu être effectuée. Le rapport sera généré avec le texte original.',
       });
-      throw e;
+      return originals;
     }
   };
 
@@ -742,12 +760,7 @@ const ChantierReportPage = () => {
     setTranslating(true);
     let overrides: { workDone: string; materials: string; observations: string };
     try {
-      const [wd, mt, ob] = await Promise.all([
-        translateField(workDone),
-        translateField(materials),
-        translateField(observations),
-      ]);
-      overrides = { workDone: wd, materials: mt, observations: ob };
+      overrides = await translateReportFields();
     } finally {
       setTranslating(false);
     }
@@ -836,12 +849,7 @@ const ChantierReportPage = () => {
     setTranslating(true);
     let overrides: { workDone: string; materials: string; observations: string };
     try {
-      const [wd, mt, ob] = await Promise.all([
-        translateField(workDone),
-        translateField(materials),
-        translateField(observations),
-      ]);
-      overrides = { workDone: wd, materials: mt, observations: ob };
+      overrides = await translateReportFields();
     } finally {
       setTranslating(false);
     }

@@ -694,16 +694,47 @@ const ChantierReportPage = () => {
   const translateField = async (text: string): Promise<string> => {
     const t = (text || '').trim();
     if (!t || !hasArabic(t)) return text;
-    try {
-      const { data, error } = await supabase.functions.invoke('btp-translate', {
-        body: { text: t, sourceLang: 'ar', targetLang: 'fr' },
+
+    const { data: { session } } = await supabase.auth.getSession();
+    let accessToken = session?.access_token;
+    if (!accessToken) {
+      const { data: refreshed } = await supabase.auth.refreshSession();
+      accessToken = refreshed.session?.access_token;
+    }
+    if (!accessToken) {
+      toast({
+        variant: 'destructive',
+        title: 'Erreur de traduction',
+        description: 'Votre session est invalide. Veuillez vous reconnecter.',
       });
-      if (error) throw error;
+      throw new Error('NO_SESSION');
+    }
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/btp-translate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ text: t, sourceLang: 'ar', targetLang: 'fr' }),
+      });
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errText}`);
+      }
+      const data = await response.json();
       const fr = String(data?.translated || '').trim();
       return fr || text;
     } catch (e) {
       console.error('[ChantierReport] translation failed:', e);
-      return text;
+      toast({
+        variant: 'destructive',
+        title: 'Erreur de traduction',
+        description: e instanceof Error ? e.message : 'La traduction a échoué. Le PDF ne sera pas généré.',
+      });
+      throw e;
     }
   };
 

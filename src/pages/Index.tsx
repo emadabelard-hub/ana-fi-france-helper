@@ -197,16 +197,6 @@ const Index = () => {
     fetchData();
   }, [fetchData, user?.id]);
 
-  // Refresh stats only on a real sign-in; initial load is handled by the user-id effect above.
-  useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN') {
-        fetchData();
-      }
-    });
-    return () => { sub.subscription.unsubscribe(); };
-  }, [fetchData]);
-
   useEffect(() => {
     const cleanupOldCaches = async () => {
       try {

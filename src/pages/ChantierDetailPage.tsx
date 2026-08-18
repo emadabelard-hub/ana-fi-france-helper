@@ -127,7 +127,7 @@ const ChantierDetailPage = () => {
   const statusLabel = statusTranslated === statusKey ? chantier.status : statusTranslated;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] overflow-y-auto md:overflow-hidden">
+    <div className="flex flex-col min-h-[calc(100vh-8rem)] md:h-[calc(100vh-8rem)] md:overflow-hidden">
       {/* Header */}
       <section className={cn("flex items-center gap-3 py-4 shrink-0", isRTL && "flex-row-reverse")}>
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="shrink-0">

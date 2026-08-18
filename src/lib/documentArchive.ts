@@ -1,11 +1,12 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export type ArchiveDocType = 'devis' | 'facture' | 'note_frais';
+export type ArchiveDocType = 'devis' | 'facture' | 'note_frais' | 'rapport_chantier';
 
 const FOLDERS: Record<ArchiveDocType, string> = {
   devis: 'devis',
   facture: 'factures',
   note_frais: 'notes-frais',
+  rapport_chantier: 'rapports-chantier',
 };
 
 interface ArchiveParams {

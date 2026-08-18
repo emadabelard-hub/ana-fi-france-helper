@@ -127,7 +127,7 @@ const ChantierDetailPage = () => {
   const statusLabel = statusTranslated === statusKey ? chantier.status : statusTranslated;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] overflow-hidden">
+    <div className="flex flex-col min-h-[calc(100vh-8rem)] md:h-[calc(100vh-8rem)] md:overflow-hidden">
       {/* Header */}
       <section className={cn("flex items-center gap-3 py-4 shrink-0", isRTL && "flex-row-reverse")}>
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="shrink-0">
@@ -337,11 +337,11 @@ const ChantierDetailPage = () => {
 
       {/* Tabs */}
       <Tabs defaultValue="documents" className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="w-full shrink-0 overflow-x-auto">
-          <TabsTrigger value="documents" className="flex-1 gap-1 text-xs"><FileText className="h-3.5 w-3.5" />{t('chantierDetail.tabs.documents')}</TabsTrigger>
-          <TabsTrigger value="expenses" className="flex-1 gap-1 text-xs"><Receipt className="h-3.5 w-3.5" />{t('chantierDetail.tabs.expenses')}</TabsTrigger>
-          <TabsTrigger value="suppliers" className="flex-1 gap-1 text-xs"><Truck className="h-3.5 w-3.5" />{t('chantierDetail.tabs.suppliers')}</TabsTrigger>
-          <TabsTrigger value="reports" className="flex-1 gap-1 text-xs"><ClipboardList className="h-3.5 w-3.5" />{t('chantierDetail.tabs.reports')}</TabsTrigger>
+        <TabsList className="w-full shrink-0 flex flex-wrap md:flex-nowrap">
+          <TabsTrigger value="documents" className="w-1/2 md:flex-1 gap-1 text-xs"><FileText className="h-3.5 w-3.5" />{t('chantierDetail.tabs.documents')}</TabsTrigger>
+          <TabsTrigger value="expenses" className="w-1/2 md:flex-1 gap-1 text-xs"><Receipt className="h-3.5 w-3.5" />{t('chantierDetail.tabs.expenses')}</TabsTrigger>
+          <TabsTrigger value="suppliers" className="w-1/2 md:flex-1 gap-1 text-xs"><Truck className="h-3.5 w-3.5" />{t('chantierDetail.tabs.suppliers')}</TabsTrigger>
+          <TabsTrigger value="reports" className="w-1/2 md:flex-1 gap-1 text-xs"><ClipboardList className="h-3.5 w-3.5" />{t('chantierDetail.tabs.reports')}</TabsTrigger>
         </TabsList>
         <TabsContent value="documents" className="flex-1 overflow-y-auto space-y-3 pb-4 mt-3">
           {errSection.documents && <p className="text-xs text-destructive px-2">{t('chantierDetail.docs.errorPrefix')}</p>}

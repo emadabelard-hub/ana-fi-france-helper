@@ -404,6 +404,10 @@ export type Database = {
         Row: {
           chantier_id: string | null
           client_id: string | null
+          client_signature_data: string | null
+          client_signature_token: string
+          client_signed_at: string | null
+          client_signer_name: string | null
           created_at: string
           created_at_timestamp: string | null
           gps_address: string | null
@@ -416,6 +420,7 @@ export type Database = {
           pdf_url: string | null
           report_date: string | null
           report_number: string | null
+          sent_to_client_at: string | null
           status: string
           submitted_by: string | null
           submitted_by_name: string | null
@@ -429,6 +434,10 @@ export type Database = {
         Insert: {
           chantier_id?: string | null
           client_id?: string | null
+          client_signature_data?: string | null
+          client_signature_token?: string
+          client_signed_at?: string | null
+          client_signer_name?: string | null
           created_at?: string
           created_at_timestamp?: string | null
           gps_address?: string | null
@@ -441,6 +450,7 @@ export type Database = {
           pdf_url?: string | null
           report_date?: string | null
           report_number?: string | null
+          sent_to_client_at?: string | null
           status?: string
           submitted_by?: string | null
           submitted_by_name?: string | null
@@ -454,6 +464,10 @@ export type Database = {
         Update: {
           chantier_id?: string | null
           client_id?: string | null
+          client_signature_data?: string | null
+          client_signature_token?: string
+          client_signed_at?: string | null
+          client_signer_name?: string | null
           created_at?: string
           created_at_timestamp?: string | null
           gps_address?: string | null
@@ -466,6 +480,7 @@ export type Database = {
           pdf_url?: string | null
           report_date?: string | null
           report_number?: string | null
+          sent_to_client_at?: string | null
           status?: string
           submitted_by?: string | null
           submitted_by_name?: string | null
@@ -2208,6 +2223,22 @@ export type Database = {
           status: string
         }[]
       }
+      get_chantier_report_by_token: {
+        Args: { _token: string }
+        Returns: {
+          chantier_name: string
+          client_name: string
+          client_signed_at: string
+          client_signer_name: string
+          id: string
+          pdf_url: string
+          report_date: string
+          report_number: string
+          status: string
+          submitted_by_name: string
+          supervisor_name: string
+        }[]
+      }
       get_document_verification: {
         Args: { _document_id: string }
         Returns: {
@@ -2280,6 +2311,10 @@ export type Database = {
       is_chantier_team_member: {
         Args: { _chantier_id: string; _user_id: string }
         Returns: boolean
+      }
+      submit_chantier_report_signature: {
+        Args: { _signature_data: string; _signer_name: string; _token: string }
+        Returns: Json
       }
       submit_signature: {
         Args: { _signature_data: string; _signer_name: string; _token: string }

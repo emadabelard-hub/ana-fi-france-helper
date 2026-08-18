@@ -564,6 +564,12 @@ const ChantierDetailPage = () => {
                         <span className="text-xs">{t('chantierDetail.reports.validate')}</span>
                       </Button>
                     )}
+                    {user?.id === chantier?.user_id && r.status === 'valide' && (
+                      <Button size="sm" className="gap-1.5 shrink-0 bg-blue-600 hover:bg-blue-700 text-white" onClick={() => handleSendReportToClient(r)}>
+                        <ClipboardList className="h-3.5 w-3.5" />
+                        <span className="text-xs">{t('chantierDetail.reports.sendToClient')}</span>
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>

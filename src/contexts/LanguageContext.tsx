@@ -1134,6 +1134,7 @@ const translations: Record<Language, Record<string, string>> = {
     'chantierDetail.suppliers.htPrefix': 'بدون ضريبة',
     'chantierDetail.suppliers.vatPrefix': 'ضريبة',
     'chantierDetail.reports.empty': 'مافيش تقارير',
+    'chantierDetail.reports.view': 'شوف التقرير',
     'chantierDetail.reports.toValidate': 'في انتظار التأكيد',
     'chantierDetail.reports.validated': 'تم الاعتماد',
     'chantierDetail.reports.validate': 'اعتماد',

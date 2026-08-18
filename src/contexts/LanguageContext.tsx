@@ -449,6 +449,11 @@ const translations: Record<Language, Record<string, string>> = {
     'chantierDetail.suppliers.htPrefix': 'HT',
     'chantierDetail.suppliers.vatPrefix': 'TVA',
     'chantierDetail.reports.empty': 'Aucun rapport',
+    'chantierDetail.reports.toValidate': 'À valider',
+    'chantierDetail.reports.validated': 'Validé',
+    'chantierDetail.reports.validate': 'Valider',
+    'chantierDetail.reports.validateError': 'Impossible de valider le rapport',
+    'chantierDetail.reports.validatedToast': 'Rapport validé ✓',
 
     // ===== AI ASSISTANT (Phase 5C) =====
     'aiAssistant.header.title': 'Assistant IA',

@@ -416,6 +416,7 @@ export type Database = {
           pdf_url: string | null
           report_date: string | null
           report_number: string | null
+          status: string
           submitted_by: string | null
           submitted_by_name: string | null
           supervisor_name: string | null
@@ -440,6 +441,7 @@ export type Database = {
           pdf_url?: string | null
           report_date?: string | null
           report_number?: string | null
+          status?: string
           submitted_by?: string | null
           submitted_by_name?: string | null
           supervisor_name?: string | null
@@ -464,6 +466,7 @@ export type Database = {
           pdf_url?: string | null
           report_date?: string | null
           report_number?: string | null
+          status?: string
           submitted_by?: string | null
           submitted_by_name?: string | null
           supervisor_name?: string | null

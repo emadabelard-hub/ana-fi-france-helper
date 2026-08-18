@@ -756,6 +756,44 @@ const ChantierReportPage = () => {
     }
   };
 
+  // Enregistrement du rapport dans ANAFYPRO (jamais bloquant)
+  const saveReportRow = async (
+    overrides: { workDone: string; materials: string; observations: string },
+    generatedAt: Date,
+    pdfUrl: string | null,
+  ) => {
+    if (!user) return;
+    try {
+      const ownerUserId = isTeamMode && teamAssignment ? teamAssignment.patron_user_id : user.id;
+      const { error: insertErr } = await (supabase.from('chantier_reports' as any) as any).insert({
+        user_id: ownerUserId,
+        chantier_id: selectedChantierId || lockedChantierId || null,
+        client_id: selectedClientId || null,
+        report_number: reportNumber,
+        report_date: reportDate,
+        worker_count: workerCount ? parseInt(workerCount, 10) || null : null,
+        worker_names: workerNames || null,
+        hours_worked: hoursWorked || null,
+        weather: weatherLabelFR(weather),
+        work_done_fr: overrides.workDone || null,
+        materials_fr: overrides.materials || null,
+        observations_fr: overrides.observations || null,
+        supervisor_name: chefName || null,
+        pdf_url: pdfUrl || null,
+        submitted_by: user.id,
+        submitted_by_name: isTeamMode ? (chefName || user.email || null) : null,
+        created_at_timestamp: generatedAt.toISOString(),
+        gps_latitude: gpsPosition?.lat ?? null,
+        gps_longitude: gpsPosition?.lng ?? null,
+        gps_address: gpsPosition ? formatGpsForDisplay(gpsPosition) : null,
+        status: 'a_valider',
+      });
+      if (insertErr) console.warn('[chantier_reports] insert failed:', insertErr.message);
+    } catch (e) {
+      console.warn('[chantier_reports] save error:', e);
+    }
+  };
+
   const handleDownload = async () => {
     setTranslating(true);
     let overrides: { workDone: string; materials: string; observations: string };
@@ -788,36 +826,7 @@ const ChantierReportPage = () => {
       });
 
       // Save report entry in chantier_reports (with French-translated texts)
-      if (user) {
-        try {
-          const ownerUserId = isTeamMode && teamAssignment ? teamAssignment.patron_user_id : user.id;
-          const { error: insertErr } = await (supabase.from('chantier_reports' as any) as any).insert({
-            user_id: ownerUserId,
-            chantier_id: selectedChantierId || null,
-            client_id: selectedClientId || null,
-            report_number: reportNumber,
-            report_date: reportDate,
-            worker_count: workerCount ? parseInt(workerCount, 10) || null : null,
-            worker_names: workerNames || null,
-            hours_worked: hoursWorked || null,
-            weather: weatherLabelFR(weather),
-            work_done_fr: overrides.workDone || null,
-            materials_fr: overrides.materials || null,
-            observations_fr: overrides.observations || null,
-            supervisor_name: chefName || null,
-            pdf_url: archived?.pdf_url || null,
-            submitted_by: user.id,
-            submitted_by_name: isTeamMode ? (chefName || user.email || null) : null,
-            created_at_timestamp: result.generatedAt.toISOString(),
-            gps_latitude: gpsPosition?.lat ?? null,
-            gps_longitude: gpsPosition?.lng ?? null,
-            gps_address: gpsPosition ? formatGpsForDisplay(gpsPosition) : null,
-          });
-          if (insertErr) console.warn('[chantier_reports] insert failed:', insertErr.message);
-        } catch (e) {
-          console.warn('[chantier_reports] save error:', e);
-        }
-      }
+      await saveReportRow(overrides, result.generatedAt, archived?.pdf_url || null);
 
       setLastPdfBase64(result.base64);
       setLastFileName(result.fileName);
@@ -872,7 +881,12 @@ const ChantierReportPage = () => {
             numero: reportNumber,
             fileName: result.fileName,
             status: 'final',
-          }).catch((e) => console.warn('[ChantierReport] archive failed:', e));
+          })
+            .then((arch) => saveReportRow(overrides, result.generatedAt, arch?.pdf_url || null))
+            .catch((e) => {
+              console.warn('[ChantierReport] archive failed:', e);
+              saveReportRow(overrides, result.generatedAt, null).catch(() => {});
+            });
           return;
         } catch (e: any) {
           if (e?.name === 'AbortError') return;
@@ -887,6 +901,7 @@ const ChantierReportPage = () => {
         fileName: result.fileName,
         status: 'final',
       });
+      await saveReportRow(overrides, result.generatedAt, archived?.pdf_url || null).catch(() => {});
       const text = archived?.pdf_url ? `${msg}\n${archived.pdf_url}` : msg;
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
     } catch (e: any) {

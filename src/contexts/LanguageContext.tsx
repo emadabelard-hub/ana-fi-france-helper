@@ -1133,6 +1133,11 @@ const translations: Record<Language, Record<string, string>> = {
     'chantierDetail.suppliers.htPrefix': 'بدون ضريبة',
     'chantierDetail.suppliers.vatPrefix': 'ضريبة',
     'chantierDetail.reports.empty': 'مافيش تقارير',
+    'chantierDetail.reports.toValidate': 'في انتظار التأكيد',
+    'chantierDetail.reports.validated': 'تم الاعتماد',
+    'chantierDetail.reports.validate': 'اعتماد',
+    'chantierDetail.reports.validateError': 'ما قدرناش نعتمد التقرير',
+    'chantierDetail.reports.validatedToast': 'تم اعتماد التقرير ✓',
 
     // ===== AI ASSISTANT (Phase 5C) =====
     'aiAssistant.header.title': 'المساعد الذكي',

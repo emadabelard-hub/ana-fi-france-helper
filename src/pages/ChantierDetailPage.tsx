@@ -129,6 +129,32 @@ const ChantierDetailPage = () => {
     toast({ title: t('chantierDetail.reports.validatedToast') });
   };
 
+  const handleSendReportToClient = async (report: any) => {
+    if (!user || !id || !chantier) return;
+    if (user.id !== chantier.user_id) {
+      toast({ title: t('chantierDetail.toast.errorTitle'), description: 'Action réservée au propriétaire du chantier.', variant: 'destructive' });
+      return;
+    }
+    const link = `${window.location.origin}/rapport/${report.client_signature_token}`;
+    const msg = `Bonjour${client?.name ? ' ' + client.name : ''},\n\nVoici le rapport de chantier ${report.report_number || ''}${chantier?.name ? ` (${chantier.name})` : ''} à consulter et signer :\n${link}`;
+    const rawPhone = (client?.contact_phone || '').replace(/[^\d+]/g, '').replace(/^\+/, '');
+    const waUrl = rawPhone
+      ? `https://wa.me/${rawPhone}?text=${encodeURIComponent(msg)}`
+      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
+
+    const { error } = await (supabase.from('chantier_reports' as any) as any)
+      .update({ status: 'envoye_client', sent_to_client_at: new Date().toISOString() })
+      .eq('id', report.id)
+      .eq('chantier_id', id)
+      .eq('user_id', user.id);
+    if (error) {
+      console.error('[ChantierDetail] send report to client failed', error);
+      return;
+    }
+    setReports(prev => prev.map(r => r.id === report.id ? { ...r, status: 'envoye_client' } : r));
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground animate-pulse">{t('chantierDetail.loading')}</div>;
   }
@@ -502,6 +528,16 @@ const ChantierDetailPage = () => {
                           {t('chantierDetail.reports.validated')}
                         </Badge>
                       )}
+                      {r.status === 'envoye_client' && (
+                        <Badge variant="outline" className="mt-1 text-[10px] bg-blue-500/10 text-blue-600 border-blue-500/30">
+                          {t('chantierDetail.reports.sentToClient')}
+                        </Badge>
+                      )}
+                      {r.status === 'signe_client' && (
+                        <Badge variant="outline" className="mt-1 text-[10px] bg-emerald-600/10 text-emerald-700 border-emerald-600/30">
+                          {t('chantierDetail.reports.signedByClient')}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   <div className={cn("flex flex-col gap-1.5 shrink-0", isRTL && "items-start")}>
@@ -526,6 +562,12 @@ const ChantierDetailPage = () => {
                       <Button size="sm" className="gap-1.5 shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleValidateReport(r.id)}>
                         <ClipboardList className="h-3.5 w-3.5" />
                         <span className="text-xs">{t('chantierDetail.reports.validate')}</span>
+                      </Button>
+                    )}
+                    {user?.id === chantier?.user_id && r.status === 'valide' && (
+                      <Button size="sm" className="gap-1.5 shrink-0 bg-blue-600 hover:bg-blue-700 text-white" onClick={() => handleSendReportToClient(r)}>
+                        <ClipboardList className="h-3.5 w-3.5" />
+                        <span className="text-xs">{t('chantierDetail.reports.sendToClient')}</span>
                       </Button>
                     )}
                   </div>

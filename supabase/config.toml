@@ -134,3 +134,6 @@ verify_jwt = false
 
 [functions.btp-analysis-worker]
 verify_jwt = false
+
+[functions.chantier-report-public]
+verify_jwt = false

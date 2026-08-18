@@ -109,6 +109,26 @@ const ChantierDetailPage = () => {
     toast({ title: t('chantierDetail.budget.savedToast') });
   };
 
+  const handleValidateReport = async (reportId: string) => {
+    if (!user || !id || !chantier) return;
+    if (user.id !== chantier.user_id) {
+      toast({ title: t('chantierDetail.toast.errorTitle'), description: 'Action réservée au propriétaire du chantier.', variant: 'destructive' });
+      return;
+    }
+    const { error } = await (supabase.from('chantier_reports' as any) as any)
+      .update({ status: 'valide' })
+      .eq('id', reportId)
+      .eq('chantier_id', id)
+      .eq('user_id', user.id);
+    if (error) {
+      console.error('[ChantierDetail] validate report failed', error);
+      toast({ title: t('chantierDetail.toast.errorTitle'), description: t('chantierDetail.reports.validateError'), variant: 'destructive' });
+      return;
+    }
+    setReports(prev => prev.map(r => r.id === reportId ? { ...r, status: 'valide' } : r));
+    toast({ title: t('chantierDetail.reports.validatedToast') });
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground animate-pulse">{t('chantierDetail.loading')}</div>;
   }

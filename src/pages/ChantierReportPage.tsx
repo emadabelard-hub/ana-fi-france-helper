@@ -881,7 +881,12 @@ const ChantierReportPage = () => {
             numero: reportNumber,
             fileName: result.fileName,
             status: 'final',
-          }).catch((e) => console.warn('[ChantierReport] archive failed:', e));
+          })
+            .then((arch) => saveReportRow(overrides, result.generatedAt, arch?.pdf_url || null))
+            .catch((e) => {
+              console.warn('[ChantierReport] archive failed:', e);
+              saveReportRow(overrides, result.generatedAt, null).catch(() => {});
+            });
           return;
         } catch (e: any) {
           if (e?.name === 'AbortError') return;
@@ -896,6 +901,7 @@ const ChantierReportPage = () => {
         fileName: result.fileName,
         status: 'final',
       });
+      await saveReportRow(overrides, result.generatedAt, archived?.pdf_url || null).catch(() => {});
       const text = archived?.pdf_url ? `${msg}\n${archived.pdf_url}` : msg;
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
     } catch (e: any) {

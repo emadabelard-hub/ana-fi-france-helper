@@ -528,6 +528,16 @@ const ChantierDetailPage = () => {
                           {t('chantierDetail.reports.validated')}
                         </Badge>
                       )}
+                      {r.status === 'envoye_client' && (
+                        <Badge variant="outline" className="mt-1 text-[10px] bg-blue-500/10 text-blue-600 border-blue-500/30">
+                          {t('chantierDetail.reports.sentToClient')}
+                        </Badge>
+                      )}
+                      {r.status === 'signe_client' && (
+                        <Badge variant="outline" className="mt-1 text-[10px] bg-emerald-600/10 text-emerald-700 border-emerald-600/30">
+                          {t('chantierDetail.reports.signedByClient')}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   <div className={cn("flex flex-col gap-1.5 shrink-0", isRTL && "items-start")}>

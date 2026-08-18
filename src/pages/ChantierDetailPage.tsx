@@ -470,8 +470,13 @@ const ChantierDetailPage = () => {
                       <p className="text-sm font-medium truncate" dir="ltr">{r.report_number || '—'}</p>
                       <p className="text-[10px] text-muted-foreground">
                         <span dir="ltr">{r.report_date ? new Date(r.report_date).toLocaleDateString('fr-FR') : ''}</span>
-                        {r.submitted_by_name ? ` · ${r.submitted_by_name}` : ''}
+                        {r.submitted_by_name ? ` · ${r.submitted_by_name}` : (r.supervisor_name ? ` · ${r.supervisor_name}` : '')}
                       </p>
+                      {r.status === 'a_valider' && (
+                        <Badge variant="outline" className="mt-1 text-[10px] bg-orange-500/10 text-orange-600 border-orange-500/30">
+                          À valider
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   {r.pdf_url && (
@@ -488,7 +493,7 @@ const ChantierDetailPage = () => {
                       }
                     }}>
                       <Download className="h-3.5 w-3.5" />
-                      <span className="text-xs">PDF</span>
+                      <span className="text-xs">Voir le rapport</span>
                     </Button>
                   )}
                 </div>

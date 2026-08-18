@@ -109,6 +109,26 @@ const ChantierDetailPage = () => {
     toast({ title: t('chantierDetail.budget.savedToast') });
   };
 
+  const handleValidateReport = async (reportId: string) => {
+    if (!user || !id || !chantier) return;
+    if (user.id !== chantier.user_id) {
+      toast({ title: t('chantierDetail.toast.errorTitle'), description: 'Action réservée au propriétaire du chantier.', variant: 'destructive' });
+      return;
+    }
+    const { error } = await (supabase.from('chantier_reports' as any) as any)
+      .update({ status: 'valide' })
+      .eq('id', reportId)
+      .eq('chantier_id', id)
+      .eq('user_id', user.id);
+    if (error) {
+      console.error('[ChantierDetail] validate report failed', error);
+      toast({ title: t('chantierDetail.toast.errorTitle'), description: t('chantierDetail.reports.validateError'), variant: 'destructive' });
+      return;
+    }
+    setReports(prev => prev.map(r => r.id === reportId ? { ...r, status: 'valide' } : r));
+    toast({ title: t('chantierDetail.reports.validatedToast') });
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground animate-pulse">{t('chantierDetail.loading')}</div>;
   }
@@ -474,28 +494,41 @@ const ChantierDetailPage = () => {
                       </p>
                       {r.status === 'a_valider' && (
                         <Badge variant="outline" className="mt-1 text-[10px] bg-orange-500/10 text-orange-600 border-orange-500/30">
-                          À valider
+                          {t('chantierDetail.reports.toValidate')}
+                        </Badge>
+                      )}
+                      {r.status === 'valide' && (
+                        <Badge variant="outline" className="mt-1 text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+                          {t('chantierDetail.reports.validated')}
                         </Badge>
                       )}
                     </div>
                   </div>
-                  {r.pdf_url && (
-                    <Button size="sm" variant="outline" className="gap-1.5 shrink-0" onClick={async () => {
-                      try {
-                        let url = r.pdf_url as string;
-                        if (!/^https?:\/\//i.test(url)) {
-                          const { data } = await supabase.storage.from('documents').createSignedUrl(url, 600);
-                          if (data?.signedUrl) url = data.signedUrl;
+                  <div className={cn("flex flex-col gap-1.5 shrink-0", isRTL && "items-start")}>
+                    {r.pdf_url && (
+                      <Button size="sm" variant="outline" className="gap-1.5 shrink-0" onClick={async () => {
+                        try {
+                          let url = r.pdf_url as string;
+                          if (!/^https?:\/\//i.test(url)) {
+                            const { data } = await supabase.storage.from('documents').createSignedUrl(url, 600);
+                            if (data?.signedUrl) url = data.signedUrl;
+                          }
+                          window.open(url, '_blank');
+                        } catch (e) {
+                          console.warn('open pdf failed', e);
                         }
-                        window.open(url, '_blank');
-                      } catch (e) {
-                        console.warn('open pdf failed', e);
-                      }
-                    }}>
-                      <Download className="h-3.5 w-3.5" />
-                      <span className="text-xs">Voir le rapport</span>
-                    </Button>
-                  )}
+                      }}>
+                        <Download className="h-3.5 w-3.5" />
+                        <span className="text-xs">{t('chantierDetail.reports.view')}</span>
+                      </Button>
+                    )}
+                    {user?.id === chantier?.user_id && r.status === 'a_valider' && (
+                      <Button size="sm" className="gap-1.5 shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleValidateReport(r.id)}>
+                        <ClipboardList className="h-3.5 w-3.5" />
+                        <span className="text-xs">{t('chantierDetail.reports.validate')}</span>
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>

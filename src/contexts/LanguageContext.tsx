@@ -449,6 +449,12 @@ const translations: Record<Language, Record<string, string>> = {
     'chantierDetail.suppliers.htPrefix': 'HT',
     'chantierDetail.suppliers.vatPrefix': 'TVA',
     'chantierDetail.reports.empty': 'Aucun rapport',
+    'chantierDetail.reports.view': 'Voir le rapport',
+    'chantierDetail.reports.toValidate': 'À valider',
+    'chantierDetail.reports.validated': 'Validé',
+    'chantierDetail.reports.validate': 'Valider',
+    'chantierDetail.reports.validateError': 'Impossible de valider le rapport',
+    'chantierDetail.reports.validatedToast': 'Rapport validé ✓',
 
     // ===== AI ASSISTANT (Phase 5C) =====
     'aiAssistant.header.title': 'Assistant IA',
@@ -1128,6 +1134,12 @@ const translations: Record<Language, Record<string, string>> = {
     'chantierDetail.suppliers.htPrefix': 'بدون ضريبة',
     'chantierDetail.suppliers.vatPrefix': 'ضريبة',
     'chantierDetail.reports.empty': 'مافيش تقارير',
+    'chantierDetail.reports.view': 'شوف التقرير',
+    'chantierDetail.reports.toValidate': 'في انتظار التأكيد',
+    'chantierDetail.reports.validated': 'تم الاعتماد',
+    'chantierDetail.reports.validate': 'اعتماد',
+    'chantierDetail.reports.validateError': 'ما قدرناش نعتمد التقرير',
+    'chantierDetail.reports.validatedToast': 'تم اعتماد التقرير ✓',
 
     // ===== AI ASSISTANT (Phase 5C) =====
     'aiAssistant.header.title': 'المساعد الذكي',

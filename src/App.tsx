@@ -128,6 +128,8 @@ const AppRoutes = () => {
         <Routes>
           {/* Public signature page — no MainLayout/auth */}
           <Route path="/sign/:token" element={<SignaturePage />} />
+          {/* Public chantier report client signature — token-based, no auth */}
+          <Route path="/rapport/:token" element={<ChantierReportSignPage />} />
           {/* Public accountant access page — token-based, no MainLayout/auth */}
           <Route path="/comptable" element={<ComptablePage />} />
           {/* Public chantier invitation page — token-based, no MainLayout */}

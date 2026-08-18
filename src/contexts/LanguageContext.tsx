@@ -449,6 +449,7 @@ const translations: Record<Language, Record<string, string>> = {
     'chantierDetail.suppliers.htPrefix': 'HT',
     'chantierDetail.suppliers.vatPrefix': 'TVA',
     'chantierDetail.reports.empty': 'Aucun rapport',
+    'chantierDetail.reports.view': 'Voir le rapport',
     'chantierDetail.reports.toValidate': 'À valider',
     'chantierDetail.reports.validated': 'Validé',
     'chantierDetail.reports.validate': 'Valider',

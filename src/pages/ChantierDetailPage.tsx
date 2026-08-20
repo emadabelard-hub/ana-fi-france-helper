@@ -138,15 +138,7 @@ const ChantierDetailPage = () => {
     const link = `${window.location.origin}/rapport/${report.client_signature_token}`;
     const msg = `Bonjour${client?.name ? ' ' + client.name : ''},\n\nVoici le rapport de chantier ${report.report_number || ''}${chantier?.name ? ` (${chantier.name})` : ''} à consulter et signer :\n${link}`;
 
-    // Normaliser un numéro français pour WhatsApp : 0615415547 -> 33615415547
-    const cleanPhone = (client?.contact_phone || '').replace(/[^\d+]/g, '').replace(/^\+/, '');
-    let waPhone = cleanPhone;
-    if (cleanPhone.startsWith('0')) {
-      waPhone = '33' + cleanPhone.slice(1);
-    }
-    const waUrl = waPhone
-      ? `https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`
-      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
 
     try {
       const { error } = await (supabase.from('chantier_reports' as any) as any)

@@ -757,9 +757,6 @@ const ChantierReportPage = () => {
   };
 
   // Enregistrement du rapport dans ANAFYPRO (jamais bloquant)
-  // Une seule ligne par rapport : le 2e appel (ex. Télécharger puis Envoyer) met juste à jour le PDF.
-  const savedReportIdRef = useRef<{ reportNumber: string; id: string } | null>(null);
-
   const saveReportRow = async (
     overrides: { workDone: string; materials: string; observations: string },
     generatedAt: Date,
@@ -767,20 +764,8 @@ const ChantierReportPage = () => {
   ) => {
     if (!user) return;
     try {
-      const existing = savedReportIdRef.current;
-      if (existing && existing.reportNumber === reportNumber) {
-        if (pdfUrl) {
-          const { error: updErr } = await (supabase.from('chantier_reports' as any) as any)
-            .update({ pdf_url: pdfUrl })
-            .eq('id', existing.id);
-          if (updErr) console.warn('[chantier_reports] update failed:', updErr.message);
-        }
-        return;
-      }
-
       const ownerUserId = isTeamMode && teamAssignment ? teamAssignment.patron_user_id : user.id;
-      const { data: inserted, error: insertErr } = await (supabase.from('chantier_reports' as any) as any).insert({
-
+      const { error: insertErr } = await (supabase.from('chantier_reports' as any) as any).insert({
         user_id: ownerUserId,
         chantier_id: selectedChantierId || lockedChantierId || null,
         client_id: selectedClientId || null,
@@ -839,9 +824,6 @@ const ChantierReportPage = () => {
         fileName: result.fileName,
         status: 'final',
       });
-
-      // Save report entry in chantier_reports (with French-translated texts)
-      await saveReportRow(overrides, result.generatedAt, archived?.pdf_url || null);
 
       setLastPdfBase64(result.base64);
       setLastFileName(result.fileName);

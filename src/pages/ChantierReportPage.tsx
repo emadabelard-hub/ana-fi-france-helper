@@ -1421,7 +1421,7 @@ const ChantierReportPage = () => {
             </Button>
             <Button
               onClick={handleShareWhatsApp}
-              disabled={generating || translating}
+              disabled={generating || translating || !effectiveChantierId}
               className="w-full font-bold h-12"
               style={{ background: '#25D366', color: '#fff' }}
             >

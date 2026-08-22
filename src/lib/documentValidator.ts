@@ -238,19 +238,25 @@ function upgradeDesignation(designation: string): string {
 }
 
 /**
- * Check if a unit is wrong for a given work type and suggest correction.
+ * Check if a unit is unusual for a given work type. Retourne une SUGGESTION
+ * uniquement (jamais appliquée). Matching par mots entiers : "porte" ne peut
+ * pas matcher "porteuse".
  */
 function checkUnitConsistency(designation: string, currentUnit: string): string | null {
   const lower = designation.toLowerCase();
+  const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   for (const hint of WORK_UNIT_HINTS) {
-    if (hint.keywords.some(kw => lower.includes(kw))) {
-      if (hint.wrongUnits.includes(currentUnit)) {
-        return hint.expectedUnit;
-      }
+    const matched = hint.keywords.some(kw => {
+      const re = new RegExp(`(^|[^\\p{L}\\p{N}])${escape(kw.toLowerCase())}($|[^\\p{L}\\p{N}])`, 'u');
+      return re.test(lower);
+    });
+    if (matched && hint.wrongUnits.includes(currentUnit)) {
+      return hint.expectedUnit;
     }
   }
   return null;
 }
+
 
 /**
  * Validate and auto-fix an entire document's items + TVA.

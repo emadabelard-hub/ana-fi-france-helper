@@ -285,108 +285,70 @@ export function validateDocument(
     }
   }
 
-  // 2. Validate and fix each item
+  // 2. Contrôle de chaque ligne — AUCUNE valeur métier n'est modifiée.
+  //    Seule la normalisation typographique de l'unité (m2 → m², m3 → m³, ML → ml…)
+  //    est appliquée : elle ne change pas le sens métier.
   const correctedItems = items.map((item) => {
     const corrected = { ...item };
 
-    // 2a. Désignation : source de vérité utilisateur — ne jamais modifier automatiquement
+    // 2a. Désignation : source de vérité utilisateur — jamais modifiée.
 
-    const btpLine = isBtpFactsLine(corrected);
-
-    // 2b. Unit normalization
-    // Lignes BTP : normalisation typographique sûre uniquement.
-    const normalizedUnit = btpLine
-      ? normalizeUnitSafely(corrected.unit)
-      : normalizeUnit(corrected.unit);
-    // Aucune « correction » affichée si la valeur est inchangée après normalisation.
+    // 2b. Unité : normalisation typographique sûre uniquement (toutes les lignes).
+    const normalizedUnit = normalizeUnitSafely(corrected.unit);
     if (normalizedUnit !== corrected.unit) {
       corrections.push({
         field: 'Unité',
         original: corrected.unit,
         corrected: normalizedUnit,
-        reason: 'Unité normalisée',
+        reason: 'Unité normalisée (typographie)',
       });
       corrected.unit = normalizedUnit;
     }
 
-    // 2c. Unit consistency check
+    // 2c. Cohérence d'unité : ALERTE uniquement, valeur conservée.
     const suggestedUnit = checkUnitConsistency(corrected.designation_fr, corrected.unit);
     if (suggestedUnit) {
-      if (btpLine) {
-        // Ligne issue des faits BTP : l'unité confirmée est la source de vérité.
-        // Avertissement uniquement, aucune réécriture.
-        warnings.push({
-          field: 'Unité',
-          value: corrected.unit,
-          reason: `Unité inhabituelle pour "${corrected.designation_fr}" (suggestion : "${suggestedUnit}") — valeur source conservée`,
-        });
-        console.warn(
-          '[documentValidator] unité BTP conservée (avertissement seulement) :',
-          corrected.designation_fr, corrected.unit, '≠ suggestion', suggestedUnit,
-        );
-      } else {
-        corrections.push({
-          field: 'Unité',
-          original: corrected.unit,
-          corrected: suggestedUnit,
-          reason: `Unité "${corrected.unit}" incohérente pour "${corrected.designation_fr}", corrigée en "${suggestedUnit}"`,
-        });
-        corrected.unit = suggestedUnit;
-      }
+      warnings.push({
+        field: 'Unité',
+        value: corrected.unit,
+        reason: 'Unité à vérifier',
+      });
+      console.warn(
+        '[documentValidator] unité conservée (alerte seulement) :',
+        corrected.designation_fr, corrected.unit, '≠ suggestion', suggestedUnit,
+      );
     }
 
-    // 2d. Price sanity check
+    // 2d. Prix : ALERTE uniquement, valeur conservée.
     const category = detectPriceCategory(corrected.designation_fr, corrected.unit);
     if (category && PRICE_RANGES[category]) {
       const range = PRICE_RANGES[category];
       const tooLow = corrected.unitPrice > 0 && corrected.unitPrice < range.min;
       const tooHigh = corrected.unitPrice > range.max * 2;
-      if (btpLine) {
-        // Prix saisi par l'artisan = source de vérité. Jamais de réécriture.
-        if (tooLow || tooHigh) {
-          warnings.push({
-            field: 'Prix unitaire',
-            value: `${corrected.unitPrice.toFixed(2)} €`,
-            reason: 'Prix unitaire à vérifier',
-          });
-          console.warn(
-            '[documentValidator] prix BTP conservé (avertissement seulement) :',
-            corrected.designation_fr, corrected.unitPrice, category,
-          );
-        }
-      } else if (tooLow) {
-        corrections.push({
+      if (tooLow || tooHigh) {
+        warnings.push({
           field: 'Prix unitaire',
-          original: `${corrected.unitPrice.toFixed(2)} €`,
-          corrected: `${range.min.toFixed(2)} €`,
-          reason: `Prix trop bas pour ${category} (min ${range.min} €)`,
+          value: `${corrected.unitPrice.toFixed(2)} €`,
+          reason: 'Prix inhabituel — vérifiez le montant',
         });
-        corrected.unitPrice = range.min;
-      } else if (tooHigh) {
-        // Only flag extreme outliers (>2x max)
-        corrections.push({
-          field: 'Prix unitaire',
-          original: `${corrected.unitPrice.toFixed(2)} €`,
-          corrected: `${range.max.toFixed(2)} €`,
-          reason: `Prix anormalement élevé pour ${category} (max recommandé ${range.max} €)`,
-        });
-        corrected.unitPrice = range.max;
+        console.warn(
+          '[documentValidator] prix conservé (alerte seulement) :',
+          corrected.designation_fr, corrected.unitPrice, category,
+        );
       }
     }
 
-    // 2e. Quantity sanity (must be > 0)
-    // Jamais de quantité artificielle « 1 » sur une ligne issue des faits BTP.
-    if (!btpLine && corrected.quantity <= 0) {
-      corrections.push({
+    // 2e. Quantité : ALERTE uniquement, valeur conservée.
+    if (corrected.quantity <= 0) {
+      warnings.push({
         field: 'Quantité',
-        original: `${corrected.quantity}`,
-        corrected: '1',
-        reason: 'Quantité invalide, corrigée à 1',
+        value: `${corrected.quantity}`,
+        reason: 'Quantité à vérifier',
       });
-      corrected.quantity = 1;
+      console.warn('[documentValidator] quantité conservée (alerte seulement) :', corrected.designation_fr, corrected.quantity);
     }
 
-    // 2f. Recalculate total
+    // 2f. Total = quantité × prix unitaire (valeur dérivée, pas une donnée saisie).
     const newTotal = Math.round(corrected.quantity * corrected.unitPrice * 100) / 100;
     if (Math.abs(newTotal - corrected.total) > 0.01) {
       corrected.total = newTotal;
@@ -394,6 +356,7 @@ export function validateDocument(
 
     return corrected;
   });
+
 
   return {
     items: correctedItems,

@@ -363,7 +363,16 @@ const ChantierReportPage = () => {
 
   const validate = (): string | null => {
     if (!isTeamMode && !selectedClientId) return 'اختر العميل أولاً';
-    if (!selectedChantierId) return 'اختر الشانتي أولاً';
+  const effectiveChantierId = selectedChantierId || lockedChantierId || '';
+
+  const validate = (): string | null => {
+    if (!isTeamMode && !selectedClientId) return tr('اختر العميل أولاً', "Sélectionnez d'abord un client");
+    if (!effectiveChantierId) {
+      return tr(
+        'مفيش شانتي محدد. اختار شانتي قبل إرسال التقرير.',
+        "Aucun chantier sélectionné. Sélectionnez un chantier avant d'envoyer le rapport.",
+      );
+    }
     if (!isTeamMode && !chantierAddress.trim()) return 'عنوان الشانتي مطلوب';
     if (!workDone.trim()) return 'الأعمال المنجزة مطلوبة';
     return null;

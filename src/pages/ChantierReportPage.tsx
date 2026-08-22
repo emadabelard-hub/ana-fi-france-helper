@@ -777,79 +777,92 @@ const ChantierReportPage = () => {
     }
   };
 
-  // Enregistrement du rapport dans ANAFYPRO (jamais bloquant)
+  // Enregistrement du rapport dans ANAFYPRO — BLOQUANT : retourne l'id ou lève une erreur
   const saveReportRow = async (
     overrides: { workDone: string; materials: string; observations: string },
     generatedAt: Date,
     pdfUrl: string | null,
-  ) => {
-    if (!user) return;
-    try {
-      const ownerUserId = isTeamMode && teamAssignment ? teamAssignment.patron_user_id : user.id;
-      const targetChantierId = selectedChantierId || lockedChantierId || null;
+  ): Promise<string> => {
+    if (!user) throw new Error('Session absente');
 
-      const reportPayload = {
-        user_id: ownerUserId,
-        chantier_id: targetChantierId,
-        client_id: selectedClientId || null,
-        report_number: reportNumber,
-        report_date: reportDate,
-        worker_count: workerCount ? parseInt(workerCount, 10) || null : null,
-        worker_names: workerNames || null,
-        hours_worked: hoursWorked || null,
-        weather: weatherLabelFR(weather),
-        work_done_fr: overrides.workDone || null,
-        materials_fr: overrides.materials || null,
-        observations_fr: overrides.observations || null,
-        supervisor_name: chefName || null,
-        pdf_url: pdfUrl || null,
-        submitted_by: user.id,
-        submitted_by_name: isTeamMode ? (chefName || user.email || null) : null,
-        created_at_timestamp: generatedAt.toISOString(),
-        gps_latitude: gpsPosition?.lat ?? null,
-        gps_longitude: gpsPosition?.lng ?? null,
-        gps_address: gpsPosition ? formatGpsForDisplay(gpsPosition) : null,
-      };
+    const ownerUserId = isTeamMode && teamAssignment ? teamAssignment.patron_user_id : user.id;
+    const targetChantierId = selectedChantierId || lockedChantierId || null;
 
-      // Mise à jour de la ligne déjà mémorisée dans cette session (double clic)
-      if (savedReportIdRef.current) {
-        const { error: updateErr } = await (supabase.from('chantier_reports' as any) as any)
-          .update(reportPayload)
-          .eq('id', savedReportIdRef.current);
-        if (updateErr) console.warn('[chantier_reports] update failed:', updateErr.message);
-        return;
+    const reportPayload = {
+      user_id: ownerUserId,
+      chantier_id: targetChantierId,
+      client_id: selectedClientId || null,
+      report_number: reportNumber,
+      report_date: reportDate,
+      worker_count: workerCount ? parseInt(workerCount, 10) || null : null,
+      worker_names: workerNames || null,
+      hours_worked: hoursWorked || null,
+      weather: weatherLabelFR(weather),
+      work_done_fr: overrides.workDone || null,
+      materials_fr: overrides.materials || null,
+      observations_fr: overrides.observations || null,
+      supervisor_name: chefName || null,
+      pdf_url: pdfUrl || null,
+      submitted_by: user.id,
+      submitted_by_name: isTeamMode ? (chefName || user.email || null) : null,
+      created_at_timestamp: generatedAt.toISOString(),
+      gps_latitude: gpsPosition?.lat ?? null,
+      gps_longitude: gpsPosition?.lng ?? null,
+      gps_address: gpsPosition ? formatGpsForDisplay(gpsPosition) : null,
+    };
+
+    // Mise à jour de la ligne déjà mémorisée dans cette session (double clic)
+    if (savedReportIdRef.current) {
+      const { error: updateErr } = await (supabase.from('chantier_reports' as any) as any)
+        .update(reportPayload)
+        .eq('id', savedReportIdRef.current);
+      if (updateErr) {
+        console.error('[chantier_reports] update failed:', updateErr);
+        throw new Error(updateErr.message);
       }
-
-      // Recherche d'une ligne existante pour ce chantier + numéro de rapport
-      const { data: existing } = await (supabase.from('chantier_reports' as any) as any)
-        .select('id')
-        .eq('chantier_id', targetChantierId)
-        .eq('report_number', reportNumber)
-        .maybeSingle();
-
-      if (existing?.id) {
-        savedReportIdRef.current = existing.id;
-        const { error: updateErr } = await (supabase.from('chantier_reports' as any) as any)
-          .update(reportPayload)
-          .eq('id', existing.id);
-        if (updateErr) console.warn('[chantier_reports] update failed:', updateErr.message);
-        return;
-      }
-
-      // Création normale
-      const { data: inserted, error: insertErr } = await (supabase.from('chantier_reports' as any) as any)
-        .insert({ ...reportPayload, status: 'a_valider' })
-        .select('id')
-        .single();
-      if (insertErr) {
-        console.warn('[chantier_reports] insert failed:', insertErr.message);
-      } else if (inserted?.id) {
-        savedReportIdRef.current = inserted.id;
-      }
-    } catch (e) {
-      console.warn('[chantier_reports] save error:', e);
+      return savedReportIdRef.current;
     }
+
+    // Recherche d'une ligne existante pour ce chantier + numéro de rapport (anti-doublon)
+    const { data: existing, error: selectErr } = await (supabase.from('chantier_reports' as any) as any)
+      .select('id')
+      .eq('chantier_id', targetChantierId)
+      .eq('report_number', reportNumber)
+      .maybeSingle();
+    if (selectErr) {
+      console.error('[chantier_reports] lookup failed:', selectErr);
+      throw new Error(selectErr.message);
+    }
+
+    if (existing?.id) {
+      savedReportIdRef.current = existing.id;
+      const { error: updateErr } = await (supabase.from('chantier_reports' as any) as any)
+        .update(reportPayload)
+        .eq('id', existing.id);
+      if (updateErr) {
+        console.error('[chantier_reports] update failed:', updateErr);
+        throw new Error(updateErr.message);
+      }
+      return existing.id;
+    }
+
+    // Création normale
+    const { data: inserted, error: insertErr } = await (supabase.from('chantier_reports' as any) as any)
+      .insert({ ...reportPayload, status: 'a_valider' })
+      .select('id')
+      .single();
+    if (insertErr) {
+      console.error('[chantier_reports] insert failed:', insertErr);
+      throw new Error(insertErr.message);
+    }
+    if (!inserted?.id) {
+      throw new Error('Aucun identifiant retourné par chantier_reports');
+    }
+    savedReportIdRef.current = inserted.id;
+    console.info('[chantier_reports] saved:', inserted.id, reportNumber);
+    return inserted.id;
   };
+
 
   const handleDownload = async () => {
     setTranslating(true);
@@ -917,35 +930,52 @@ const ChantierReportPage = () => {
       setTranslating(false);
     }
     setGenerating(true);
+    const failToast = (err: any) => {
+      console.error('[ChantierReport] enregistrement ANAFYPRO échoué:', err);
+      toast({
+        title: tr('فشل الحفظ في ANAFYPRO', 'Enregistrement impossible'),
+        description: tr(
+          'التقرير مش اتحفظ في ANAFYPRO. حاول تاني.',
+          "Le rapport n'a pas pu être enregistré dans ANAFYPRO. Réessayez.",
+        ),
+        variant: 'destructive',
+      });
+    };
+
     try {
+      // 1. PDF
       const result = await generatePdf(overrides);
       if (!result) {
-        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+        failToast(new Error('Génération du PDF impossible'));
         return;
       }
 
+      // 2. Archivage dans documents/<user>/rapports-chantier + 3. ligne chantier_reports
+      let archived: { pdf_url: string; storage_path: string } | null = null;
+      let savedId: string | null = null;
+      try {
+        archived = await archivePdf({
+          blob: result.blob,
+          type: 'rapport_chantier',
+          numero: reportNumber,
+          fileName: result.fileName,
+          status: 'final',
+        });
+        if (!archived?.pdf_url) {
+          throw new Error('Archivage du PDF impossible (Storage)');
+        }
+        // 4. l'id de la ligne doit être obtenu, sinon erreur
+        savedId = await saveReportRow(overrides, result.generatedAt, archived.pdf_url);
+        if (!savedId) throw new Error('Aucun identifiant de rapport obtenu');
+      } catch (saveErr: any) {
+        failToast(saveErr);
+        return; // 5. WhatsApp ne s'ouvre JAMAIS si l'enregistrement échoue
+      }
+
+      // 5. Partage seulement après enregistrement confirmé
       const file = new File([result.blob], result.fileName, { type: 'application/pdf' });
       const nav = navigator as any;
       if (nav.share && (!nav.canShare || nav.canShare({ files: [file] }))) {
-        // Archiver + enregistrer AVANT le partage : WhatsApp suspend la page
-        // et une chaîne non attendue ne se terminerait jamais.
-        try {
-          const arch = await archivePdf({
-            blob: result.blob,
-            type: 'rapport_chantier',
-            numero: reportNumber,
-            fileName: result.fileName,
-            status: 'final',
-          });
-          await saveReportRow(overrides, result.generatedAt, arch?.pdf_url || null);
-        } catch (archErr: any) {
-          console.error('[ChantierReport] archivage/sauvegarde ANAFYPRO échoué:', archErr);
-          toast({
-            title: tr('فشل الحفظ في ANAFYPRO', 'Archivage ANAFYPRO échoué'),
-            description: archErr?.message || tr('التقرير مش محفوظ في ANAFYPRO', "Le rapport n'a pas été enregistré dans ANAFYPRO"),
-            variant: 'destructive',
-          });
-        }
         try {
           await nav.share({ files: [file], text: msg, title: result.fileName });
           return;
@@ -955,32 +985,14 @@ const ChantierReportPage = () => {
         }
       }
 
-
-      let archived: { pdf_url: string; storage_path: string } | null = null;
-      try {
-        archived = await archivePdf({
-          blob: result.blob,
-          type: 'rapport_chantier',
-          numero: reportNumber,
-          fileName: result.fileName,
-          status: 'final',
-        });
-        await saveReportRow(overrides, result.generatedAt, archived?.pdf_url || null);
-      } catch (archErr: any) {
-        console.error('[ChantierReport] archivage/sauvegarde ANAFYPRO échoué:', archErr);
-        toast({
-          title: tr('فشل الحفظ في ANAFYPRO', 'Archivage ANAFYPRO échoué'),
-          description: archErr?.message || tr('التقرير مش محفوظ في ANAFYPRO', "Le rapport n'a pas été enregistré dans ANAFYPRO"),
-          variant: 'destructive',
-        });
-      }
-      const text = archived?.pdf_url ? `${msg}\n${archived.pdf_url}` : msg;
-      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+      const text = `${msg}\n${archived.pdf_url}`;
+      window.location.href = `https://wa.me/?text=${encodeURIComponent(text)}`;
     } catch (e: any) {
       console.error('[ChantierReport] WhatsApp share error:', e);
-      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+      failToast(e);
     } finally {
       setGenerating(false);
+
     }
   };
 

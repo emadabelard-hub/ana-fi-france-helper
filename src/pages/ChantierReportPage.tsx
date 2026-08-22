@@ -364,7 +364,11 @@ const ChantierReportPage = () => {
     // if (!isTeamMode && !selectedClientId) return 'اختر العميل أولاً';
     // if (!selectedChantierId) return 'اختر الشانتي أولاً';
     // if (!isTeamMode && !chantierAddress.trim()) return 'عنوان الشانتي مطلوب';
-    if (!workDone.trim()) return 'الأعمال المنجزة مطلوبة';
+    if (!workDone.trim()) {
+      console.log('[TEST] validate failed: workDone empty. Value:', JSON.stringify(workDone));
+      return 'الأعمال المنجزة مطلوبة';
+    }
+    console.log('[TEST] validate passed');
     return null;
   };
 

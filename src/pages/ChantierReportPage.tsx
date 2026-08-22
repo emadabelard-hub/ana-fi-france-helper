@@ -528,6 +528,10 @@ const ChantierReportPage = () => {
     ): Promise<number> => {
       if (!content.trim()) return startY;
       let cy = startY;
+      if (cy + 10 > pageH - 20) {
+        doc.addPage();
+        cy = margin;
+      }
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10);
       doc.setTextColor(15, 42, 94);

@@ -561,6 +561,23 @@ const ChantierDetailPage = () => {
                         <span className="text-xs">{t('chantierDetail.reports.view')}</span>
                       </Button>
                     )}
+                    {r.status === 'signe_client' && r.signed_pdf_url && (
+                      <Button size="sm" className="gap-1.5 shrink-0 bg-emerald-700 hover:bg-emerald-800 text-white" onClick={async () => {
+                        try {
+                          let url = r.signed_pdf_url as string;
+                          if (!/^https?:\/\//i.test(url)) {
+                            const { data } = await supabase.storage.from('documents').createSignedUrl(url, 600);
+                            if (data?.signedUrl) url = data.signedUrl;
+                          }
+                          window.open(url, '_blank');
+                        } catch (e) {
+                          console.warn('open signed pdf failed', e);
+                        }
+                      }}>
+                        <Download className="h-3.5 w-3.5" />
+                        <span className="text-xs">Voir le rapport signé</span>
+                      </Button>
+                    )}
                     {user?.id === chantier?.user_id && r.status === 'a_valider' && (
                       <Button size="sm" className="gap-1.5 shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleValidateReport(r.id)}>
                         <ClipboardList className="h-3.5 w-3.5" />

@@ -120,8 +120,12 @@ Deno.serve(async (req) => {
           '- source_file doit reprendre EXACTEMENT le nom de fichier annoncé.\n' +
           '- source_page = numéro de page ou repère du plan si connu, sinon null.\n' +
           '- Regroupe les prestations par lot (lot = corps de métier en français majuscules).\n' +
-          '- Fusionne uniquement les doublons évidents (même prestation, même périmètre).\n' +
-          '- designation_fr : français professionnel BTP, court (Action + Prestation + Périmètre).\n' +
+          "- RÈGLE ABSOLUE DE NON-FUSION : une opération reste une LIGNE DISTINCTE dès qu'un seul de ces éléments diffère : désignation, quantité, unité, emplacement/pièce, dimensions, nature de prestation, fourniture/pose, ou prix/régime TVA potentiellement différent.\n" +
+          '- Ne fusionner QUE des occurrences strictement identiques représentant réellement la même prestation (même prestation, même pièce, mêmes dimensions) : dans ce cas additionner les quantités.\n' +
+          '- INTERDIT de créer des lignes globales agrégées du type "Menuiseries extérieures | 9 | u". Chaque type/dimension/pièce doit apparaître séparément, par exemple : "Baie vitrée séjour 240x215 cm | 1 | u", "Fenêtre cuisine 120x115 cm | 1 | u", "Fenêtre bureau 120x115 cm | 1 | u", "Fenêtres chambres 120x115 cm | 3 | u", "Fenêtre SDB 80x95 cm | 1 | u", "Fenêtre salle d’eau 60x75 cm | 1 | u", "Porte d’entrée 95x215 cm | 1 | u".\n' +
+          '- Même règle en électricité : prises, interrupteurs, points lumineux, RJ45, prises TV restent des lignes séparées avec leurs quantités réelles (ex. prises | 46 | u ; interrupteurs | 18 | u ; points lumineux | 21 | u ; RJ45 | 6 | u ; prises TV | 2 | u).\n' +
+          '- designation_fr : français professionnel BTP, concise mais COMPLÈTE — elle doit toujours conserver la prestation, la pièce/périmètre, et la dimension lorsqu’elle différencie l’ouvrage. Ne jamais raccourcir au point de perdre ces éléments.\n' +
+
           '- explication_ar : arabe simple et clair (une phrase).\n' +
           '- unit : uniquement "m²", "ml", "u", "forfait" ou null.\n' +
           '- reading_status : uniquement "Confirmé dans le document", "Partiellement lisible" ou "Quantité à confirmer".\n' +

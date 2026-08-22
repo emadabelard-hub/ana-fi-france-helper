@@ -77,18 +77,20 @@ describe('prix BTP jamais réécrits', () => {
     expect(r.items[0].unitPrice).toBe(1);
     expect(r.items[0].total).toBe(65);
     expect(r.corrections).toHaveLength(0);
-    expect(r.warnings.some((w) => w.reason === 'Prix unitaire à vérifier')).toBe(true);
+    expect(r.warnings.some((w) => w.reason === 'Prix inhabituel — vérifiez le montant')).toBe(true);
   });
 
-  it('corrige encore un prix hors ligne BTP', () => {
+  it('ne corrige plus aucun prix, même hors ligne BTP', () => {
     const r = validateDocument(
       [{ ...btpLine({ designation_fr: 'Application de peinture', quantity: 10, unit: 'm²', unitPrice: 1, total: 10 }), sourceOrigin: undefined }],
       20,
       false,
     );
-    expect(r.items[0].unitPrice).toBe(8);
-    expect(r.corrections.some((c) => c.field === 'Prix unitaire')).toBe(true);
+    expect(r.items[0].unitPrice).toBe(1);
+    expect(r.corrections.some((c) => c.field === 'Prix unitaire')).toBe(false);
+    expect(r.warnings.some((w) => w.field === 'Prix unitaire')).toBe(true);
   });
+
 });
 
 describe('métadonnées transportées par la ligne', () => {

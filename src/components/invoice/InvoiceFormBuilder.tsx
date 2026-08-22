@@ -1145,9 +1145,26 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     rawInvoiceData.tvaExempt
   );
   
-  // CRITICAL: Recalculate ALL financial values from validated items to ensure consistency.
-  // The validation layer may change item prices/quantities, so we must recompute everything.
-  const validatedSubtotal = validationResult.items.reduce((s, i) => s + i.total, 0);
+  // Les valeurs métier (désignation, quantité, prix) proviennent EXCLUSIVEMENT
+  // de la saisie utilisateur. La seule donnée reprise du contrôle est l'unité
+  // normalisée typographiquement (m2 → m², m3 → m³…).
+  const normalizedUnitById = new Map(
+    validationResult.items.map(vi => [vi.id, vi.unit] as const)
+  );
+  const finalItems = rawInvoiceData.items.map((item, i) => {
+    const id = item.id || `v-${i}`;
+    const unit = normalizedUnitById.get(id) ?? item.unit;
+    const total = Math.round((item.quantity || 0) * (item.unitPrice || 0) * 100) / 100;
+    return {
+      ...item,
+      unit,
+      designation_ar: item.designation_ar || item.designation_fr,
+      lot: typeof (item as any).lot === 'string' && (item as any).lot.trim() ? (item as any).lot.trim() : undefined,
+      total,
+    };
+  });
+
+  const validatedSubtotal = finalItems.reduce((s, i) => s + i.total, 0);
   const validatedTvaRate = validationResult.tvaRate;
   const validatedTotals = calculateInvoiceTotals({
     subtotal: validatedSubtotal,
@@ -1164,18 +1181,7 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
   const invoiceData: InvoiceData = {
     ...rawInvoiceData,
     documentId: savedOfficialDocumentId || undefined,
-    items: validationResult.items.map(vi => ({
-      ...vi,
-      designation_fr: vi.designation_fr,
-      designation_ar: vi.designation_ar || vi.designation_fr,
-      quantity: vi.quantity,
-      unit: vi.unit,
-      unitPrice: vi.unitPrice,
-      total: vi.total,
-      lot: typeof (vi as any).lot === 'string' && (vi as any).lot.trim() ? (vi as any).lot.trim() : undefined,
-      sourceOrigin: vi.sourceOrigin,
-      clientSupplied: (vi as any).clientSupplied,
-    })),
+    items: finalItems,
     subtotal: Math.round(validatedSubtotal * 100) / 100,
     discountAmount: validatedDiscountAmt > 0 ? validatedDiscountAmt : undefined,
     subtotalAfterDiscount: validatedDiscountAmt > 0 ? validatedSubtotalAfterDiscount : undefined,
@@ -1183,30 +1189,26 @@ const InvoiceFormBuilder = ({ documentType, onBack, prefillData, onDocumentTypeC
     tvaAmount: validatedTvaAmount,
     total: validatedTotal,
   };
-  
-  // Log corrections on first preview render (show toast once)
+
+  // Alerte non bloquante : aucune valeur n'est modifiée automatiquement.
   const lastCorrectionsRef = useRef<string>('');
   useEffect(() => {
-    if (validationResult.corrections.length > 0 && showPreview) {
-      const key = validationResult.corrections.map(c => `${c.field}:${c.corrected}`).join('|');
+    if (validationResult.warnings.length > 0) {
+      console.warn('[InvoiceFormBuilder] valeurs à vérifier (aucune donnée modifiée) :', validationResult.warnings);
+    }
+    if (validationResult.warnings.length > 0 && showPreview) {
+      const key = validationResult.warnings.map(w => `${w.field}:${w.value}`).join('|');
       if (key !== lastCorrectionsRef.current) {
         lastCorrectionsRef.current = key;
         toast({
-          title: `✅ ${validationResult.corrections.length} correction(s) automatique(s)`,
-          description: validationResult.corrections.slice(0, 3).map(c => `${c.field}: ${c.reason}`).join(' • '),
+          title: 'Certaines valeurs méritent d’être vérifiées.',
+          description: validationResult.warnings.slice(0, 3).map(w => `${w.field}: ${w.reason}`).join(' • '),
           duration: 6000,
         });
       }
     }
-  }, [showPreview, validationResult.corrections.length]);
+  }, [showPreview, validationResult.warnings.length]);
 
-  // Avertissements : ne modifient aucune donnée et ne sont jamais comptés
-  // comme corrections automatiques (UX silencieuse — console uniquement).
-  useEffect(() => {
-    if (validationResult.warnings.length > 0) {
-      console.warn('[InvoiceFormBuilder] avertissements de contrôle (aucune donnée modifiée) :', validationResult.warnings);
-    }
-  }, [validationResult.warnings.length]);
   
   // Check if form is valid
   const isFormValid = items.some(item => item.designation_fr.trim() && item.unitPrice > 0) || (includeTravelCosts && travelPrice > 0);

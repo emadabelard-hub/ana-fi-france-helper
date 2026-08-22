@@ -871,6 +871,13 @@ const ChantierReportPage = () => {
         fileName: result.fileName,
         status: 'final',
       });
+      if (!archived?.pdf_url) {
+        throw new Error('Archivage du PDF impossible (Storage)');
+      }
+
+      // Le téléchargement doit également enregistrer le rapport dans le chantier.
+      // La RPC réutilise la même ligne lors d'un envoi WhatsApp ultérieur.
+      await saveReportRow(overrides, result.generatedAt, archived.pdf_url);
 
       setLastPdfBase64(result.base64);
       setLastFileName(result.fileName);

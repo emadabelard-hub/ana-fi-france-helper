@@ -945,12 +945,20 @@ const ChantierReportPage = () => {
     setGenerating(true);
     const failToast = (err: any) => {
       console.error('[ChantierReport] enregistrement ANAFYPRO échoué:', err);
+      const missingChantier = err?.message === 'CHANTIER_ID_MISSING';
       toast({
-        title: tr('فشل الحفظ في ANAFYPRO', 'Enregistrement impossible'),
-        description: tr(
-          'التقرير مش اتحفظ في ANAFYPRO. حاول تاني.',
-          "Le rapport n'a pas pu être enregistré dans ANAFYPRO. Réessayez.",
-        ),
+        title: missingChantier
+          ? tr('مفيش شانتي محدد', 'Aucun chantier sélectionné')
+          : tr('فشل الحفظ في ANAFYPRO', 'Enregistrement impossible'),
+        description: missingChantier
+          ? tr(
+              'مفيش شانتي محدد. اختار شانتي قبل إرسال التقرير.',
+              "Aucun chantier sélectionné. Sélectionnez un chantier avant d'envoyer le rapport.",
+            )
+          : tr(
+              'التقرير مش اتحفظ في ANAFYPRO. حاول تاني.',
+              "Le rapport n'a pas pu être enregistré dans ANAFYPRO. Réessayez.",
+            ),
         variant: 'destructive',
       });
     };

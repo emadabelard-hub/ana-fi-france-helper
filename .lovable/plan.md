@@ -29,7 +29,7 @@ Le rapport narratif devient un simple rendu lisible. Le copier-coller et le seco
 | Fichier | Rôle dans le plan |
 | --- | --- |
 | `supabase/functions/_shared/btpFactsContract.ts` | Ajout des champs optionnels + déduction déterministe du rôle et de la relation |
-| `supabase/functions/ai-assistant/index.ts` (action `btp_factual_extraction`) | Demander à l'extracteur de déclarer `role`, `operation`, `scope`, `coveredBy` |
+| `supabase/functions/ai-assistant/index.ts` (action `btp_factual_extraction`) | Demander à l'extracteur `role`, `operation`, `scope`, fourniture/pose et une **référence parent temporaire** (jamais un `factId`, jamais une `lineKey`) |
 | `src/lib/btpFactsToDraft.ts` | Filtrage par rôle, clé métier de ligne, conservation `factId`/source |
 | `src/pages/AIAssistantPage.tsx` (`transferToSmartDevis`) | Utiliser le contrat enrichi ; retirer le repli narratif |
 | `src/pages/ArchitectDevisPage.tsx` + `supabase/functions/btp-quote-from-documents/index.ts` | Basculer, en dernière phase, sur le contrat de faits plutôt que sur la reconstruction textuelle |
@@ -40,11 +40,22 @@ Le rapport narratif devient un simple rendu lisible. Le copier-coller et le seco
 Sur `ValidatedBtpFact`, sans nouvelle structure parallèle :
 
 - `role?: "main" | "included_component" | "descriptive"` — défaut `main` si `factType = billable_work`, sinon `descriptive`.
-- `coveredByFactId?: string | null` — renseigné uniquement quand `role = included_component`.
+- `parentRef?: string | null` — **référence temporaire** parent/enfant telle que sortie de l'IA (identifiant local libre, ex. `p1`, ou l'`id` brut du fait parent). Jamais un `factId`.
+- `coveredByFactId?: string | null` — **calculé par le code uniquement**, après génération des `factId`.
 - `operation?: string | null` — verbe métier normalisé (pose, dépose, création, peinture…).
 - `scope?: string | null` — périmètre/localisation + dimensions caractérisantes non facturables.
 - `includesMaterials?: boolean | null`, `includesLabor?: boolean | null` — fourniture/pose.
-- `lineKey?: string` — clé métier calculée (déterministe, utilisée pour la fusion).
+- `lineKey?: string` — **calculée par le code uniquement**, jamais lue depuis la sortie IA.
+
+**Ordre de création vérifié.** Dans `btpFactsContract.ts`, `buildFactId` est appelé à l'intérieur de `validateBtpFacts`, donc **après** la sortie IA : l'IA ne peut pas connaître le `factId` définitif et ne doit donc jamais produire de `coveredByFactId`. Résolution en deux temps, entièrement déterministe :
+
+1. l'extracteur ne fournit qu'une relation temporaire (`parentRef`) désignant un fait de la même sortie ;
+2. `validateBtpFacts` génère tous les `factId`, construit la table `refTemporaire → factId`, puis renseigne `coveredByFactId`.
+
+`coveredByFactId` doit toujours pointer vers un `factId` réellement présent dans le contrat validé. Une référence parent inexistante, circulaire, ou pointant vers un fait non `main` est **rejetée** : le fait est déclassé en `role = descriptive` (ou `transferStatus = pending` s'il est facturable en propre), avec un motif explicite dans `reasons` (`parent_ref_unresolved`). Jamais de rattachement deviné.
+
+**`lineKey`.** Calculée exclusivement par le code après validation, à partir des champs validés : `operation + scope normalisé + dimensions caractérisantes + unit + mode fourniture/pose`. Aucune valeur `lineKey` venant de l'IA n'est lue, stockée ou fusionnée ; si le JSON en contient une, elle est ignorée. Recalculable à l'identique à tout moment depuis le contrat.
+
 
 Déjà présents, à réutiliser sans les dupliquer : `factId`, `quantity`, `unit`, `quantityType`, `clientSupplied`, `technicalReservation`, `sourceFile`, `sourcePage`, `location`, `material`, `reasons`, `transferStatus`.
 
@@ -59,7 +70,7 @@ Aucune table, aucune colonne : ces données vivent dans le bloc `<ANAFYPRO_BTP_F
 
 **Quantité principale.** La quantité d'un `included_component` n'est jamais promue vers son parent ; le nombre de composants ne devient jamais la quantité du `main`. Les cotes descriptives restent dans `scope`. Aucune quantité ni unité inventée : sans quantité fiable, le fait reste `pending` plutôt que `1 u`.
 
-**Contrôles avant devis (dans le code, pas dans un prompt) :** zéro ligne issue d'un `included_component` ou d'un `descriptive` ; zéro `lineKey` dupliquée ; zéro quantité promue depuis un composant ; zéro unité absente du contrat ; `factId` + `sourceFile`/`sourcePage` présents sur chaque ligne transférée. Toute violation bloque le transfert avec un message clair, sans écrire de devis partiel.
+**Contrôles avant devis (dans le code, pas dans un prompt) :** zéro ligne issue d'un `included_component` ou d'un `descriptive` ; zéro `lineKey` dupliquée ; zéro quantité promue depuis un composant ; zéro unité absente du contrat ; `factId` + `sourceFile`/`sourcePage` présents sur chaque ligne transférée ; **tout `coveredByFactId` résolu vers un `factId` `main` réellement présent** ; **toute `lineKey` recalculée par le code** (aucune valeur IA). Toute violation bloque le transfert avec un message clair, sans écrire de devis partiel.
 
 ## 5. Fonctions à réutiliser / à ne pas toucher
 
@@ -73,9 +84,9 @@ Ne pas toucher : `src/lib/invoiceTotals.ts`, moteur TVA et mentions CGI, `invoic
 Champs optionnels ajoutés dans `btpFactsContract.ts`, `role` déduit par défaut de `factType`, aucune règle de filtrage nouvelle.
 *Test :* la suite de tests existante passe inchangée ; un contrat sans les nouveaux champs produit exactement les mêmes lignes qu'aujourd'hui.
 
-**Phase B — Produire rôles et relations.**
-Le prompt d'extraction déclare `role`, `operation`, `scope`, `coveredBy`, fourniture/pose. Résultats seulement affichés/loggués, pas encore appliqués.
-*Test :* sur les 3 documents MARTIN, vérifier dans la console que les accessoires sortent en `included_component` avec un `coveredByFactId` valide et les cotes en `descriptive`. Le devis produit reste identique à la Phase A.
+**Phase B — Produire rôles et relations (référence temporaire) + résolution par le code.**
+Le prompt d'extraction déclare `role`, `operation`, `scope`, fourniture/pose et une référence parent temporaire. `validateBtpFacts` résout ces références en `coveredByFactId` après génération des `factId` et calcule `lineKey`. Résultats seulement affichés/loggués, pas encore appliqués.
+*Test :* sur les 3 documents MARTIN, vérifier dans la console que les accessoires sortent en `included_component` avec un `coveredByFactId` pointant vers un `factId` `main` existant, que les références non résolues sont déclassées avec le motif `parent_ref_unresolved`, et que les cotes sortent en `descriptive`. Le devis produit reste identique à la Phase A.
 
 **Phase C — Activer le filtrage déterministe + clé de ligne.**
 `btpFactsToDraft` applique les règles du §4 et les contrôles.

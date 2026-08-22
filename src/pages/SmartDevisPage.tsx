@@ -805,13 +805,15 @@ const SmartDevisPage = () => {
                           {isRTL ? 'السعر €' : 'PU €'}
                         </label>
                         <Input
-                          type="number"
+                          type="text"
                           inputMode="decimal"
-                          value={item.unitPrice}
-                          onChange={(e) => updateItem(item.id, { unitPrice: Number(e.target.value) || 0 })}
+                          value={priceDrafts[item.id] ?? (item.unitPrice ? String(item.unitPrice).replace('.', ',') : '')}
+                          onChange={(e) => handlePriceInput(item.id, e.target.value)}
+                          placeholder="0,00"
                           lang="fr"
                           dir="ltr"
                         />
+
                       </div>
                     </div>
 

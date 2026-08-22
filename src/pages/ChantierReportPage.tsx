@@ -238,6 +238,8 @@ const ChantierReportPage = () => {
 
   // Load chantiers when client changes
   useEffect(() => {
+    // Mode ouvrier/équipe : le chantier est verrouillé, ne jamais l'écraser ni le vider.
+    if (isTeamMode) return;
     if (!user || !selectedClientId) {
       setChantiersList([]);
       setSelectedChantierId('');

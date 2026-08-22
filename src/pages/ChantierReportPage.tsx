@@ -238,6 +238,8 @@ const ChantierReportPage = () => {
 
   // Load chantiers when client changes
   useEffect(() => {
+    // Mode ouvrier/équipe : le chantier est verrouillé, ne jamais l'écraser ni le vider.
+    if (isTeamMode) return;
     if (!user || !selectedClientId) {
       setChantiersList([]);
       setSelectedChantierId('');
@@ -257,7 +259,7 @@ const ChantierReportPage = () => {
       setChantiersList((data || []) as any);
     };
     loadChantiers();
-  }, [user, selectedClientId]);
+  }, [user, selectedClientId, isTeamMode]);
 
   // Init signature pads + resize for retina
   useEffect(() => {
@@ -359,9 +361,19 @@ const ChantierReportPage = () => {
   const weatherLabelFR = (w: Weather) =>
     WEATHER_OPTIONS.find((x) => x.value === w)?.fr || w;
 
+  const effectiveChantierId = selectedChantierId || lockedChantierId || '';
+
   const validate = (): string | null => {
-    if (!isTeamMode && !selectedClientId) return 'اختر العميل أولاً';
-    if (!selectedChantierId) return 'اختر الشانتي أولاً';
+    if (!isTeamMode && !selectedClientId) return tr('اختر العميل أولاً', "Sélectionnez d'abord un client");
+    if (!effectiveChantierId) {
+      return tr(
+        'مفيش شانتي محدد. اختار شانتي قبل إرسال التقرير.',
+        "Aucun chantier sélectionné. Sélectionnez un chantier avant d'envoyer le rapport.",
+      );
+    }
+    if (!chantierName.trim()) {
+      return tr('اسم الشانتي ناقص', 'Le nom du chantier est manquant');
+    }
     if (!isTeamMode && !chantierAddress.trim()) return 'عنوان الشانتي مطلوب';
     if (!workDone.trim()) return 'الأعمال المنجزة مطلوبة';
     return null;
@@ -786,7 +798,11 @@ const ChantierReportPage = () => {
     if (!user) throw new Error('Session absente');
 
     const ownerUserId = isTeamMode && teamAssignment ? teamAssignment.patron_user_id : user.id;
-    const targetChantierId = selectedChantierId || lockedChantierId || null;
+    const targetChantierId = effectiveChantierId;
+    // GARDE-FOU : aucune requête Supabase sans chantier valide
+    if (!targetChantierId || targetChantierId === 'null' || targetChantierId === 'undefined') {
+      throw new Error('CHANTIER_ID_MISSING');
+    }
 
     const reportPayload = {
       user_id: ownerUserId,
@@ -919,8 +935,21 @@ const ChantierReportPage = () => {
   };
 
   const handleShareWhatsApp = async () => {
+    // Aucun envoi possible sans chantier valide
+    if (!effectiveChantierId) {
+      toast({
+        title: tr('مفيش شانتي محدد', 'Aucun chantier sélectionné'),
+        description: tr(
+          'مفيش شانتي محدد. اختار شانتي قبل إرسال التقرير.',
+          "Aucun chantier sélectionné. Sélectionnez un chantier avant d'envoyer le rapport.",
+        ),
+        variant: 'destructive',
+      });
+      return;
+    }
     const dateStr = new Date(reportDate).toLocaleDateString('fr-FR');
     const msg = `Bonjour, veuillez trouver ci-joint le rapport de chantier du ${dateStr}. Merci de télécharger le PDF depuis Anafy Pro.`;
+
 
     setTranslating(true);
     let overrides: { workDone: string; materials: string; observations: string };
@@ -932,12 +961,20 @@ const ChantierReportPage = () => {
     setGenerating(true);
     const failToast = (err: any) => {
       console.error('[ChantierReport] enregistrement ANAFYPRO échoué:', err);
+      const missingChantier = err?.message === 'CHANTIER_ID_MISSING';
       toast({
-        title: tr('فشل الحفظ في ANAFYPRO', 'Enregistrement impossible'),
-        description: tr(
-          'التقرير مش اتحفظ في ANAFYPRO. حاول تاني.',
-          "Le rapport n'a pas pu être enregistré dans ANAFYPRO. Réessayez.",
-        ),
+        title: missingChantier
+          ? tr('مفيش شانتي محدد', 'Aucun chantier sélectionné')
+          : tr('فشل الحفظ في ANAFYPRO', 'Enregistrement impossible'),
+        description: missingChantier
+          ? tr(
+              'مفيش شانتي محدد. اختار شانتي قبل إرسال التقرير.',
+              "Aucun chantier sélectionné. Sélectionnez un chantier avant d'envoyer le rapport.",
+            )
+          : tr(
+              'التقرير مش اتحفظ في ANAFYPRO. حاول تاني.',
+              "Le rapport n'a pas pu être enregistré dans ANAFYPRO. Réessayez.",
+            ),
         variant: 'destructive',
       });
     };
@@ -1387,7 +1424,7 @@ const ChantierReportPage = () => {
             </Button>
             <Button
               onClick={handleShareWhatsApp}
-              disabled={generating || translating}
+              disabled={generating || translating || !effectiveChantierId}
               className="w-full font-bold h-12"
               style={{ background: '#25D366', color: '#fff' }}
             >

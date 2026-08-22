@@ -371,6 +371,9 @@ const ChantierReportPage = () => {
         "Aucun chantier sélectionné. Sélectionnez un chantier avant d'envoyer le rapport.",
       );
     }
+    if (!chantierName.trim()) {
+      return tr('اسم الشانتي ناقص', 'Le nom du chantier est manquant');
+    }
     if (!isTeamMode && !chantierAddress.trim()) return 'عنوان الشانتي مطلوب';
     if (!workDone.trim()) return 'الأعمال المنجزة مطلوبة';
     return null;

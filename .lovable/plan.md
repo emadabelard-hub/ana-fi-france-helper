@@ -84,9 +84,9 @@ Ne pas toucher : `src/lib/invoiceTotals.ts`, moteur TVA et mentions CGI, `invoic
 Champs optionnels ajoutés dans `btpFactsContract.ts`, `role` déduit par défaut de `factType`, aucune règle de filtrage nouvelle.
 *Test :* la suite de tests existante passe inchangée ; un contrat sans les nouveaux champs produit exactement les mêmes lignes qu'aujourd'hui.
 
-**Phase B — Produire rôles et relations.**
-Le prompt d'extraction déclare `role`, `operation`, `scope`, `coveredBy`, fourniture/pose. Résultats seulement affichés/loggués, pas encore appliqués.
-*Test :* sur les 3 documents MARTIN, vérifier dans la console que les accessoires sortent en `included_component` avec un `coveredByFactId` valide et les cotes en `descriptive`. Le devis produit reste identique à la Phase A.
+**Phase B — Produire rôles et relations (référence temporaire) + résolution par le code.**
+Le prompt d'extraction déclare `role`, `operation`, `scope`, fourniture/pose et une référence parent temporaire. `validateBtpFacts` résout ces références en `coveredByFactId` après génération des `factId` et calcule `lineKey`. Résultats seulement affichés/loggués, pas encore appliqués.
+*Test :* sur les 3 documents MARTIN, vérifier dans la console que les accessoires sortent en `included_component` avec un `coveredByFactId` pointant vers un `factId` `main` existant, que les références non résolues sont déclassées avec le motif `parent_ref_unresolved`, et que les cotes sortent en `descriptive`. Le devis produit reste identique à la Phase A.
 
 **Phase C — Activer le filtrage déterministe + clé de ligne.**
 `btpFactsToDraft` applique les règles du §4 et les contrôles.

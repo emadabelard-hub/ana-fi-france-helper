@@ -70,7 +70,7 @@ Aucune table, aucune colonne : ces données vivent dans le bloc `<ANAFYPRO_BTP_F
 
 **Quantité principale.** La quantité d'un `included_component` n'est jamais promue vers son parent ; le nombre de composants ne devient jamais la quantité du `main`. Les cotes descriptives restent dans `scope`. Aucune quantité ni unité inventée : sans quantité fiable, le fait reste `pending` plutôt que `1 u`.
 
-**Contrôles avant devis (dans le code, pas dans un prompt) :** zéro ligne issue d'un `included_component` ou d'un `descriptive` ; zéro `lineKey` dupliquée ; zéro quantité promue depuis un composant ; zéro unité absente du contrat ; `factId` + `sourceFile`/`sourcePage` présents sur chaque ligne transférée. Toute violation bloque le transfert avec un message clair, sans écrire de devis partiel.
+**Contrôles avant devis (dans le code, pas dans un prompt) :** zéro ligne issue d'un `included_component` ou d'un `descriptive` ; zéro `lineKey` dupliquée ; zéro quantité promue depuis un composant ; zéro unité absente du contrat ; `factId` + `sourceFile`/`sourcePage` présents sur chaque ligne transférée ; **tout `coveredByFactId` résolu vers un `factId` `main` réellement présent** ; **toute `lineKey` recalculée par le code** (aucune valeur IA). Toute violation bloque le transfert avec un message clair, sans écrire de devis partiel.
 
 ## 5. Fonctions à réutiliser / à ne pas toucher
 

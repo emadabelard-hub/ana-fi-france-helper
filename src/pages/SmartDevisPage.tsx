@@ -407,6 +407,25 @@ const SmartDevisPage = () => {
   const updateItem = (id: string, patch: Partial<LineItem>) => {
     setLineItems(prev => prev.map(it => it.id === id ? { ...it, ...patch } : it));
   };
+
+  /**
+   * Saisie prix mobile : on conserve le texte brut saisi (virgule autorisée)
+   * et on ne convertit en nombre que si la valeur est parsable.
+   * Jamais de suppression silencieuse de la virgule.
+   */
+  const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({});
+  const handlePriceInput = (id: string, raw: string) => {
+    const cleaned = raw.replace(/[^\d.,]/g, '');
+    setPriceDrafts(prev => ({ ...prev, [id]: cleaned }));
+    const normalized = cleaned.replace(',', '.');
+    const parsed = Number(normalized);
+    if (cleaned === '' ) {
+      updateItem(id, { unitPrice: 0 });
+    } else if (Number.isFinite(parsed)) {
+      updateItem(id, { unitPrice: parsed });
+    }
+  };
+
   const removeItem = (id: string) => setLineItems(prev => prev.filter(it => it.id !== id));
   const addItem = () => setLineItems(prev => [...prev, {
     id: generateId(),

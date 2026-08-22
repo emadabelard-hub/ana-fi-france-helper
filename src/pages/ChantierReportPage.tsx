@@ -898,7 +898,9 @@ const ChantierReportPage = () => {
     }
     setGenerating(true);
     try {
+      console.log('[TEST] generatePdf start');
       const result = await generatePdf(overrides);
+      console.log('[TEST] generatePdf result:', result ? 'OK' : 'NULL');
       if (!result) {
         window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
         return;
@@ -928,6 +930,7 @@ const ChantierReportPage = () => {
         }
       }
 
+      console.log('[TEST] archivePdf start');
       const archived = await archivePdf({
         blob: result.blob,
         type: 'rapport_chantier' as any,
@@ -935,11 +938,14 @@ const ChantierReportPage = () => {
         fileName: result.fileName,
         status: 'final',
       });
-      await saveReportRow(overrides, result.generatedAt, archived?.pdf_url || null).catch(() => {});
+      console.log('[TEST] archivePdf result:', archived);
+      console.log('[TEST] saveReportRow start, user:', !!user);
+      await saveReportRow(overrides, result.generatedAt, archived?.pdf_url || null).catch((e) => console.error('[TEST] saveReportRow error:', e));
+      console.log('[TEST] saveReportRow done');
       const text = archived?.pdf_url ? `${msg}\n${archived.pdf_url}` : msg;
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
     } catch (e: any) {
-      console.error('[ChantierReport] WhatsApp share error:', e);
+      console.error('[TEST] WhatsApp share error:', e);
       window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
     } finally {
       setGenerating(false);

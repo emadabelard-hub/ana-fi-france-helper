@@ -18,6 +18,7 @@ interface ReportInfo {
   supervisor_name: string | null;
   submitted_by_name: string | null;
   pdf_url: string | null;
+  signed_pdf_url: string | null;
   client_signer_name: string | null;
   client_signed_at: string | null;
 }

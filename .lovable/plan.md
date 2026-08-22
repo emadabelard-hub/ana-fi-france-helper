@@ -40,11 +40,22 @@ Le rapport narratif devient un simple rendu lisible. Le copier-coller et le seco
 Sur `ValidatedBtpFact`, sans nouvelle structure parallèle :
 
 - `role?: "main" | "included_component" | "descriptive"` — défaut `main` si `factType = billable_work`, sinon `descriptive`.
-- `coveredByFactId?: string | null` — renseigné uniquement quand `role = included_component`.
+- `parentRef?: string | null` — **référence temporaire** parent/enfant telle que sortie de l'IA (identifiant local libre, ex. `p1`, ou l'`id` brut du fait parent). Jamais un `factId`.
+- `coveredByFactId?: string | null` — **calculé par le code uniquement**, après génération des `factId`.
 - `operation?: string | null` — verbe métier normalisé (pose, dépose, création, peinture…).
 - `scope?: string | null` — périmètre/localisation + dimensions caractérisantes non facturables.
 - `includesMaterials?: boolean | null`, `includesLabor?: boolean | null` — fourniture/pose.
-- `lineKey?: string` — clé métier calculée (déterministe, utilisée pour la fusion).
+- `lineKey?: string` — **calculée par le code uniquement**, jamais lue depuis la sortie IA.
+
+**Ordre de création vérifié.** Dans `btpFactsContract.ts`, `buildFactId` est appelé à l'intérieur de `validateBtpFacts`, donc **après** la sortie IA : l'IA ne peut pas connaître le `factId` définitif et ne doit donc jamais produire de `coveredByFactId`. Résolution en deux temps, entièrement déterministe :
+
+1. l'extracteur ne fournit qu'une relation temporaire (`parentRef`) désignant un fait de la même sortie ;
+2. `validateBtpFacts` génère tous les `factId`, construit la table `refTemporaire → factId`, puis renseigne `coveredByFactId`.
+
+`coveredByFactId` doit toujours pointer vers un `factId` réellement présent dans le contrat validé. Une référence parent inexistante, circulaire, ou pointant vers un fait non `main` est **rejetée** : le fait est déclassé en `role = descriptive` (ou `transferStatus = pending` s'il est facturable en propre), avec un motif explicite dans `reasons` (`parent_ref_unresolved`). Jamais de rattachement deviné.
+
+**`lineKey`.** Calculée exclusivement par le code après validation, à partir des champs validés : `operation + scope normalisé + dimensions caractérisantes + unit + mode fourniture/pose`. Aucune valeur `lineKey` venant de l'IA n'est lue, stockée ou fusionnée ; si le JSON en contient une, elle est ignorée. Recalculable à l'identique à tout moment depuis le contrat.
+
 
 Déjà présents, à réutiliser sans les dupliquer : `factId`, `quantity`, `unit`, `quantityType`, `clientSupplied`, `technicalReservation`, `sourceFile`, `sourcePage`, `location`, `material`, `reasons`, `transferStatus`.
 

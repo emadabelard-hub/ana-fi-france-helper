@@ -259,7 +259,7 @@ const ChantierReportPage = () => {
       setChantiersList((data || []) as any);
     };
     loadChantiers();
-  }, [user, selectedClientId]);
+  }, [user, selectedClientId, isTeamMode]);
 
   // Init signature pads + resize for retina
   useEffect(() => {

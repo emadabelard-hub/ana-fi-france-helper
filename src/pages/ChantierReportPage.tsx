@@ -930,35 +930,52 @@ const ChantierReportPage = () => {
       setTranslating(false);
     }
     setGenerating(true);
+    const failToast = (err: any) => {
+      console.error('[ChantierReport] enregistrement ANAFYPRO échoué:', err);
+      toast({
+        title: tr('فشل الحفظ في ANAFYPRO', 'Enregistrement impossible'),
+        description: tr(
+          'التقرير مش اتحفظ في ANAFYPRO. حاول تاني.',
+          "Le rapport n'a pas pu être enregistré dans ANAFYPRO. Réessayez.",
+        ),
+        variant: 'destructive',
+      });
+    };
+
     try {
+      // 1. PDF
       const result = await generatePdf(overrides);
       if (!result) {
-        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+        failToast(new Error('Génération du PDF impossible'));
         return;
       }
 
+      // 2. Archivage dans documents/<user>/rapports-chantier + 3. ligne chantier_reports
+      let archived: { pdf_url: string; storage_path: string } | null = null;
+      let savedId: string | null = null;
+      try {
+        archived = await archivePdf({
+          blob: result.blob,
+          type: 'rapport_chantier',
+          numero: reportNumber,
+          fileName: result.fileName,
+          status: 'final',
+        });
+        if (!archived?.pdf_url) {
+          throw new Error('Archivage du PDF impossible (Storage)');
+        }
+        // 4. l'id de la ligne doit être obtenu, sinon erreur
+        savedId = await saveReportRow(overrides, result.generatedAt, archived.pdf_url);
+        if (!savedId) throw new Error('Aucun identifiant de rapport obtenu');
+      } catch (saveErr: any) {
+        failToast(saveErr);
+        return; // 5. WhatsApp ne s'ouvre JAMAIS si l'enregistrement échoue
+      }
+
+      // 5. Partage seulement après enregistrement confirmé
       const file = new File([result.blob], result.fileName, { type: 'application/pdf' });
       const nav = navigator as any;
       if (nav.share && (!nav.canShare || nav.canShare({ files: [file] }))) {
-        // Archiver + enregistrer AVANT le partage : WhatsApp suspend la page
-        // et une chaîne non attendue ne se terminerait jamais.
-        try {
-          const arch = await archivePdf({
-            blob: result.blob,
-            type: 'rapport_chantier',
-            numero: reportNumber,
-            fileName: result.fileName,
-            status: 'final',
-          });
-          await saveReportRow(overrides, result.generatedAt, arch?.pdf_url || null);
-        } catch (archErr: any) {
-          console.error('[ChantierReport] archivage/sauvegarde ANAFYPRO échoué:', archErr);
-          toast({
-            title: tr('فشل الحفظ في ANAFYPRO', 'Archivage ANAFYPRO échoué'),
-            description: archErr?.message || tr('التقرير مش محفوظ في ANAFYPRO', "Le rapport n'a pas été enregistré dans ANAFYPRO"),
-            variant: 'destructive',
-          });
-        }
         try {
           await nav.share({ files: [file], text: msg, title: result.fileName });
           return;
@@ -968,32 +985,14 @@ const ChantierReportPage = () => {
         }
       }
 
-
-      let archived: { pdf_url: string; storage_path: string } | null = null;
-      try {
-        archived = await archivePdf({
-          blob: result.blob,
-          type: 'rapport_chantier',
-          numero: reportNumber,
-          fileName: result.fileName,
-          status: 'final',
-        });
-        await saveReportRow(overrides, result.generatedAt, archived?.pdf_url || null);
-      } catch (archErr: any) {
-        console.error('[ChantierReport] archivage/sauvegarde ANAFYPRO échoué:', archErr);
-        toast({
-          title: tr('فشل الحفظ في ANAFYPRO', 'Archivage ANAFYPRO échoué'),
-          description: archErr?.message || tr('التقرير مش محفوظ في ANAFYPRO', "Le rapport n'a pas été enregistré dans ANAFYPRO"),
-          variant: 'destructive',
-        });
-      }
-      const text = archived?.pdf_url ? `${msg}\n${archived.pdf_url}` : msg;
-      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+      const text = `${msg}\n${archived.pdf_url}`;
+      window.location.href = `https://wa.me/?text=${encodeURIComponent(text)}`;
     } catch (e: any) {
       console.error('[ChantierReport] WhatsApp share error:', e);
-      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+      failToast(e);
     } finally {
       setGenerating(false);
+
     }
   };
 

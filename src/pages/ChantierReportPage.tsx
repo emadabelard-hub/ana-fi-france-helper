@@ -795,7 +795,11 @@ const ChantierReportPage = () => {
     if (!user) throw new Error('Session absente');
 
     const ownerUserId = isTeamMode && teamAssignment ? teamAssignment.patron_user_id : user.id;
-    const targetChantierId = selectedChantierId || lockedChantierId || null;
+    const targetChantierId = effectiveChantierId;
+    // GARDE-FOU : aucune requête Supabase sans chantier valide
+    if (!targetChantierId || targetChantierId === 'null' || targetChantierId === 'undefined') {
+      throw new Error('CHANTIER_ID_MISSING');
+    }
 
     const reportPayload = {
       user_id: ownerUserId,

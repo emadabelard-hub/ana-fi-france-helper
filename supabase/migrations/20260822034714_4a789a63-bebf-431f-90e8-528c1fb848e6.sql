@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.save_chantier_report(jsonb) FROM anon;

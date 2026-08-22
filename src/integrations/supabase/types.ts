@@ -2316,6 +2316,7 @@ export type Database = {
         Args: { _chantier_id: string; _user_id: string }
         Returns: boolean
       }
+      save_chantier_report: { Args: { _payload: Json }; Returns: string }
       submit_chantier_report_signature: {
         Args: { _signature_data: string; _signer_name: string; _token: string }
         Returns: Json

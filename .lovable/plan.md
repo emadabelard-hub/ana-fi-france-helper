@@ -1,0 +1,111 @@
+# Fiabiliser Documents → Faits → Lignes de devis
+
+Aucun code, aucune migration, aucun déploiement dans ce plan.
+
+## 1. Chemin technique minimal recommandé
+
+Le chemin le plus court n'est pas de créer un nouveau système : il consiste à **étendre le contrat de faits déjà existant** (`ValidatedBtpFact`) avec des champs optionnels de rôle/relation, puis à faire du **transfert direct faits → brouillon** le seul chemin du parcours documentaire.
+
+```text
+Documents ──► extraction IA (btp_factual_extraction)
+                    │  JSON faits bruts
+                    ▼
+        validateBtpFacts()  ← rôles + relations validés ICI (déterministe)
+                    │  contrat figé (factId, role, coveredByFactId, scope…)
+                    ▼
+   ┌────────────────┴────────────────┐
+   ▼                                 ▼
+Rapport Markdown             buildDraftLinesFromFacts()
+(affichage seul)              → lignes de devis (clé métier, filtrage rôles)
+                                     │
+                                     ▼
+                        Devis intelligent (prix, PDF, envoi) — INCHANGÉ
+```
+
+Le rapport narratif devient un simple rendu lisible. Le copier-coller et le second raisonnement IA disparaissent **uniquement pour ce parcours documentaire**. Le parcours texte libre (saisie manuelle → `smart-devis-analyzer`) reste tel quel.
+
+## 2. Fichiers réellement concernés
+
+| Fichier | Rôle dans le plan |
+| --- | --- |
+| `supabase/functions/_shared/btpFactsContract.ts` | Ajout des champs optionnels + déduction déterministe du rôle et de la relation |
+| `supabase/functions/ai-assistant/index.ts` (action `btp_factual_extraction`) | Demander à l'extracteur de déclarer `role`, `operation`, `scope`, `coveredBy` |
+| `src/lib/btpFactsToDraft.ts` | Filtrage par rôle, clé métier de ligne, conservation `factId`/source |
+| `src/pages/AIAssistantPage.tsx` (`transferToSmartDevis`) | Utiliser le contrat enrichi ; retirer le repli narratif |
+| `src/pages/ArchitectDevisPage.tsx` + `supabase/functions/btp-quote-from-documents/index.ts` | Basculer, en dernière phase, sur le contrat de faits plutôt que sur la reconstruction textuelle |
+| `src/test/btpFacts*.test.ts` | Tests génériques (cas A→F) |
+
+## 3. Champs à ajouter au contrat (tous optionnels)
+
+Sur `ValidatedBtpFact`, sans nouvelle structure parallèle :
+
+- `role?: "main" | "included_component" | "descriptive"` — défaut `main` si `factType = billable_work`, sinon `descriptive`.
+- `coveredByFactId?: string | null` — renseigné uniquement quand `role = included_component`.
+- `operation?: string | null` — verbe métier normalisé (pose, dépose, création, peinture…).
+- `scope?: string | null` — périmètre/localisation + dimensions caractérisantes non facturables.
+- `includesMaterials?: boolean | null`, `includesLabor?: boolean | null` — fourniture/pose.
+- `lineKey?: string` — clé métier calculée (déterministe, utilisée pour la fusion).
+
+Déjà présents, à réutiliser sans les dupliquer : `factId`, `quantity`, `unit`, `quantityType`, `clientSupplied`, `technicalReservation`, `sourceFile`, `sourcePage`, `location`, `material`, `reasons`, `transferStatus`.
+
+Aucune table, aucune colonne : ces données vivent dans le bloc `<ANAFYPRO_BTP_FACTS>` et dans le brouillon en mémoire/`sessionStorage`.
+
+## 4. Règles déterministes
+
+**Transfert.** Devient une ligne facturable uniquement : `role = main` ET `factType = billable_work` ET (`quantity > 0` avec `unit` non nulle → `ready`, ou quantité/unité manquante → `pending` « à confirmer »).
+`included_component` avec `coveredByFactId` → rattaché au périmètre de la ligne parente (mention dans la désignation ou note), jamais une deuxième ligne. `descriptive` → jamais de ligne. Aucune règle par métier.
+
+**Clé de ligne.** `lineKey = operation | scope normalisé | dimensions caractérisantes | unit | mode fourniture/pose`. Le `lot` n'entre jamais dans la clé (classement/affichage seulement). Fusion possible seulement si les clés sont strictement égales ; alors on additionne les quantités et on conserve **les deux sources**.
+
+**Quantité principale.** La quantité d'un `included_component` n'est jamais promue vers son parent ; le nombre de composants ne devient jamais la quantité du `main`. Les cotes descriptives restent dans `scope`. Aucune quantité ni unité inventée : sans quantité fiable, le fait reste `pending` plutôt que `1 u`.
+
+**Contrôles avant devis (dans le code, pas dans un prompt) :** zéro ligne issue d'un `included_component` ou d'un `descriptive` ; zéro `lineKey` dupliquée ; zéro quantité promue depuis un composant ; zéro unité absente du contrat ; `factId` + `sourceFile`/`sourcePage` présents sur chaque ligne transférée. Toute violation bloque le transfert avec un message clair, sans écrire de devis partiel.
+
+## 5. Fonctions à réutiliser / à ne pas toucher
+
+Réutiliser : `validateBtpFacts`, `normalizeUnit`, `parseFactsBlock`, `serializeFactsContract`, `buildFactId`, `buildDraftLinesFromFacts` / `buildFromContract`, `resolveLot` (`btpLotNormalization`), `sanitizeReformulatedDesignation`, `btpTransferValidator`.
+
+Ne pas toucher : `src/lib/invoiceTotals.ts`, moteur TVA et mentions CGI, `invoicePdf` / `facturx*` / `pdfEngine`, enregistrement et numérotation (`documentNumbers`, `documentArchive`, `invoiceDraftStorage`), envoi/signature client, `documentValidator.ts` (politique de non-correction acquise), `smart-devis-analyzer` et le parcours texte libre, RLS et tables existantes.
+
+## 6. Phases, dans l'ordre, avec le test de sortie
+
+**Phase A — Enrichir le contrat, comportement identique.**
+Champs optionnels ajoutés dans `btpFactsContract.ts`, `role` déduit par défaut de `factType`, aucune règle de filtrage nouvelle.
+*Test :* la suite de tests existante passe inchangée ; un contrat sans les nouveaux champs produit exactement les mêmes lignes qu'aujourd'hui.
+
+**Phase B — Produire rôles et relations.**
+Le prompt d'extraction déclare `role`, `operation`, `scope`, `coveredBy`, fourniture/pose. Résultats seulement affichés/loggués, pas encore appliqués.
+*Test :* sur les 3 documents MARTIN, vérifier dans la console que les accessoires sortent en `included_component` avec un `coveredByFactId` valide et les cotes en `descriptive`. Le devis produit reste identique à la Phase A.
+
+**Phase C — Activer le filtrage déterministe + clé de ligne.**
+`btpFactsToDraft` applique les règles du §4 et les contrôles.
+*Test :* cas A→F ci-dessous en tests unitaires, plus un devis réel de bout en bout (prix, PDF, enregistrement) pour vérifier l'absence de régression.
+
+**Phase D — Transfert direct.**
+« Préparer le devis » consomme le contrat (factId + données validées) sans passer par le Markdown ni un second appel IA ; `factId` et source conservés jusqu'au brouillon.
+*Test :* un transfert complet sans aucun appel à `btp-quote-from-documents` / `smart-devis-analyzer` (vérifiable dans l'onglet réseau), lignes détaillées conservées, aucune erreur 413.
+
+**Phase E — Retirer le passage narratif devenu inutile.**
+Suppression du repli « rapport → parsing → IA » dans ce seul parcours, une fois D validée en usage réel.
+*Test :* parcours documentaire OK ; parcours texte libre et devis manuel toujours fonctionnels ; anciens devis enregistrés s'ouvrent normalement.
+
+## 7. Tests génériques (indépendants du métier)
+
+- **A** — équipement + 5 accessoires → 1 ligne `main`, 5 `included_component`, aucune double facturation.
+- **B** — 2 équipements type A + 3 type B → 2 lignes distinctes, quantités 2 et 3.
+- **C** — ouvrage 4,20 ml, hauteur 2,50 m → quantité 4,20 ml ; hauteur dans `scope`.
+- **D** — fourniture client / pose entreprise → `clientSupplied = true`, `includesMaterials = false`, fourniture non facturée.
+- **E** — ouvrage « comprenant raccordements, essais, mise en service » → composants inclus, sauf prestation explicitement distincte.
+- **F** — même prestation dans deux documents → une seule ligne (clé identique), deux sources conservées.
+
+## 8. Risques de régression
+
+- Un `role` mal déduit pourrait faire disparaître une prestation réelle : atténuation par la Phase B en observation seule et par le repli `main` quand le rôle est absent ou incohérent.
+- Sur-fusion si `scope` est mal normalisé : la clé inclut périmètre et dimensions, et le lot est exclu de la décision.
+- Contrôles trop stricts bloquant un transfert légitime : message explicite listant les faits fautifs, jamais de devis partiel silencieux.
+- Faits anciens sans nouveaux champs : chemin de compatibilité conservé tant que la Phase E n'est pas validée.
+- Le devis actuel (création, prix, PDF, enregistrement, envoi, signature) n'est touché à aucune phase.
+
+## 9. Ce qui se fait sans base de données
+
+Tout. Rôles, relations, périmètre, clé de ligne et contrôles vivent dans le contrat de faits sérialisé et dans le brouillon côté client. Aucune migration, aucune RLS, aucun champ de table nouveau. Une persistance en base ne se poserait qu'un jour, si l'on souhaitait rejouer un devis à partir des faits d'origine — hors périmètre de ce plan.

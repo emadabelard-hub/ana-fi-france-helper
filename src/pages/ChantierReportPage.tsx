@@ -539,13 +539,29 @@ const ChantierReportPage = () => {
       if (hasArabic(content)) {
         const img = await renderTextToImage(content, width, { align: 'right' });
         if (img) {
+          // Nouvelle page AVANT addImage si le bloc ne rentre pas
+          if (cy + img.heightMm > pageH - 20) {
+            doc.addPage();
+            cy = margin;
+          }
           doc.addImage(img.dataUrl, 'PNG', x, cy, width, img.heightMm);
           cy += img.heightMm + 4;
         }
       } else {
-        const lines = doc.splitTextToSize(content, width);
-        doc.text(lines, x, cy);
-        cy += lines.length * 5 + 4;
+        const lines: string[] = doc.splitTextToSize(content, width);
+        // Écriture ligne par ligne avec passage de page : aucun texte perdu
+        for (const line of lines) {
+          if (cy + 5 > pageH - 20) {
+            doc.addPage();
+            cy = margin;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            doc.setTextColor(33, 33, 33);
+          }
+          doc.text(line, x, cy);
+          cy += 5;
+        }
+        cy += 4;
       }
       return cy;
     };

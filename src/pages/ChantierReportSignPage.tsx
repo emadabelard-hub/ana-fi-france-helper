@@ -201,11 +201,23 @@ const ChantierReportSignPage = () => {
         )}
 
         {signed ? (
-          <Card className="p-6 text-center space-y-2">
+          <Card className="p-6 text-center space-y-3">
             <CheckCircle2 className="h-10 w-10 text-emerald-600 mx-auto" />
             <p className="text-lg font-semibold">Rapport signé avec succès</p>
             {info.client_signer_name && (
               <p className="text-sm text-muted-foreground">Signé par {info.client_signer_name}</p>
+            )}
+            {finalizing && (
+              <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Préparation de votre rapport signé…
+              </p>
+            )}
+            {signedUrl && (
+              <Button className="gap-2" onClick={() => window.open(signedUrl, '_blank', 'noopener')}>
+                <FileText className="h-4 w-4" />
+                Télécharger mon rapport signé
+              </Button>
             )}
           </Card>
         ) : (

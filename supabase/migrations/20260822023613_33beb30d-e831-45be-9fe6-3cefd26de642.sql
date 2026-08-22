@@ -1,0 +1,2 @@
+ALTER TABLE public.documents DROP CONSTRAINT documents_type_check;
+ALTER TABLE public.documents ADD CONSTRAINT documents_type_check CHECK (type = ANY (ARRAY['devis'::text, 'facture'::text, 'note_frais'::text, 'rapport_chantier'::text]));

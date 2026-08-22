@@ -361,8 +361,6 @@ const ChantierReportPage = () => {
   const weatherLabelFR = (w: Weather) =>
     WEATHER_OPTIONS.find((x) => x.value === w)?.fr || w;
 
-  const validate = (): string | null => {
-    if (!isTeamMode && !selectedClientId) return 'اختر العميل أولاً';
   const effectiveChantierId = selectedChantierId || lockedChantierId || '';
 
   const validate = (): string | null => {

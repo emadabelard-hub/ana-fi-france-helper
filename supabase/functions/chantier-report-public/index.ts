@@ -53,7 +53,13 @@ Deno.serve(async (req) => {
       pdfUrl = signed?.signedUrl || null;
     }
 
-    return json({ ...row, pdf_url: pdfUrl });
+    let signedPdfUrl: string | null = row.signed_pdf_url || null;
+    if (signedPdfUrl && !/^https?:\/\//i.test(signedPdfUrl)) {
+      const { data: s } = await admin.storage.from("documents").createSignedUrl(signedPdfUrl, 3600);
+      signedPdfUrl = s?.signedUrl || null;
+    }
+
+    return json({ ...row, pdf_url: pdfUrl, signed_pdf_url: signedPdfUrl });
   } catch (e) {
     console.error("[chantier-report-public] error:", e);
     return json({ error: "Erreur serveur" }, 500);

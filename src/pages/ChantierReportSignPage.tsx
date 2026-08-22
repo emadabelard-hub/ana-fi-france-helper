@@ -18,6 +18,7 @@ interface ReportInfo {
   supervisor_name: string | null;
   submitted_by_name: string | null;
   pdf_url: string | null;
+  signed_pdf_url: string | null;
   client_signer_name: string | null;
   client_signed_at: string | null;
 }
@@ -30,9 +31,25 @@ const ChantierReportSignPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [signerName, setSignerName] = useState('');
   const [isEmpty, setIsEmpty] = useState(true);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [finalizing, setFinalizing] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const padRef = useRef<SignaturePadLib | null>(null);
+
+  const finalizeReport = async () => {
+    if (!token) return;
+    setFinalizing(true);
+    const { data, error: fnErr } = await supabase.functions.invoke('chantier-report-finalize', {
+      body: { token },
+    });
+    setFinalizing(false);
+    if (fnErr || !data || (data as any).error) {
+      console.error('[ChantierReportSign] finalize failed', (data as any)?.error || fnErr?.message);
+      return;
+    }
+    setSignedUrl((data as any).signed_pdf_url || null);
+  };
 
   const loadInfo = async () => {
     if (!token) return;
@@ -44,7 +61,12 @@ const ChantierReportSignPage = () => {
       setInfo(null);
     } else {
       setError(null);
-      setInfo(data as ReportInfo);
+      const row = data as ReportInfo;
+      setInfo(row);
+      if (row.status === 'signe_client') {
+        if (row.signed_pdf_url) setSignedUrl(row.signed_pdf_url);
+        else await finalizeReport();
+      }
     }
   };
 
@@ -179,11 +201,23 @@ const ChantierReportSignPage = () => {
         )}
 
         {signed ? (
-          <Card className="p-6 text-center space-y-2">
+          <Card className="p-6 text-center space-y-3">
             <CheckCircle2 className="h-10 w-10 text-emerald-600 mx-auto" />
             <p className="text-lg font-semibold">Rapport signé avec succès</p>
             {info.client_signer_name && (
               <p className="text-sm text-muted-foreground">Signé par {info.client_signer_name}</p>
+            )}
+            {finalizing && (
+              <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Préparation de votre rapport signé…
+              </p>
+            )}
+            {signedUrl && (
+              <Button className="gap-2" onClick={() => window.open(signedUrl, '_blank', 'noopener')}>
+                <FileText className="h-4 w-4" />
+                Télécharger mon rapport signé
+              </Button>
             )}
           </Card>
         ) : (

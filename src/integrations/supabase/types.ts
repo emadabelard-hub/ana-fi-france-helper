@@ -421,6 +421,7 @@ export type Database = {
           report_date: string | null
           report_number: string | null
           sent_to_client_at: string | null
+          signed_pdf_url: string | null
           status: string
           submitted_by: string | null
           submitted_by_name: string | null
@@ -451,6 +452,7 @@ export type Database = {
           report_date?: string | null
           report_number?: string | null
           sent_to_client_at?: string | null
+          signed_pdf_url?: string | null
           status?: string
           submitted_by?: string | null
           submitted_by_name?: string | null
@@ -481,6 +483,7 @@ export type Database = {
           report_date?: string | null
           report_number?: string | null
           sent_to_client_at?: string | null
+          signed_pdf_url?: string | null
           status?: string
           submitted_by?: string | null
           submitted_by_name?: string | null
@@ -2234,6 +2237,7 @@ export type Database = {
           pdf_url: string
           report_date: string
           report_number: string
+          signed_pdf_url: string
           status: string
           submitted_by_name: string
           supervisor_name: string

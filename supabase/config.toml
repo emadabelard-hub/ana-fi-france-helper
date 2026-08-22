@@ -137,3 +137,7 @@ verify_jwt = false
 
 [functions.chantier-report-public]
 verify_jwt = false
+
+[functions.chantier-report-finalize]
+verify_jwt = false
+

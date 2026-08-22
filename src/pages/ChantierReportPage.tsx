@@ -797,7 +797,6 @@ const ChantierReportPage = () => {
   ): Promise<string> => {
     if (!user) throw new Error('Session absente');
 
-    const ownerUserId = isTeamMode && teamAssignment ? teamAssignment.patron_user_id : user.id;
     const targetChantierId = effectiveChantierId;
     // GARDE-FOU : aucune requête Supabase sans chantier valide
     if (!targetChantierId || targetChantierId === 'null' || targetChantierId === 'undefined') {
@@ -805,7 +804,6 @@ const ChantierReportPage = () => {
     }
 
     const reportPayload = {
-      user_id: ownerUserId,
       chantier_id: targetChantierId,
       client_id: selectedClientId || null,
       report_number: reportNumber,
@@ -819,7 +817,6 @@ const ChantierReportPage = () => {
       observations_fr: overrides.observations || null,
       supervisor_name: chefName || null,
       pdf_url: pdfUrl || null,
-      submitted_by: user.id,
       submitted_by_name: isTeamMode ? (chefName || user.email || null) : null,
       created_at_timestamp: generatedAt.toISOString(),
       gps_latitude: gpsPosition?.lat ?? null,
@@ -827,56 +824,20 @@ const ChantierReportPage = () => {
       gps_address: gpsPosition ? formatGpsForDisplay(gpsPosition) : null,
     };
 
-    // Mise à jour de la ligne déjà mémorisée dans cette session (double clic)
-    if (savedReportIdRef.current) {
-      const { error: updateErr } = await (supabase.from('chantier_reports' as any) as any)
-        .update(reportPayload)
-        .eq('id', savedReportIdRef.current);
-      if (updateErr) {
-        console.error('[chantier_reports] update failed:', updateErr);
-        throw new Error(updateErr.message);
-      }
-      return savedReportIdRef.current;
+    // Le backend vérifie l'affectation, déduit le patron et garantit l'idempotence.
+    const { data: savedId, error: saveErr } = await (supabase.rpc as any)('save_chantier_report', {
+      _payload: reportPayload,
+    });
+    if (saveErr) {
+      console.error('[chantier_reports] save failed:', saveErr);
+      throw new Error(saveErr.message);
     }
-
-    // Recherche d'une ligne existante pour ce chantier + numéro de rapport (anti-doublon)
-    const { data: existing, error: selectErr } = await (supabase.from('chantier_reports' as any) as any)
-      .select('id')
-      .eq('chantier_id', targetChantierId)
-      .eq('report_number', reportNumber)
-      .maybeSingle();
-    if (selectErr) {
-      console.error('[chantier_reports] lookup failed:', selectErr);
-      throw new Error(selectErr.message);
-    }
-
-    if (existing?.id) {
-      savedReportIdRef.current = existing.id;
-      const { error: updateErr } = await (supabase.from('chantier_reports' as any) as any)
-        .update(reportPayload)
-        .eq('id', existing.id);
-      if (updateErr) {
-        console.error('[chantier_reports] update failed:', updateErr);
-        throw new Error(updateErr.message);
-      }
-      return existing.id;
-    }
-
-    // Création normale
-    const { data: inserted, error: insertErr } = await (supabase.from('chantier_reports' as any) as any)
-      .insert({ ...reportPayload, status: 'a_valider' })
-      .select('id')
-      .single();
-    if (insertErr) {
-      console.error('[chantier_reports] insert failed:', insertErr);
-      throw new Error(insertErr.message);
-    }
-    if (!inserted?.id) {
+    if (!savedId || typeof savedId !== 'string') {
       throw new Error('Aucun identifiant retourné par chantier_reports');
     }
-    savedReportIdRef.current = inserted.id;
-    console.info('[chantier_reports] saved:', inserted.id, reportNumber);
-    return inserted.id;
+    savedReportIdRef.current = savedId;
+    console.info('[chantier_reports] saved:', savedId, reportNumber);
+    return savedId;
   };
 
 

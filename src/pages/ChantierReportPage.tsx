@@ -936,14 +936,24 @@ const ChantierReportPage = () => {
       }
 
 
-      const archived = await archivePdf({
-        blob: result.blob,
-        type: 'rapport_chantier' as any,
-        numero: reportNumber,
-        fileName: result.fileName,
-        status: 'final',
-      });
-      await saveReportRow(overrides, result.generatedAt, archived?.pdf_url || null).catch(() => {});
+      let archived: { pdf_url: string; storage_path: string } | null = null;
+      try {
+        archived = await archivePdf({
+          blob: result.blob,
+          type: 'rapport_chantier',
+          numero: reportNumber,
+          fileName: result.fileName,
+          status: 'final',
+        });
+        await saveReportRow(overrides, result.generatedAt, archived?.pdf_url || null);
+      } catch (archErr: any) {
+        console.error('[ChantierReport] archivage/sauvegarde ANAFYPRO échoué:', archErr);
+        toast({
+          title: tr('فشل الحفظ في ANAFYPRO', 'Archivage ANAFYPRO échoué'),
+          description: archErr?.message || tr('التقرير مش محفوظ في ANAFYPRO', "Le rapport n'a pas été enregistré dans ANAFYPRO"),
+          variant: 'destructive',
+        });
+      }
       const text = archived?.pdf_url ? `${msg}\n${archived.pdf_url}` : msg;
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
     } catch (e: any) {

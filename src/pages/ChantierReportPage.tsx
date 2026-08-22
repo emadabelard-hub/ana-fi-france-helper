@@ -176,6 +176,7 @@ const ChantierReportPage = () => {
   const [translating, setTranslating] = useState(false);
   const [lastPdfBase64, setLastPdfBase64] = useState<string | null>(null);
   const [lastFileName, setLastFileName] = useState<string | null>(null);
+  const savedReportIdRef = useRef<string | null>(null);
 
   // Auto-generate report number on mount if empty
   useEffect(() => {
@@ -765,9 +766,11 @@ const ChantierReportPage = () => {
     if (!user) return;
     try {
       const ownerUserId = isTeamMode && teamAssignment ? teamAssignment.patron_user_id : user.id;
-      const { error: insertErr } = await (supabase.from('chantier_reports' as any) as any).insert({
+      const targetChantierId = selectedChantierId || lockedChantierId || null;
+
+      const reportPayload = {
         user_id: ownerUserId,
-        chantier_id: selectedChantierId || lockedChantierId || null,
+        chantier_id: targetChantierId,
         client_id: selectedClientId || null,
         report_number: reportNumber,
         report_date: reportDate,
@@ -786,9 +789,43 @@ const ChantierReportPage = () => {
         gps_latitude: gpsPosition?.lat ?? null,
         gps_longitude: gpsPosition?.lng ?? null,
         gps_address: gpsPosition ? formatGpsForDisplay(gpsPosition) : null,
-        status: 'a_valider',
-      });
-      if (insertErr) console.warn('[chantier_reports] insert failed:', insertErr.message);
+      };
+
+      // Mise à jour de la ligne déjà mémorisée dans cette session (double clic)
+      if (savedReportIdRef.current) {
+        const { error: updateErr } = await (supabase.from('chantier_reports' as any) as any)
+          .update(reportPayload)
+          .eq('id', savedReportIdRef.current);
+        if (updateErr) console.warn('[chantier_reports] update failed:', updateErr.message);
+        return;
+      }
+
+      // Recherche d'une ligne existante pour ce chantier + numéro de rapport
+      const { data: existing } = await (supabase.from('chantier_reports' as any) as any)
+        .select('id')
+        .eq('chantier_id', targetChantierId)
+        .eq('report_number', reportNumber)
+        .maybeSingle();
+
+      if (existing?.id) {
+        savedReportIdRef.current = existing.id;
+        const { error: updateErr } = await (supabase.from('chantier_reports' as any) as any)
+          .update(reportPayload)
+          .eq('id', existing.id);
+        if (updateErr) console.warn('[chantier_reports] update failed:', updateErr.message);
+        return;
+      }
+
+      // Création normale
+      const { data: inserted, error: insertErr } = await (supabase.from('chantier_reports' as any) as any)
+        .insert({ ...reportPayload, status: 'a_valider' })
+        .select('id')
+        .single();
+      if (insertErr) {
+        console.warn('[chantier_reports] insert failed:', insertErr.message);
+      } else if (inserted?.id) {
+        savedReportIdRef.current = inserted.id;
+      }
     } catch (e) {
       console.warn('[chantier_reports] save error:', e);
     }

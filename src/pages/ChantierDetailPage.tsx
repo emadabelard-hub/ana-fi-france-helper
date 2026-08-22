@@ -575,7 +575,7 @@ const ChantierDetailPage = () => {
                         }
                       }}>
                         <Download className="h-3.5 w-3.5" />
-                        <span className="text-xs">Voir le rapport signé</span>
+                        <span className="text-xs">{t('chantierDetail.reports.viewSigned')}</span>
                       </Button>
                     )}
                     {user?.id === chantier?.user_id && r.status === 'a_valider' && (

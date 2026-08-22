@@ -458,6 +458,7 @@ const translations: Record<Language, Record<string, string>> = {
     'chantierDetail.reports.validate': 'Valider',
     'chantierDetail.reports.validateError': 'Impossible de valider le rapport',
     'chantierDetail.reports.validatedToast': 'Rapport validé ✓',
+    'chantierDetail.reports.viewSigned': 'Voir le rapport signé',
 
     // ===== AI ASSISTANT (Phase 5C) =====
     'aiAssistant.header.title': 'Assistant IA',
@@ -1146,6 +1147,7 @@ const translations: Record<Language, Record<string, string>> = {
     'chantierDetail.reports.validate': 'اعتماد',
     'chantierDetail.reports.validateError': 'ما قدرناش نعتمد التقرير',
     'chantierDetail.reports.validatedToast': 'تم اعتماد التقرير ✓',
+    'chantierDetail.reports.viewSigned': 'شوف التقرير الموقّع',
 
     // ===== AI ASSISTANT (Phase 5C) =====
     'aiAssistant.header.title': 'المساعد الذكي',

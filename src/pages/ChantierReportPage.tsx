@@ -932,8 +932,21 @@ const ChantierReportPage = () => {
   };
 
   const handleShareWhatsApp = async () => {
+    // Aucun envoi possible sans chantier valide
+    if (!effectiveChantierId) {
+      toast({
+        title: tr('مفيش شانتي محدد', 'Aucun chantier sélectionné'),
+        description: tr(
+          'مفيش شانتي محدد. اختار شانتي قبل إرسال التقرير.',
+          "Aucun chantier sélectionné. Sélectionnez un chantier avant d'envoyer le rapport.",
+        ),
+        variant: 'destructive',
+      });
+      return;
+    }
     const dateStr = new Date(reportDate).toLocaleDateString('fr-FR');
     const msg = `Bonjour, veuillez trouver ci-joint le rapport de chantier du ${dateStr}. Merci de télécharger le PDF depuis Anafy Pro.`;
+
 
     setTranslating(true);
     let overrides: { workDone: string; materials: string; observations: string };

@@ -360,15 +360,10 @@ const ChantierReportPage = () => {
     WEATHER_OPTIONS.find((x) => x.value === w)?.fr || w;
 
   const validate = (): string | null => {
-    // TEMP: disabled client/address checks for double-click test
-    // if (!isTeamMode && !selectedClientId) return 'اختر العميل أولاً';
-    // if (!selectedChantierId) return 'اختر الشانتي أولاً';
-    // if (!isTeamMode && !chantierAddress.trim()) return 'عنوان الشانتي مطلوب';
-    if (!workDone.trim()) {
-      console.log('[TEST] validate failed: workDone empty. Value:', JSON.stringify(workDone));
-      return 'الأعمال المنجزة مطلوبة';
-    }
-    console.log('[TEST] validate passed');
+    if (!isTeamMode && !selectedClientId) return 'اختر العميل أولاً';
+    if (!selectedChantierId) return 'اختر الشانتي أولاً';
+    if (!isTeamMode && !chantierAddress.trim()) return 'عنوان الشانتي مطلوب';
+    if (!workDone.trim()) return 'الأعمال المنجزة مطلوبة';
     return null;
   };
 

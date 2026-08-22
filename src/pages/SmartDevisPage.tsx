@@ -37,6 +37,75 @@ const introTipTextFr = `① Décrivez ou dictez le travail souhaité (français 
 ④ Après l'analyse, vous pouvez ajuster chaque ligne manuellement
 ⑤ Appuyez sur Suivant pour générer le devis`;
 
+// ────────────────────────────────────────────────────────────────────────────
+// Parseur LOCAL des lignes déjà structurées (issues de l'extraction documents)
+// Format attendu :
+//   LOT : NOM DU LOT
+//   Désignation | 310 | m²
+//   Désignation | À confirmer |
+// Aucun appel IA : les désignations, quantités et unités sont conservées telles
+// quelles. Aucune quantité ni prix n'est inventé.
+// ────────────────────────────────────────────────────────────────────────────
+interface ParsedStructuredItem {
+  designation_fr: string;
+  quantity: number | null;
+  unit: string;
+  lot?: string;
+}
+
+const parseFrNumber = (raw: string): number | null => {
+  const cleaned = raw
+    .replace(/[\s\u00A0\u202F]/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.');
+  if (!/^\d+(\.\d+)?$/.test(cleaned)) return null;
+  const n = Number(cleaned);
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
+
+const parseStructuredDevisText = (text: string): ParsedStructuredItem[] | null => {
+  const rawLines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+  if (rawLines.length === 0) return null;
+
+  let hasLot = false;
+  let currentLot: string | undefined;
+  const items: ParsedStructuredItem[] = [];
+
+  for (const line of rawLines) {
+    const lotMatch = line.match(/^LOT\s*[:：]\s*(.+)$/i);
+    if (lotMatch) {
+      hasLot = true;
+      currentLot = lotMatch[1].trim() || undefined;
+      continue;
+    }
+
+    const parts = line.split('|').map((p) => p.trim());
+    if (parts.length < 2) return null; // ligne non structurée → texte libre
+
+    const designation = parts[0];
+    if (!designation) return null;
+
+    const qtyRaw = parts[1] || '';
+    const unitRaw = (parts[2] || '').trim();
+
+    let quantity: number | null = null;
+    if (qtyRaw && qtyRaw !== '—' && !/^à\s*confirmer$/i.test(qtyRaw)) {
+      quantity = parseFrNumber(qtyRaw);
+      if (quantity === null) return null; // quantité illisible → on laisse l'IA
+    }
+
+    items.push({
+      designation_fr: designation,
+      quantity,
+      unit: quantity === null ? '' : unitRaw,
+      lot: currentLot,
+    });
+  }
+
+  if (!hasLot || items.length === 0) return null;
+  return items;
+};
+
 
 interface UploadedImage {
   id: string;

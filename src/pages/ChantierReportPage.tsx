@@ -176,6 +176,7 @@ const ChantierReportPage = () => {
   const [translating, setTranslating] = useState(false);
   const [lastPdfBase64, setLastPdfBase64] = useState<string | null>(null);
   const [lastFileName, setLastFileName] = useState<string | null>(null);
+  const savedReportIdRef = useRef<string | null>(null);
 
   // Auto-generate report number on mount if empty
   useEffect(() => {

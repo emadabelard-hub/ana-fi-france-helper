@@ -777,79 +777,92 @@ const ChantierReportPage = () => {
     }
   };
 
-  // Enregistrement du rapport dans ANAFYPRO (jamais bloquant)
+  // Enregistrement du rapport dans ANAFYPRO — BLOQUANT : retourne l'id ou lève une erreur
   const saveReportRow = async (
     overrides: { workDone: string; materials: string; observations: string },
     generatedAt: Date,
     pdfUrl: string | null,
-  ) => {
-    if (!user) return;
-    try {
-      const ownerUserId = isTeamMode && teamAssignment ? teamAssignment.patron_user_id : user.id;
-      const targetChantierId = selectedChantierId || lockedChantierId || null;
+  ): Promise<string> => {
+    if (!user) throw new Error('Session absente');
 
-      const reportPayload = {
-        user_id: ownerUserId,
-        chantier_id: targetChantierId,
-        client_id: selectedClientId || null,
-        report_number: reportNumber,
-        report_date: reportDate,
-        worker_count: workerCount ? parseInt(workerCount, 10) || null : null,
-        worker_names: workerNames || null,
-        hours_worked: hoursWorked || null,
-        weather: weatherLabelFR(weather),
-        work_done_fr: overrides.workDone || null,
-        materials_fr: overrides.materials || null,
-        observations_fr: overrides.observations || null,
-        supervisor_name: chefName || null,
-        pdf_url: pdfUrl || null,
-        submitted_by: user.id,
-        submitted_by_name: isTeamMode ? (chefName || user.email || null) : null,
-        created_at_timestamp: generatedAt.toISOString(),
-        gps_latitude: gpsPosition?.lat ?? null,
-        gps_longitude: gpsPosition?.lng ?? null,
-        gps_address: gpsPosition ? formatGpsForDisplay(gpsPosition) : null,
-      };
+    const ownerUserId = isTeamMode && teamAssignment ? teamAssignment.patron_user_id : user.id;
+    const targetChantierId = selectedChantierId || lockedChantierId || null;
 
-      // Mise à jour de la ligne déjà mémorisée dans cette session (double clic)
-      if (savedReportIdRef.current) {
-        const { error: updateErr } = await (supabase.from('chantier_reports' as any) as any)
-          .update(reportPayload)
-          .eq('id', savedReportIdRef.current);
-        if (updateErr) console.warn('[chantier_reports] update failed:', updateErr.message);
-        return;
+    const reportPayload = {
+      user_id: ownerUserId,
+      chantier_id: targetChantierId,
+      client_id: selectedClientId || null,
+      report_number: reportNumber,
+      report_date: reportDate,
+      worker_count: workerCount ? parseInt(workerCount, 10) || null : null,
+      worker_names: workerNames || null,
+      hours_worked: hoursWorked || null,
+      weather: weatherLabelFR(weather),
+      work_done_fr: overrides.workDone || null,
+      materials_fr: overrides.materials || null,
+      observations_fr: overrides.observations || null,
+      supervisor_name: chefName || null,
+      pdf_url: pdfUrl || null,
+      submitted_by: user.id,
+      submitted_by_name: isTeamMode ? (chefName || user.email || null) : null,
+      created_at_timestamp: generatedAt.toISOString(),
+      gps_latitude: gpsPosition?.lat ?? null,
+      gps_longitude: gpsPosition?.lng ?? null,
+      gps_address: gpsPosition ? formatGpsForDisplay(gpsPosition) : null,
+    };
+
+    // Mise à jour de la ligne déjà mémorisée dans cette session (double clic)
+    if (savedReportIdRef.current) {
+      const { error: updateErr } = await (supabase.from('chantier_reports' as any) as any)
+        .update(reportPayload)
+        .eq('id', savedReportIdRef.current);
+      if (updateErr) {
+        console.error('[chantier_reports] update failed:', updateErr);
+        throw new Error(updateErr.message);
       }
-
-      // Recherche d'une ligne existante pour ce chantier + numéro de rapport
-      const { data: existing } = await (supabase.from('chantier_reports' as any) as any)
-        .select('id')
-        .eq('chantier_id', targetChantierId)
-        .eq('report_number', reportNumber)
-        .maybeSingle();
-
-      if (existing?.id) {
-        savedReportIdRef.current = existing.id;
-        const { error: updateErr } = await (supabase.from('chantier_reports' as any) as any)
-          .update(reportPayload)
-          .eq('id', existing.id);
-        if (updateErr) console.warn('[chantier_reports] update failed:', updateErr.message);
-        return;
-      }
-
-      // Création normale
-      const { data: inserted, error: insertErr } = await (supabase.from('chantier_reports' as any) as any)
-        .insert({ ...reportPayload, status: 'a_valider' })
-        .select('id')
-        .single();
-      if (insertErr) {
-        console.warn('[chantier_reports] insert failed:', insertErr.message);
-      } else if (inserted?.id) {
-        savedReportIdRef.current = inserted.id;
-      }
-    } catch (e) {
-      console.warn('[chantier_reports] save error:', e);
+      return savedReportIdRef.current;
     }
+
+    // Recherche d'une ligne existante pour ce chantier + numéro de rapport (anti-doublon)
+    const { data: existing, error: selectErr } = await (supabase.from('chantier_reports' as any) as any)
+      .select('id')
+      .eq('chantier_id', targetChantierId)
+      .eq('report_number', reportNumber)
+      .maybeSingle();
+    if (selectErr) {
+      console.error('[chantier_reports] lookup failed:', selectErr);
+      throw new Error(selectErr.message);
+    }
+
+    if (existing?.id) {
+      savedReportIdRef.current = existing.id;
+      const { error: updateErr } = await (supabase.from('chantier_reports' as any) as any)
+        .update(reportPayload)
+        .eq('id', existing.id);
+      if (updateErr) {
+        console.error('[chantier_reports] update failed:', updateErr);
+        throw new Error(updateErr.message);
+      }
+      return existing.id;
+    }
+
+    // Création normale
+    const { data: inserted, error: insertErr } = await (supabase.from('chantier_reports' as any) as any)
+      .insert({ ...reportPayload, status: 'a_valider' })
+      .select('id')
+      .single();
+    if (insertErr) {
+      console.error('[chantier_reports] insert failed:', insertErr);
+      throw new Error(insertErr.message);
+    }
+    if (!inserted?.id) {
+      throw new Error('Aucun identifiant retourné par chantier_reports');
+    }
+    savedReportIdRef.current = inserted.id;
+    console.info('[chantier_reports] saved:', inserted.id, reportNumber);
+    return inserted.id;
   };
+
 
   const handleDownload = async () => {
     setTranslating(true);

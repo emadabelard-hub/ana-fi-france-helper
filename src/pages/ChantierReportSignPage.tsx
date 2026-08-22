@@ -31,9 +31,25 @@ const ChantierReportSignPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [signerName, setSignerName] = useState('');
   const [isEmpty, setIsEmpty] = useState(true);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [finalizing, setFinalizing] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const padRef = useRef<SignaturePadLib | null>(null);
+
+  const finalizeReport = async () => {
+    if (!token) return;
+    setFinalizing(true);
+    const { data, error: fnErr } = await supabase.functions.invoke('chantier-report-finalize', {
+      body: { token },
+    });
+    setFinalizing(false);
+    if (fnErr || !data || (data as any).error) {
+      console.error('[ChantierReportSign] finalize failed', (data as any)?.error || fnErr?.message);
+      return;
+    }
+    setSignedUrl((data as any).signed_pdf_url || null);
+  };
 
   const loadInfo = async () => {
     if (!token) return;
@@ -45,7 +61,12 @@ const ChantierReportSignPage = () => {
       setInfo(null);
     } else {
       setError(null);
-      setInfo(data as ReportInfo);
+      const row = data as ReportInfo;
+      setInfo(row);
+      if (row.status === 'signe_client') {
+        if (row.signed_pdf_url) setSignedUrl(row.signed_pdf_url);
+        else await finalizeReport();
+      }
     }
   };
 

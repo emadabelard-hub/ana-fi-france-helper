@@ -322,6 +322,26 @@ const SmartDevisPage = () => {
       return;
     }
 
+    // ── Voie locale : lignes déjà structurées (LOT : … / désignation | qté | unité)
+    // Aucun appel IA, aucune reformulation, aucune invention.
+    if (images.length === 0) {
+      const structured = parseStructuredDevisText(combined);
+      if (structured) {
+        const mappedLocal: LineItem[] = structured.map((it, idx) => ({
+          id: `struct-${Date.now()}-${idx}`,
+          designation_fr: it.designation_fr,
+          designation_ar: it.designation_fr,
+          quantity: it.quantity !== null ? it.quantity : ('' as unknown as number),
+          unit: it.unit,
+          unitPrice: 0,
+          lot: it.lot,
+        }));
+        setLineItems(mappedLocal);
+        console.log('[SmartDevis] lignes structurées parsées localement (0 appel IA):', mappedLocal.length);
+        return;
+      }
+    }
+
     setAnalyzing(true);
     try {
       const firstImg = images[0];
@@ -334,6 +354,7 @@ const SmartDevisPage = () => {
         },
       });
       if (error) throw error;
+
       const items = Array.isArray(data?.items) ? data.items : (Array.isArray(data?.suggestedItems) ? data.suggestedItems : []);
       console.log('[SmartDevis] items reçus:', items);
 

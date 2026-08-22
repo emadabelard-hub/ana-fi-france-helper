@@ -907,26 +907,34 @@ const ChantierReportPage = () => {
       const file = new File([result.blob], result.fileName, { type: 'application/pdf' });
       const nav = navigator as any;
       if (nav.share && (!nav.canShare || nav.canShare({ files: [file] }))) {
+        // Archiver + enregistrer AVANT le partage : WhatsApp suspend la page
+        // et une chaîne non attendue ne se terminerait jamais.
         try {
-          await nav.share({ files: [file], text: msg, title: result.fileName });
-          archivePdf({
+          const arch = await archivePdf({
             blob: result.blob,
-            type: 'rapport_chantier' as any,
+            type: 'rapport_chantier',
             numero: reportNumber,
             fileName: result.fileName,
             status: 'final',
-          })
-            .then((arch) => saveReportRow(overrides, result.generatedAt, arch?.pdf_url || null))
-            .catch((e) => {
-              console.warn('[ChantierReport] archive failed:', e);
-              saveReportRow(overrides, result.generatedAt, null).catch(() => {});
-            });
+          });
+          await saveReportRow(overrides, result.generatedAt, arch?.pdf_url || null);
+        } catch (archErr: any) {
+          console.error('[ChantierReport] archivage/sauvegarde ANAFYPRO échoué:', archErr);
+          toast({
+            title: tr('فشل الحفظ في ANAFYPRO', 'Archivage ANAFYPRO échoué'),
+            description: archErr?.message || tr('التقرير مش محفوظ في ANAFYPRO', "Le rapport n'a pas été enregistré dans ANAFYPRO"),
+            variant: 'destructive',
+          });
+        }
+        try {
+          await nav.share({ files: [file], text: msg, title: result.fileName });
           return;
         } catch (e: any) {
           if (e?.name === 'AbortError') return;
           console.warn('[ChantierReport] file share failed, fallback to link:', e);
         }
       }
+
 
       const archived = await archivePdf({
         blob: result.blob,

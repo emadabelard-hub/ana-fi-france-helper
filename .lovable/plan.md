@@ -29,7 +29,7 @@ Le rapport narratif devient un simple rendu lisible. Le copier-coller et le seco
 | Fichier | Rôle dans le plan |
 | --- | --- |
 | `supabase/functions/_shared/btpFactsContract.ts` | Ajout des champs optionnels + déduction déterministe du rôle et de la relation |
-| `supabase/functions/ai-assistant/index.ts` (action `btp_factual_extraction`) | Demander à l'extracteur de déclarer `role`, `operation`, `scope`, `coveredBy` |
+| `supabase/functions/ai-assistant/index.ts` (action `btp_factual_extraction`) | Demander à l'extracteur `role`, `operation`, `scope`, fourniture/pose et une **référence parent temporaire** (jamais un `factId`, jamais une `lineKey`) |
 | `src/lib/btpFactsToDraft.ts` | Filtrage par rôle, clé métier de ligne, conservation `factId`/source |
 | `src/pages/AIAssistantPage.tsx` (`transferToSmartDevis`) | Utiliser le contrat enrichi ; retirer le repli narratif |
 | `src/pages/ArchitectDevisPage.tsx` + `supabase/functions/btp-quote-from-documents/index.ts` | Basculer, en dernière phase, sur le contrat de faits plutôt que sur la reconstruction textuelle |

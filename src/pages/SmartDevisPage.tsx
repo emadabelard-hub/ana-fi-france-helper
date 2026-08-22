@@ -382,11 +382,23 @@ const SmartDevisPage = () => {
       }
     } catch (e: any) {
       console.error('[SmartDevis] analyze error:', e);
+      let description = e?.message || String(e);
+      try {
+        const body = await e?.context?.json?.();
+        if (body?.code === 'DEVIS_TOO_LONG' || String(body?.error || '').includes('DEVIS_TOO_LONG')) {
+          description = isRTL
+            ? 'الدوفي فيه بنود كتير أوي علشان يتحلل مرة واحدة.'
+            : 'Le devis contient trop de prestations pour être analysé en une seule fois.';
+        } else if (body?.error) {
+          description = String(body.error);
+        }
+      } catch { /* corps illisible : on garde le message d'origine */ }
       toast({
         variant: 'destructive',
         title: isRTL ? 'خطأ في التحليل' : 'Erreur d\'analyse',
-        description: e?.message || String(e),
+        description,
       });
+
     } finally {
       setAnalyzing(false);
     }

@@ -88,9 +88,9 @@ Ne pas toucher : `src/lib/invoiceTotals.ts`, moteur TVA et mentions CGI, `invoic
 
 ## 6. Phases, dans l'ordre, avec le test de sortie
 
-**Phase A — Enrichir le contrat, comportement identique.**
-Champs optionnels ajoutés dans `btpFactsContract.ts`, `role` déduit par défaut de `factType`, aucune règle de filtrage nouvelle.
-*Test :* la suite de tests existante passe inchangée ; un contrat sans les nouveaux champs produit exactement les mêmes lignes qu'aujourd'hui.
+**Phase A — Enrichir le contrat, comportement strictement identique (seule phase à réaliser après approbation).**
+Ajout des champs optionnels dans `btpFactsContract.ts`, `role` déduit par défaut de `factType` (`billable_work` → `main`, sinon `descriptive`). Aucune règle de filtrage nouvelle, aucune ligne de devis modifiée, aucun PDF, aucun calcul, aucune TVA, aucun envoi/signature touché, aucun prompt modifié, aucune migration, aucun déploiement au-delà du partage du fichier de contrat.
+*Test :* la suite de tests existante passe inchangée ; un contrat sans les nouveaux champs produit exactement les mêmes lignes qu'aujourd'hui ; un devis réel documentaire donne un résultat identique à avant. Validation de la Phase A **avant** toute Phase B. Les phases B à E ne sont jamais exécutées en même temps.
 
 **Phase B — Produire rôles et relations (référence temporaire) + résolution par le code.**
 Le prompt d'extraction déclare `role`, `operation`, `scope`, fourniture/pose et une référence parent temporaire. `validateBtpFacts` résout ces références en `coveredByFactId` après génération des `factId` et calcule `lineKey`. Résultats seulement affichés/loggués, pas encore appliqués.

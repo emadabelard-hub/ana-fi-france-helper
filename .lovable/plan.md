@@ -131,7 +131,7 @@ Suppression du repli « rapport → parsing → IA » dans ce seul parcours, une
 
 - Un `role` mal déduit pourrait faire disparaître une prestation réelle : atténuation par la Phase B en observation seule et par le repli `main` quand le rôle est absent ou incohérent.
 - Sur-fusion si `scope` est mal normalisé : la clé inclut périmètre et dimensions, et le lot est exclu de la décision.
-- Contrôles trop stricts bloquant un transfert légitime : message explicite listant les faits fautifs, jamais de devis partiel silencieux.
+- Contrôles trop stricts bloquant un transfert légitime : le plan distingue explicitement `pending` (marqué « À confirmer ») et erreurs structurelles (bloquantes). Seules les secondes empêchent l'écriture du brouillon. Message explicite listant les faits fautifs, jamais de devis partiel silencieux.
 - Faits anciens sans nouveaux champs : chemin de compatibilité conservé tant que la Phase E n'est pas validée.
 - Le devis actuel (création, prix, PDF, enregistrement, envoi, signature) n'est touché à aucune phase.
 

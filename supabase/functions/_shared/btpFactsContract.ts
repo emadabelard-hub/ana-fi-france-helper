@@ -282,6 +282,59 @@ const buildFactId = (parts: {
   return parts.used.has(base) ? `${base}_${parts.index}` : (parts.used.add(base), base);
 };
 
+/** Lecture booléenne tolérante (aucune déduction, null si non déclaré). */
+const bool = (v: unknown): boolean | null => {
+  if (v === true || v === false) return v;
+  if (typeof v === "string") {
+    const s = v.trim().toLowerCase();
+    if (["true", "oui", "yes", "1"].includes(s)) return true;
+    if (["false", "non", "no", "0"].includes(s)) return false;
+  }
+  return null;
+};
+
+const normalizeKeyPart = (v: string | null): string =>
+  (v ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9²³.,]+/g, " ")
+    .trim()
+    .replace(/\s+/g, "-");
+
+/**
+ * Clé métier de ligne, calculée EXCLUSIVEMENT par le code (aucune valeur IA).
+ * Phase B : donnée d'observation uniquement — aucun regroupement, filtrage ni
+ * suppression de ligne n'est effectué à partir de cette clé.
+ */
+const buildLineKey = (parts: {
+  operation: string | null;
+  scope: string | null;
+  descriptionExact: string;
+  dimensions: string;
+  unit: BtpUnit;
+  includesMaterials: boolean | null;
+  includesLabor: boolean | null;
+  clientSupplied: boolean | null;
+}): string => {
+  const dims = (`${parts.dimensions} ${parts.scope ?? ""}`.match(/\d+(?:[.,]\d+)?\s*(?:mm|cm|m²|m³|ml|m)\b/gi) ?? [])
+    .map((d) => normalizeKeyPart(d))
+    .sort()
+    .join("+");
+  const supply = [
+    parts.includesMaterials === null ? "f?" : parts.includesMaterials ? "f1" : "f0",
+    parts.includesLabor === null ? "p?" : parts.includesLabor ? "p1" : "p0",
+    parts.clientSupplied === true ? "cli" : "",
+  ].filter(Boolean).join("");
+  return [
+    normalizeKeyPart(parts.operation) || normalizeKeyPart(parts.descriptionExact),
+    normalizeKeyPart(parts.scope),
+    dims,
+    parts.unit ?? "",
+    supply,
+  ].join("|");
+};
+
 /**
  * Valide et fige un tableau de faits bruts issus de l'extraction IA.
  * Aucune donnée n'est inventée : une quantité ou une unité absente reste nulle
@@ -291,6 +344,8 @@ export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
   const arr = Array.isArray(rawFacts) ? rawFacts : [];
   const facts: ValidatedBtpFact[] = [];
   const usedIds = new Set<string>();
+  const refAliases: Set<string>[] = [];
+
 
   arr.forEach((entry, i) => {
     if (!entry || typeof entry !== "object") return;

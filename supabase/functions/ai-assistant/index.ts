@@ -1036,7 +1036,7 @@ La TVA ne se choisit JAMAIS uniquement d'après le type de travaux. Vérifier r�
         try { return JSON.stringify(deepBtpDocData ?? null, null, 2); } catch { return 'null'; }
       })();
 
-      finalSystemPrompt = `Tu es un expert BTP français chargé de produire l'ANALYSE D'UN DOSSIER DE CHANTIER destinée à aider un artisan à préparer un brouillon de devis.
+      finalSystemPrompt = `Tu es un expert BTP français chargé de produire l'ANALYSE D'UN DOSSIER DE CHANTIER destinée à aider un artisan à comprendre le projet. Ce rapport ne prépare pas les lignes du devis.
 
 Le dossier peut être de tout type : cahier des charges, devis existant, plans architecturaux, plans de structure, PDF natif, PDF scanné, DOCX, photographies, captures d'écran, notes textuelles, dossier complet ou incomplet. Tu n'es jamais conçu pour un dossier particulier.
 
@@ -1229,7 +1229,7 @@ RÈGLES DE LANGUE (impératives) :
 - Utilise naturellement le vocabulaire BTP compris par les artisans : les mots dialectaux réellement employés sur les chantiers et les termes techniques français couramment utilisés en France.
 - Titres, phrases, explications, réserves, questions et conclusion : dans cette variante. Aucune phrase moitié arabe / moitié française.
 - Le titre unique du rapport doit être exactement : « ## التحليل الفني المعمق ». N'écris jamais le titre français.
-- Traduis les titres des 9 sections dans cette variante, dans le même ordre et avec le même contenu.
+- Traduis les titres des 7 sections dans cette variante, dans le même ordre et avec le même contenu.
 - Restent en français / dans leur forme originale : noms de fichiers, normes et sigles (DTU, RE2020, BA13, IPN, IPE...), dimensions, unités (m², ml, m³, u), références produits, ainsi que les termes techniques de chantier couramment employés en français (placo, ragréage, sous-couche, cloison, étaiement...).
 - N'utilise JAMAIS le prénom ni le nom de l'utilisateur : le rapport n'est jamais personnalisé.
 - Nature de la preuve, à écrire exactement ainsi : « مذكورة صراحة في المستند » / « مؤكدة بصرياً » / « مقروءة جزئياً » / « محسوبة من المستند » / « افتراض » / « غير قابلة للتحقق ».

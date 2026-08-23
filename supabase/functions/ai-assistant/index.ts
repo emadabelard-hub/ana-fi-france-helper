@@ -1260,11 +1260,10 @@ RÈGLES DE LANGUE (impératives) :
         deepParts.push({
           type: 'text',
           text: `CONTRAT DE FAITS BTP VALIDÉ CÔTÉ SERVEUR — SOURCE UNIQUE ET AUTORITÉ FINALE.
-Chaque fait est déjà figé. Tu ne dois JAMAIS modifier : quantity, unit, lot, clientSupplied, factType, transferStatus, factId. Tu ne peux ni reclasser un fait, ni élever un statut, ni ajouter une quantité absente, ni supprimer une réserve, ni fusionner ou scinder deux faits.
-RÉPARTITION IMPOSÉE DANS LE RAPPORT (aucune autre règle) :
-- section 4 « Éléments prêts pour le brouillon de devis » = EXACTEMENT les faits transferStatus === "ready" (tous, une ligne par factId, quantité et unité recopiées telles quelles) ;
-- section 5 « Lignes à créer avec quantité à confirmer » = EXACTEMENT les faits transferStatus === "pending", avec leur motif ;
-- annotations techniques (transferStatus === "excluded") = jamais une prestation, jamais dans les sections 4 et 5.
+Chaque fait est déjà figé. Tu ne dois JAMAIS modifier, reclasser, compléter, fusionner ou scinder un fait.
+USAGE IMPOSÉ DANS LE RAPPORT : ces faits servent UNIQUEMENT à comprendre le projet et à rédiger la synthèse (travaux principaux par lot, points techniques, incohérences, informations à confirmer). Tu ne produis AUCUN tableau de lignes de devis, AUCUNE liste exhaustive de désignations avec quantité et unité, AUCUNE préparation de brouillon de devis : cette préparation est réalisée ailleurs par la fonction « Préparer le devis ».
+Les annotations techniques (transferStatus === "excluded") ne sont jamais présentées comme des prestations. Un fait de statut "pending" peut seulement alimenter les informations à confirmer.
+
 
 ${deepFactsPayload}`,
         });

@@ -66,11 +66,19 @@ Aucune table, aucune colonne : ces données vivent dans le bloc `<ANAFYPRO_BTP_F
 **Transfert.** Devient une ligne facturable uniquement : `role = main` ET `factType = billable_work` ET (`quantity > 0` avec `unit` non nulle → `ready`, ou quantité/unité manquante → `pending` « à confirmer »).
 `included_component` avec `coveredByFactId` → rattaché au périmètre de la ligne parente (mention dans la désignation ou note), jamais une deuxième ligne. `descriptive` → jamais de ligne. Aucune règle par métier.
 
-**Clé de ligne.** `lineKey = operation | scope normalisé | dimensions caractérisantes | unit | mode fourniture/pose`. Le `lot` n'entre jamais dans la clé (classement/affichage seulement). Deux faits de même `lineKey` sont candidates au rapprochement ; si toutes leurs valeurs compatibles (mêmes `unit`, `operation`, `scope`, mode fourniture/pose) coïncident réellement, leurs quantités sont additionnées et les deux sources sont conservées. Si des valeurs incompatibles existent (quantité/unité différentes, modes contradictoires, périmètres distincts), aucune fusion silencieuse n'est effectuée : les faits passent en `pending` avec le motif `lineKey_conflict`, et le transfert les affiche comme « à vérifier ». Après cette résolution, le brouillon ne contient aucune duplication non résolue.
+**Clé de ligne.** `lineKey = operation | scope normalisé | dimensions caractérisantes | unit | mode fourniture/pose`. Le `lot` n'entre jamais dans la clé (classement/affichage seulement).
+
+**Règle absolue : plusieurs sources ≠ plusieurs prestations.** Deux faits de même `lineKey` décrivent le même travail vu dans deux documents, jamais deux travaux. Aucune addition de quantités n'est faite lors d'un rapprochement de sources. Résolution déterministe :
+
+- **Cas A — même opération, même périmètre, même quantité, même unité, plusieurs documents :** une seule ligne ; la quantité est conservée **une seule fois** ; toutes les sources (`sourceFile`/`sourcePage`) sont conservées et affichées. Exemple : « Isolation combles 96 m² » dans A et B → `Isolation combles | 96 m²` (jamais 192 m²).
+- **Cas B — même opération, même périmètre, quantités divergentes :** aucune addition, aucun choix arbitraire, aucune moyenne. La ligne passe en `pending` avec le motif `quantity_conflict_between_sources` ; les deux valeurs et les deux sources sont conservées et présentées « à vérifier » à l'artisan, qui tranche.
+- **Cas C — opérations réellement différentes (périmètres distincts) :** `lineKey` différentes → deux lignes distinctes, chacune avec sa quantité. Exemple : isolation mur chambre 1 = 20 m², chambre 2 = 25 m².
+
+Aucun cumul automatique de quantités n'existe dans ce plan, quelle que soit la situation.
 
 **Quantité principale.** La quantité d'un `included_component` n'est jamais promue vers son parent ; le nombre de composants ne devient jamais la quantité du `main`. Les cotes descriptives restent dans `scope`. Aucune quantité ni unité inventée : sans quantité fiable, le fait reste `pending` plutôt que `1 u`.
 
-**Contrôles avant devis (dans le code, pas dans un prompt) :** zéro ligne issue d'un `included_component` ou d'un `descriptive` ; **zéro quantité/unité inventée** — une ligne `main` devient `ready` si `quantity > 0` et `unit` valide, sinon `pending` avec motif explicite (`quantity_missing`, `unit_unreadable`…) ; **zéro conflit de `lineKey` non résolu** ; zéro quantité d'un composant promue vers son parent ; `factId` + `sourceFile`/`sourcePage` présents sur chaque ligne transférée ; **tout `coveredByFactId` résolu vers un `factId` `main` réellement présent** ; **toute `lineKey` recalculée par le code** (aucune valeur IA). Toute violation bloque le transfert avec un message clair, sans écrire de devis partiel.
+**Contrôles avant devis (dans le code, pas dans un prompt) :** zéro ligne issue d'un `included_component` ou d'un `descriptive` ; **zéro quantité/unité inventée** — une ligne `main` devient `ready` si `quantity > 0` et `unit` valide, sinon `pending` avec motif explicite (`quantity_missing`, `unit_unreadable`…) ; **zéro quantité additionnée entre sources** ; **zéro `lineKey` dupliquée non résolue** ; zéro quantité d'un composant promue vers son parent ; `factId` + toutes les sources (`sourceFile`/`sourcePage`) présents sur chaque ligne transférée ; **tout `coveredByFactId` résolu vers un `factId` `main` réellement présent** ; **toute `lineKey` recalculée par le code** (aucune valeur IA). Toute violation bloque le transfert avec un message clair, sans écrire de devis partiel.
 
 ## 5. Fonctions à réutiliser / à ne pas toucher
 
@@ -80,9 +88,9 @@ Ne pas toucher : `src/lib/invoiceTotals.ts`, moteur TVA et mentions CGI, `invoic
 
 ## 6. Phases, dans l'ordre, avec le test de sortie
 
-**Phase A — Enrichir le contrat, comportement identique.**
-Champs optionnels ajoutés dans `btpFactsContract.ts`, `role` déduit par défaut de `factType`, aucune règle de filtrage nouvelle.
-*Test :* la suite de tests existante passe inchangée ; un contrat sans les nouveaux champs produit exactement les mêmes lignes qu'aujourd'hui.
+**Phase A — Enrichir le contrat, comportement strictement identique (seule phase à réaliser après approbation).**
+Ajout des champs optionnels dans `btpFactsContract.ts`, `role` déduit par défaut de `factType` (`billable_work` → `main`, sinon `descriptive`). Aucune règle de filtrage nouvelle, aucune ligne de devis modifiée, aucun PDF, aucun calcul, aucune TVA, aucun envoi/signature touché, aucun prompt modifié, aucune migration, aucun déploiement au-delà du partage du fichier de contrat.
+*Test :* la suite de tests existante passe inchangée ; un contrat sans les nouveaux champs produit exactement les mêmes lignes qu'aujourd'hui ; un devis réel documentaire donne un résultat identique à avant. Validation de la Phase A **avant** toute Phase B. Les phases B à E ne sont jamais exécutées en même temps.
 
 **Phase B — Produire rôles et relations (référence temporaire) + résolution par le code.**
 Le prompt d'extraction déclare `role`, `operation`, `scope`, fourniture/pose et une référence parent temporaire. `validateBtpFacts` résout ces références en `coveredByFactId` après génération des `factId` et calcule `lineKey`. Résultats seulement affichés/loggués, pas encore appliqués.
@@ -107,7 +115,9 @@ Suppression du repli « rapport → parsing → IA » dans ce seul parcours, une
 - **C** — ouvrage 4,20 ml, hauteur 2,50 m → quantité 4,20 ml ; hauteur dans `scope`.
 - **D** — fourniture client / pose entreprise → `clientSupplied = true`, `includesMaterials = false`, fourniture non facturée.
 - **E** — ouvrage « comprenant raccordements, essais, mise en service » → composants inclus, sauf prestation explicitement distincte.
-- **F** — même prestation dans deux documents → une seule ligne (clé identique), deux sources conservées.
+- **F** — même prestation présente dans deux documents avec la **même quantité** (ex. isolation combles 96 m² dans A et dans B) → **une seule ligne**, quantité conservée **une seule fois** (96 m², jamais 192), **deux sources conservées**.
+- **F bis** — même prestation, quantités divergentes (96 m² / 102 m²) → une seule ligne en `pending` « à vérifier », les deux valeurs et les deux sources conservées, **aucune addition automatique**, aucun choix arbitraire.
+- **F ter** — même opération sur deux périmètres différents (mur chambre 1 = 20 m², mur chambre 2 = 25 m²) → deux lignes distinctes.
 
 ## 8. Risques de régression
 

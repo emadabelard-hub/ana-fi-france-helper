@@ -412,24 +412,39 @@ export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
         ? "main"
         : "descriptive";
 
+    // Champs sémantiques d'OBSERVATION (Phase B) : lus tels quels, jamais
+    // recalculés, et sans aucune incidence sur factType/quantity/unit/statut.
+    const operation = str(f, ["operation"]);
+    const scope = str(f, ["scope", "perimetre", "périmètre"]);
+    const includesMaterials = bool(f.includesMaterials ?? f.fournitureComprise);
+    const includesLabor = bool(f.includesLabor ?? f.poseComprise);
+    // Référence temporaire locale fournie par l'IA. Jamais un factId définitif.
+    const parentRef = str(f, ["parentRef", "parent", "parent_ref"]);
+
+    // Alias de référence de CE fait, utilisés pour résoudre les parentRef.
+    const aliases = new Set<string>();
+    [str(f, ["factId", "id"]), str(f, ["ref", "localRef"]), String(i), String(i + 1)]
+      .forEach((a) => { if (a) aliases.add(a.trim().toLowerCase()); });
+    refAliases.push(aliases);
+
     facts.push({
       factId,
       lot,
       category,
       factType,
       role,
-      parentRef: null,
+      parentRef,
       coveredByFactId: null,
-      operation: null,
-      scope: null,
+      operation,
+      scope,
       descriptionExact,
       evidenceText,
       quantity,
       quantityType: resolvedQuantityType,
       unit: resolvedUnit,
       clientSupplied,
-      includesMaterials: null,
-      includesLabor: null,
+      includesMaterials,
+      includesLabor,
       transferStatus,
       technicalReservation,
       sourceFile,
@@ -437,8 +452,60 @@ export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
       location,
       material,
       reasons,
+      lineKey: buildLineKey({
+        operation,
+        scope,
+        descriptionExact,
+        dimensions,
+        unit: resolvedUnit,
+        includesMaterials,
+        includesLabor,
+        clientSupplied,
+      }),
     });
   });
+
+  // ── Résolution des parentRef → coveredByFactId (CODE UNIQUEMENT) ─────────
+  // Phase B : purement observationnelle. Une référence absente, invalide,
+  // circulaire ou pointant vers un fait non `main` laisse coveredByFactId à
+  // null et n'ajoute qu'un diagnostic ; aucun déclassement, aucun changement
+  // de transferStatus, de quantité ou de ligne.
+  const aliasToFactId = new Map<string, string>();
+  facts.forEach((fact, idx) => {
+    refAliases[idx]?.forEach((alias) => {
+      if (!aliasToFactId.has(alias)) aliasToFactId.set(alias, fact.factId);
+    });
+    if (!aliasToFactId.has(fact.factId.toLowerCase())) {
+      aliasToFactId.set(fact.factId.toLowerCase(), fact.factId);
+    }
+  });
+  const byFactId = new Map(facts.map((fact) => [fact.factId, fact]));
+  facts.forEach((fact) => {
+    if (!fact.parentRef) return;
+    const targetId = aliasToFactId.get(fact.parentRef.trim().toLowerCase()) ?? null;
+    const parent = targetId ? byFactId.get(targetId) : undefined;
+    if (!parent || parent.factId === fact.factId) {
+      fact.reasons.push("parent_ref_unresolved");
+      return;
+    }
+    if (parent.role !== "main") {
+      fact.reasons.push("parent_ref_not_main");
+      return;
+    }
+    // Anti-cycle : le parent (ou un ancêtre) ne doit pas redescendre sur ce fait.
+    let cursor: ValidatedBtpFact | undefined = parent;
+    const seen = new Set<string>([fact.factId]);
+    while (cursor) {
+      if (seen.has(cursor.factId)) {
+        fact.reasons.push("parent_ref_unresolved");
+        return;
+      }
+      seen.add(cursor.factId);
+      cursor = cursor.coveredByFactId ? byFactId.get(cursor.coveredByFactId) : undefined;
+    }
+    fact.coveredByFactId = parent.factId;
+  });
+
 
 
   const counts = {

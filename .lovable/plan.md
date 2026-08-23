@@ -115,7 +115,9 @@ Suppression du repli « rapport → parsing → IA » dans ce seul parcours, une
 - **C** — ouvrage 4,20 ml, hauteur 2,50 m → quantité 4,20 ml ; hauteur dans `scope`.
 - **D** — fourniture client / pose entreprise → `clientSupplied = true`, `includesMaterials = false`, fourniture non facturée.
 - **E** — ouvrage « comprenant raccordements, essais, mise en service » → composants inclus, sauf prestation explicitement distincte.
-- **F** — même prestation dans deux documents → une seule ligne (clé identique), deux sources conservées.
+- **F** — même prestation présente dans deux documents avec la **même quantité** (ex. isolation combles 96 m² dans A et dans B) → **une seule ligne**, quantité conservée **une seule fois** (96 m², jamais 192), **deux sources conservées**.
+- **F bis** — même prestation, quantités divergentes (96 m² / 102 m²) → une seule ligne en `pending` « à vérifier », les deux valeurs et les deux sources conservées, **aucune addition automatique**, aucun choix arbitraire.
+- **F ter** — même opération sur deux périmètres différents (mur chambre 1 = 20 m², mur chambre 2 = 25 m²) → deux lignes distinctes.
 
 ## 8. Risques de régression
 

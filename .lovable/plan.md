@@ -1,106 +1,121 @@
-# Analyser mon projet — pipeline strictement par document
+# Analyser mon projet — pipeline par document, un seul appel IA par document
 
-## 1. Chaîne exacte finale
+## 1. Chaîne finale
 
 ```text
-Document 1 ─┐   lecture → fiche compacte → faits du doc 1 → contrat validé doc 1
-Document 2 ─┼─  lecture → fiche compacte → faits du doc 2 → contrat validé doc 2
-Document 3 ─┘   lecture → fiche compacte → faits du doc 3 → contrat validé doc 3
+Document 1 (original) ─► 1 appel IA ─► fiche compacte + faits ─► validation ─► contrat doc 1
+Document 2 (original) ─► 1 appel IA ─► fiche compacte + faits ─► validation ─► contrat doc 2
+Document 3 (original) ─► 1 appel IA ─► fiche compacte + faits ─► validation ─► contrat doc 3
+
+Document volumineux : découpage en portions ─► 1 appel IA par portion ─►
+                      fiche + faits par portion ─► validation ─► regroupement du document
                                    ↓
-                  regroupement déterministe côté serveur (aucun appel IA)
+        consolidation déterministe serveur (remapping factId / coveredByFactId)
                                    ↓
-                     dossier consolidé + faits validés + sources
+              dossier consolidé : fiches + faits validés + sources
                                    ↓
-                    Claude — btp_deep_technical_analysis
+                  Claude — btp_deep_technical_analysis
                                    ↓
-                              rapport final
+                           rapport final
 ```
 
-Aucun appel IA n'agit sur plus d'un document (ou d'une portion de document) à la fois. Il n'existe plus aucune étape « toutes les fiches → un appel d'extraction factuelle ».
+## 2. Un seul appel IA par document — faisable, retenu
 
-## 2. Production des faits, document par document
+Vérification faite dans `ai-assistant/index.ts` : les deux prompts existants sont indépendants et compatibles.
 
-Pour chaque document, deux appels IA successifs, tous deux limités à ce seul document :
+- la lecture documentaire produit déjà un bloc `<ANAFYPRO_DOCUMENT_DATA>` en tête de réponse, **avant** toute partie narrative ;
+- `btp_factual_extraction` produit déjà un bloc `<ANAFYPRO_BTP_FACTS>` et sait travailler directement sur les pièces originales (images, PDF, docx) — il ne dépend pas de la fiche ;
+- rien dans le code n'impose l'enchaînement en deux appels : c'est uniquement l'historique du worker.
 
-1. **Lecture** : appel actuel de lecture documentaire avec `attachments: [doc]` → fiche technique compacte (`<ANAFYPRO_DOCUMENT_DATA>`).
-2. **Extraction factuelle** : appel `btp_factual_extraction` alimenté **uniquement** par la fiche de ce document → bloc de faits de ce document.
+Décision : **une nouvelle action** `btp_document_ingest` dans `ai-assistant`, appelée une fois par document (ou portion), qui reçoit la **pièce originale** et renvoie, dans cet ordre :
 
-Les faits conservent intégralement le format Phases A/B : `factId`, `role`, `operation`, `scope`, `parentRef` / `coveredByFactId`, `includesMaterials`, `includesLabor`, `lineKey`. Le prompt d'extraction n'est pas réécrit : il reçoit simplement un périmètre plus petit.
+1. `<ANAFYPRO_DOCUMENT_DATA>` … `</ANAFYPRO_DOCUMENT_DATA>` — fiche technique compacte de ce document ;
+2. `<ANAFYPRO_BTP_FACTS>` … `</ANAFYPRO_BTP_FACTS>` — faits structurés du même document, format Phases A/B inchangé (`factId`/`id`, `role`, `operation`, `scope`, `parentRef`, `includesMaterials`, `includesLabor`).
 
-Chaque fait reçoit en plus, côté serveur, sa provenance : identifiant interne du document + nom de fichier + éventuelle portion (voir §5). Cette provenance est ajoutée après validation, elle n'est jamais demandée à l'IA.
+Son prompt est la réunion des deux prompts existants, sans la partie narrative de la lecture documentaire (inutile ici : le narratif final est produit par le rapport). Les interdictions factuelles de `btp_factual_extraction` s'appliquent au bloc de faits.
 
-## 3. Validation de chaque contrat
+Bénéfices : une seule lecture de la source, aucune réinterprétation d'un résumé, coût et latence réduits de moitié, une seule source de vérité par document.
 
-Pour chaque document, immédiatement après son extraction :
+Les actions existantes `btp_factual_extraction` et la lecture documentaire classique restent en place pour les autres parcours (texte libre sans pièce jointe, conversation), mais ne sont plus appelées dans ce pipeline.
 
-- `parseFactsBlock` puis `validateBtpFacts` sur les faits de ce document seul ;
-- `parentRef` / `coveredByFactId` sont donc résolus **dans le périmètre du document**, ce qui est le comportement naturel : un composant inclus appartient toujours à l'ouvrage décrit par le même document ;
-- contrat vide ou illisible → ce document est marqué `factsError` **sans repli silencieux**, les autres documents continuent ;
-- le contrat validé et l'état (ok / erreur) sont enregistrés dans le travail avant de passer au document suivant.
+## 3. Validation par document
 
-Le fichier `_shared/btpFactsContract.ts` n'est pas modifié : les 97 tests Phases A/B restent valables tels quels.
+Pour chaque document / portion, immédiatement après son appel :
 
-## 4. Regroupement des contrats (code serveur, aucune IA)
+- extraction des deux blocs de la réponse ; bloc manquant ou JSON incomplet → ce document est marqué en erreur explicite, **sans repli silencieux**, et les autres continuent ;
+- `parseFactsBlock` + `validateBtpFacts` sur les faits de ce seul document → `factId`, `lineKey`, `role`, résolution `parentRef → coveredByFactId` dans le périmètre du document (comportement naturel : un composant inclus appartient toujours à l'ouvrage du même document) ;
+- contrat vide → erreur enregistrée pour ce document ;
+- fiche + contrat + état enregistrés avant de passer au document suivant.
 
-Le serveur produit un contrat consolidé :
+`_shared/btpFactsContract.ts` n'est pas modifié.
 
-- concaténation des faits validés de tous les documents, **chacun conservant sa provenance** ;
-- `counts` recalculé par simple somme (`ready` / `pending` / `excluded` / `total`) ;
-- collision éventuelle de `factId` entre deux documents : le `factId` est préfixé par l'identifiant du document, ce qui garantit l'unicité tout en préservant les liens `parentRef` internes (préfixés de la même façon, donc cohérents) ;
-- deux documents décrivant le même ouvrage restent **deux faits distincts avec deux sources** : aucune fusion, aucune addition de quantités, aucun arbitrage. Le `lineKey` identique entre eux est simplement exposé comme indice de recoupement pour que l'analyse globale comprenne qu'il s'agit d'un même ouvrage vu par plusieurs documents ;
-- les fiches compactes sont regroupées de la même façon, chaque bloc restant identifié par son document.
+## 4. Consolidation des contrats et remapping des identifiants
 
-Cette étape est de la pure agrégation : rien n'est inventé, rien n'est supprimé.
+Étape purement déterministe, aucun appel IA, en trois temps :
+
+1. **Table de correspondance** par document : `ancien factId → <docId>_<ancien factId>`.
+2. **Réécriture** : chaque fait reçoit son nouveau `factId`, et **`coveredByFactId` est remappé avec la même table**. `parentRef` (référence temporaire d'avant validation) n'est plus utilisé comme relation après validation — la seule relation finale est `coveredByFactId`.
+3. **Contrôle d'intégrité** : chaque `coveredByFactId` doit pointer vers un `factId` réellement présent dans le consolidé ; sinon la relation est neutralisée (`coveredByFactId: null`) et le fait est signalé, jamais rattaché arbitrairement.
+
+Le consolidé conserve par ailleurs :
+
+- la provenance de chaque fait (identifiant document, nom de fichier, portion le cas échéant) ;
+- tous les faits de tous les documents, sans fusion et sans addition de quantités ;
+- plusieurs documents décrivant le même ouvrage → plusieurs faits, plusieurs sources ; l'égalité de `lineKey` est exposée comme simple indice de recoupement pour l'analyse ;
+- `counts` recalculé par somme.
+
+Le même mécanisme (correspondance + remapping + contrôle) sert au regroupement des portions à l'intérieur d'un document, avec `<docId>_p<portion>_` comme préfixe.
+
+**Test ajouté** (`src/test/`) : un `main` de `factId` `A` et un `included_component` de `coveredByFactId` `A`, après consolidation du document 1, donnent `doc1_A` et `coveredByFactId: doc1_A`, relation toujours valide ; plus un cas de collision `A` entre deux documents restant distincte, et un cas de `coveredByFactId` orphelin neutralisé.
 
 ## 5. Document individuel trop volumineux
 
-Un document n'est jamais déclaré en échec au premier appel qui atteint la limite de tokens. Traitement en portions :
+Aucun document n'est déclaré en échec au premier appel tronqué :
 
-- la troncature est déjà détectable (`stop_reason` de type longueur / marqueur de troncature dans le flux) ;
-- si la lecture d'un document est tronquée, le document est subdivisé en portions maîtrisées (découpage par pages pour un PDF, sinon par sections de taille bornée de sa couche texte) ;
-- chaque portion suit le même traitement : fiche compacte de la portion → faits de la portion → validation ;
-- les portions d'un même document sont d'abord regroupées **au niveau du document** (même logique qu'au §4, provenance = document + portion), produisant un contrat de document unique ;
-- ce contrat de document rejoint ensuite le regroupement global ;
-- une portion reste inexploitable après subdivision → seule cette portion est signalée manquante, le document et le dossier continuent, et le rapport mentionne explicitement la portion non exploitée.
+- la troncature est détectée via le signal de longueur / le marqueur de troncature déjà présents dans le flux, ou un bloc non fermé ;
+- le document est alors subdivisé en portions maîtrisées : par pages pour un PDF, sinon par sections bornées de sa couche texte ;
+- un appel `btp_document_ingest` par portion → fiche + faits de la portion → validation ;
+- regroupement au niveau du document (§4), produisant un contrat unique de document ;
+- si une portion reste inexploitable, seule cette portion est signalée manquante ; le document et le dossier continuent et le rapport mentionne explicitement la portion non exploitée.
 
 ## 6. Idempotence et reprise du worker
 
-L'état est enregistré au grain le plus fin :
+État enregistré au grain le plus fin, dans `step_results.docs[<docId>]` : `sheet`, `parts[]` (si subdivisé), `factsContract`, `factsError`, `done`.
 
-- `step_results.docs[<docId>]` porte, pour chaque document : `sheet`, `parts` (si subdivisé), `factsContract`, `factsError`, `done` ;
-- avant chaque appel IA, le worker vérifie si ce résultat existe déjà : présent → jamais rejoué ;
-- le budget de temps est contrôlé après chaque sous-étape (lecture d'un document, extraction d'un document, portion) ; s'il est dépassé, l'état est enregistré et le self-chaining existant reprend exactement là où il s'est arrêté ;
-- le regroupement et le rapport final restent idempotents comme aujourd'hui (`final_report` déjà présent → pas de nouvel appel).
+- avant chaque appel IA, le worker vérifie si le résultat existe déjà → jamais rejoué ;
+- contrôle du budget de temps après chaque document et chaque portion ; dépassement → état enregistré et self-chaining existant reprend exactement au point d'arrêt ;
+- consolidation et rapport final restent idempotents (`final_report` présent → aucun nouvel appel).
 
-Conséquence utile : chaque appel IA étant petit, une reprise ne coûte plus jamais la totalité du dossier.
+Un appel étant désormais petit, une reprise ne recoûte jamais la totalité du dossier.
 
-## 7. Fichiers réellement nécessaires
+## 7. Fichiers nécessaires
 
-| Fichier | Nature de la modification |
+| Fichier | Modification |
 |---|---|
-| `supabase/functions/btp-analysis-worker/index.ts` | boucle par document (lecture → extraction → validation), subdivision d'un document volumineux, stockage fin par document, regroupement déterministe |
-| `supabase/functions/ai-assistant/index.ts` | ajustement du seul prompt `btp_deep_technical_analysis` : données issues de plusieurs documents/portions, sources multiples possibles pour un même ouvrage, interdiction d'additionner des quantités de sources différentes, mention des portions non exploitées |
+| `supabase/functions/ai-assistant/index.ts` | nouvelle action `btp_document_ingest` (fiche + faits en un appel) ; ajustement du prompt `btp_deep_technical_analysis` (plusieurs documents/portions, sources multiples d'un même ouvrage, interdiction d'additionner des quantités de sources différentes, mention des portions non exploitées) |
+| `supabase/functions/btp-analysis-worker/index.ts` | boucle par document, subdivision d'un document volumineux, stockage fin, consolidation + remapping + contrôle d'intégrité |
+| `src/test/btpConsolidation.test.ts` (nouveau) | tests de remapping `factId` / `coveredByFactId` (§4) |
 
-Aucun autre fichier n'est nécessaire. `_shared/btpFactsContract.ts` reste inchangé.
+`_shared/btpFactsContract.ts` reste inchangé.
 
-## 8. Ce qui devient inutile dans l'ancien pipeline
+## 8. Ce qui devient inutile dans ce pipeline
 
-- l'appel de lecture unique portant l'ensemble des `attachments` ;
+- l'appel de lecture unique portant tous les `attachments` ;
 - l'appel global `btp_factual_extraction` sur le dossier entier ;
-- l'état global `results.docData` / `results.facts` / `results.factsContract` comme uniques porteurs de résultat (remplacés par l'état par document + le consolidé) ;
-- le repli « réponse non structurée conservée comme rapport final » reste utile uniquement pour le cas sans pièce jointe (texte libre), inchangé.
+- le second appel IA par document (extraction depuis la fiche) ;
+- les états globaux `results.docData` / `results.facts` / `results.factsContract` comme uniques porteurs (remplacés par l'état par document + le consolidé) ;
+- le repli « réponse non structurée conservée comme rapport final » ne subsiste que pour le cas texte libre sans pièce jointe, inchangé.
 
-## 9. Confirmation — plus aucun gros appel global
+## 9. Confirmation — aucun appel global d'extraction
 
-Confirmé : après cette correction, `btp_factual_extraction` n'est appelé qu'avec la fiche d'**un** document, ou d'**une** portion de document. Il n'existe aucun chemin de code qui lui transmette le dossier consolidé. Le seul appel qui voit l'ensemble du dossier est `btp_deep_technical_analysis`, qui reçoit des fiches compactes et des faits déjà validés — c'est le but du rapport.
+Confirmé : aucun chemin de code ne transmet plus le dossier consolidé à une extraction factuelle. Chaque appel d'ingestion ne voit qu'un document ou une portion. Le seul appel qui voit l'ensemble est `btp_deep_technical_analysis`, qui reçoit des fiches compactes et des faits déjà validés — c'est l'objet du rapport.
 
-## 10. Confirmation — aucun frontend, aucun devis touché
+## 10. Confirmation — rien d'autre n'est touché
 
-- `src/pages/AIAssistantPage.tsx` : **non modifié** (pas de libellé « document X/Y » pour l'instant, donc aucun Publish frontend pendant les tests).
-- Devis intelligent, `btp-quote-from-documents`, factures, TVA, prix, PDF, RLS, tables : **non touchés**. Ce pipeline a pour seul objectif le rapport d'analyse.
+Non modifiés : tout le frontend (`AIAssistantPage.tsx` compris, donc aucun Publish nécessaire), Devis intelligent, `btp-quote-from-documents`, factures, TVA, PDF, RLS, tables et migrations.
 
 ## Vérification prévue
 
-1. `bunx vitest run` — les 97 tests existants doivent rester verts (contrat inchangé).
-2. Déploiement de `btp-analysis-worker` et `ai-assistant`.
-3. Test réel 3 documents MARTIN : 3 fiches distinctes, 3 contrats validés non vides, logs `[btpFacts][phaseB]` présents pour chaque document, rapport final complet et non tronqué.
+1. `bunx vitest run` — 97 tests existants verts + nouveaux tests de consolidation.
+2. Déploiement de `ai-assistant` et `btp-analysis-worker`.
+3. Test réel 3 documents MARTIN : 3 appels d'ingestion, 3 contrats validés non vides, logs `[btpFacts][phaseB]` par document, relations `coveredByFactId` valides après consolidation, rapport final complet et non tronqué.

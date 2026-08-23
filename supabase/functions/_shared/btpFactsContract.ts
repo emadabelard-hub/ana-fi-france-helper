@@ -17,6 +17,8 @@ export type BtpFactType =
   | "information"
   | "to_confirm";
 
+export type BtpFactRole = "main" | "included_component" | "descriptive";
+
 export type BtpQuantityType =
   | "count"
   | "length"
@@ -44,6 +46,20 @@ export type ValidatedBtpFact = {
   lot: string;
   category: string;
   factType: BtpFactType;
+  /** Rôle sémantique de la ligne : opération principale, composant inclus ou donnée descriptive.
+   *  Déduit de `factType` par défaut : `billable_work` → `main`, sinon `descriptive`. */
+  role: BtpFactRole;
+
+  /** Référence temporaire fournie par l'IA pour désigner un parent (ex. p1, id brut).
+   *  Jamais un factId définitif, jamais une lineKey. */
+  parentRef: string | null;
+  /** Identifiant définitif du fait parent, résolu par le code après génération des factId. */
+  coveredByFactId: string | null;
+
+  /** Verbe métier normalisé (pose, dépose, création, peinture…). */
+  operation: string | null;
+  /** Périmètre/localisation + dimensions caractérisantes non facturables. */
+  scope: string | null;
 
   descriptionExact: string;
   evidenceText: string;
@@ -53,6 +69,10 @@ export type ValidatedBtpFact = {
   unit: BtpUnit;
 
   clientSupplied: boolean | null;
+  /** Fourniture comprise (matériaux). */
+  includesMaterials: boolean | null;
+  /** Pose/ouvrage comprise (main d'œuvre). */
+  includesLabor: boolean | null;
 
   transferStatus: BtpTransferStatus;
   technicalReservation: string | null;
@@ -64,6 +84,9 @@ export type ValidatedBtpFact = {
 
   /** Motifs déterministes de la décision (diagnostic, jamais affiché comme prix). */
   reasons: string[];
+
+  /** Clé métier de la ligne de devis, calculée par le code uniquement. */
+  lineKey?: string;
 };
 
 export type BtpFactsContract = {
@@ -370,28 +393,43 @@ export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
       transferStatus = "excluded";
     }
 
+    const factId = buildFactId({
+      rawId: str(f, ["factId", "id"]),
+      sourceFile,
+      sourcePage,
+      lot,
+      category,
+      descriptionExact,
+      quantity,
+      unit: resolvedUnit,
+      index: i,
+      used: usedIds,
+    });
+
+    const role: BtpFactRole = (f.role === "main" || f.role === "included_component" || f.role === "descriptive")
+      ? f.role
+      : factType === "billable_work"
+        ? "main"
+        : "descriptive";
+
     facts.push({
-      factId: buildFactId({
-        rawId: str(f, ["factId", "id"]),
-        sourceFile,
-        sourcePage,
-        lot,
-        category,
-        descriptionExact,
-        quantity,
-        unit: resolvedUnit,
-        index: i,
-        used: usedIds,
-      }),
+      factId,
       lot,
       category,
       factType,
+      role,
+      parentRef: null,
+      coveredByFactId: null,
+      operation: null,
+      scope: null,
       descriptionExact,
       evidenceText,
       quantity,
       quantityType: resolvedQuantityType,
       unit: resolvedUnit,
       clientSupplied,
+      includesMaterials: null,
+      includesLabor: null,
       transferStatus,
       technicalReservation,
       sourceFile,

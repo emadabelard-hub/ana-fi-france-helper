@@ -66,7 +66,15 @@ Aucune table, aucune colonne : ces données vivent dans le bloc `<ANAFYPRO_BTP_F
 **Transfert.** Devient une ligne facturable uniquement : `role = main` ET `factType = billable_work` ET (`quantity > 0` avec `unit` non nulle → `ready`, ou quantité/unité manquante → `pending` « à confirmer »).
 `included_component` avec `coveredByFactId` → rattaché au périmètre de la ligne parente (mention dans la désignation ou note), jamais une deuxième ligne. `descriptive` → jamais de ligne. Aucune règle par métier.
 
-**Clé de ligne.** `lineKey = operation | scope normalisé | dimensions caractérisantes | unit | mode fourniture/pose`. Le `lot` n'entre jamais dans la clé (classement/affichage seulement). Deux faits de même `lineKey` sont candidates au rapprochement ; si toutes leurs valeurs compatibles (mêmes `unit`, `operation`, `scope`, mode fourniture/pose) coïncident réellement, leurs quantités sont additionnées et les deux sources sont conservées. Si des valeurs incompatibles existent (quantité/unité différentes, modes contradictoires, périmètres distincts), aucune fusion silencieuse n'est effectuée : les faits passent en `pending` avec le motif `lineKey_conflict`, et le transfert les affiche comme « à vérifier ». Après cette résolution, le brouillon ne contient aucune duplication non résolue.
+**Clé de ligne.** `lineKey = operation | scope normalisé | dimensions caractérisantes | unit | mode fourniture/pose`. Le `lot` n'entre jamais dans la clé (classement/affichage seulement).
+
+**Règle absolue : plusieurs sources ≠ plusieurs prestations.** Deux faits de même `lineKey` décrivent le même travail vu dans deux documents, jamais deux travaux. Aucune addition de quantités n'est faite lors d'un rapprochement de sources. Résolution déterministe :
+
+- **Cas A — même opération, même périmètre, même quantité, même unité, plusieurs documents :** une seule ligne ; la quantité est conservée **une seule fois** ; toutes les sources (`sourceFile`/`sourcePage`) sont conservées et affichées. Exemple : « Isolation combles 96 m² » dans A et B → `Isolation combles | 96 m²` (jamais 192 m²).
+- **Cas B — même opération, même périmètre, quantités divergentes :** aucune addition, aucun choix arbitraire, aucune moyenne. La ligne passe en `pending` avec le motif `quantity_conflict_between_sources` ; les deux valeurs et les deux sources sont conservées et présentées « à vérifier » à l'artisan, qui tranche.
+- **Cas C — opérations réellement différentes (périmètres distincts) :** `lineKey` différentes → deux lignes distinctes, chacune avec sa quantité. Exemple : isolation mur chambre 1 = 20 m², chambre 2 = 25 m².
+
+Aucun cumul automatique de quantités n'existe dans ce plan, quelle que soit la situation.
 
 **Quantité principale.** La quantité d'un `included_component` n'est jamais promue vers son parent ; le nombre de composants ne devient jamais la quantité du `main`. Les cotes descriptives restent dans `scope`. Aucune quantité ni unité inventée : sans quantité fiable, le fait reste `pending` plutôt que `1 u`.
 

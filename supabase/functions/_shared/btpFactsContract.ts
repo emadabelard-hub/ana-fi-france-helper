@@ -570,6 +570,25 @@ export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
     total: facts.length,
   };
 
+  // Observabilité Phase B : diagnostic serveur uniquement (jamais affiché au
+  // client, jamais dans le PDF).
+  try {
+    console.log("[btpFacts][phaseB] structure observée", JSON.stringify(facts.map((f) => ({
+      factId: f.factId,
+      role: f.role,
+      operation: f.operation,
+      scope: f.scope,
+      parentRef: f.parentRef,
+      coveredByFactId: f.coveredByFactId,
+      includesMaterials: f.includesMaterials,
+      includesLabor: f.includesLabor,
+      lineKey: f.lineKey,
+      sourceFile: f.sourceFile,
+      sourcePage: f.sourcePage,
+      transferStatus: f.transferStatus,
+    }))));
+  } catch { /* diagnostic non bloquant */ }
+
   return { version: 1, facts, counts };
 };
 

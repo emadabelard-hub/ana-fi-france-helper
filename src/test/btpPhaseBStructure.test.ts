@@ -94,7 +94,11 @@ describe("Phase B — structure sémantique observationnelle", () => {
     ]);
     expect(facts[1].coveredByFactId).toBeNull();
     expect(facts[1].reasons).toContain("parent_ref_not_main");
-    expect(facts[1].transferStatus).toBe("ready");
+    // Aucun déclassement dû à Phase B : le statut reste celui du moteur existant.
+    const baseline = validateBtpFacts([
+      base({ id: "c", descriptionExact: "Accessoire compris", quantity: 1, unit: "u" }),
+    ]);
+    expect(facts[1].transferStatus).toBe(baseline.facts[0].transferStatus);
   });
 
   it("lineKey est calculée par le code et ignore toute valeur fournie par l'IA", () => {

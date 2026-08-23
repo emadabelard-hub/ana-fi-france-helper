@@ -63,7 +63,9 @@ Aucune table, aucune colonne : ces données vivent dans le bloc `<ANAFYPRO_BTP_F
 
 ## 4. Règles déterministes
 
-**Transfert.** Devient une ligne facturable uniquement : `role = main` ET `factType = billable_work` ET (`quantity > 0` avec `unit` non nulle → `ready`, ou quantité/unité manquante → `pending` « à confirmer »).
+**Transfert.** Devient une ligne facturable uniquement : `role = main` ET `factType = billable_work`.
+- **Statut `ready`** (quantité > 0, unité valide, conflits résolus) → ligne normale du brouillon de devis, l'artisan peut ajuster le prix et la finaliser.
+- **Statut `pending`** (quantité/unité absente, unité non fiable, conflit de sources entre quantités, information facturable nécessitant confirmation) → ligne présente dans le brouillon mais **clairement marquée « À confirmer » / « À vérifier »**, **aucune quantité, unité ou prix inventé** ; l'artisan la complète avant la finalisation du devis.
 `included_component` avec `coveredByFactId` → rattaché au périmètre de la ligne parente (mention dans la désignation ou note), jamais une deuxième ligne. `descriptive` → jamais de ligne. Aucune règle par métier.
 
 **Clé de ligne.** `lineKey = operation | scope normalisé | dimensions caractérisantes | unit | mode fourniture/pose`. Le `lot` n'entre jamais dans la clé (classement/affichage seulement).

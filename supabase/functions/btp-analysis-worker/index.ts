@@ -21,6 +21,11 @@ import {
   serializeFactsContract,
   validateBtpFacts,
 } from "../_shared/btpFactsContract.ts";
+import {
+  consolidateBtpContracts,
+  serializeConsolidatedContract,
+  type ContractEntry,
+} from "../_shared/btpFactsConsolidation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,6 +49,14 @@ const STALE_MS = 120_000;
 
 const DOC_DATA_OPEN = "<ANAFYPRO_DOCUMENT_DATA>";
 const DOC_DATA_CLOSE = "</ANAFYPRO_DOCUMENT_DATA>";
+const FACTS_OPEN = "<ANAFYPRO_BTP_FACTS>";
+const FACTS_CLOSE = "</ANAFYPRO_BTP_FACTS>";
+const TRUNCATED_MARK = "<ANAFYPRO_TRUNCATED/>";
+
+// Taille maximale d'une portion de couche texte lorsqu'un document doit être
+// subdivisé, et nombre de pages par portion pour un PDF rendu en images.
+const PORTION_TEXT_CHARS = 12000;
+const PORTION_PAGES = 2;
 
 type Step = "analyze" | "facts" | "report" | "done";
 
@@ -54,6 +67,8 @@ const PROGRESS: Record<string, number> = {
   report: 80,
   done: 100,
 };
+
+
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
@@ -86,6 +101,58 @@ const extractDocData = (content: string): any | null => {
     return null;
   }
 };
+
+// ── Ingestion d'un document : détection de troncature et découpage ──────────
+
+/** Vrai si la réponse a manifestement été coupée (limite de jetons atteinte). */
+const looksTruncated = (text: string, complete: boolean): boolean => {
+  if (!complete) return true;
+  if (text.includes(TRUNCATED_MARK)) return true;
+  const hasSheet = text.includes(DOC_DATA_OPEN) && text.includes(DOC_DATA_CLOSE);
+  const hasFacts = text.includes(FACTS_OPEN) && text.includes(FACTS_CLOSE);
+  return !hasSheet || !hasFacts;
+};
+
+/**
+ * Subdivise une pièce en portions maîtrisées : pages pour un PDF rendu en
+ * images, sinon sections bornées de sa couche texte. Une image seule n'est pas
+ * subdivisible : la liste renvoyée est alors vide.
+ */
+const splitAttachment = (att: any): any[] => {
+  const pages: string[] = Array.isArray(att?.pageImages) ? att.pageImages : [];
+  if (pages.length > 1) {
+    const out: any[] = [];
+    for (let i = 0; i < pages.length; i += PORTION_PAGES) {
+      const slice = pages.slice(i, i + PORTION_PAGES);
+      out.push({
+        ...att,
+        text: null,
+        pageImages: slice,
+        name: `${att?.name ?? "document"} (pages ${i + 1}-${i + slice.length})`,
+      });
+    }
+    return out;
+  }
+
+  const text = typeof att?.text === "string" ? att.text : "";
+  if (text.trim().length > PORTION_TEXT_CHARS) {
+    const out: any[] = [];
+    for (let i = 0; i < text.length; i += PORTION_TEXT_CHARS) {
+      const part = text.slice(i, i + PORTION_TEXT_CHARS);
+      out.push({
+        ...att,
+        pageImages: null,
+        text: part,
+        name: `${att?.name ?? "document"} (portion ${out.length + 1})`,
+      });
+    }
+    return out;
+  }
+
+  return [];
+};
+
+
 
 // Consomme un flux SSE de ai-assistant et renvoie le texte complet.
 // `complete` vaut false si le marqueur [DONE] n'a jamais été reçu : le résultat
@@ -230,105 +297,281 @@ const process = async (jobId: string, token: string) => {
   try {
     await patchJob(jobId, { status: "processing" });
 
-    // ── Étape 1 : analyse documentaire (idempotente) ──────────────────────
-    if (!results.docData) {
-      await saveStep("analyze", {});
-      const displayText =
-        userText ||
-        (attachments.length > 0
-          ? `📎 ${attachments.map((a: any) => a.name).join(", ")}`
-          : "");
-      const r = await callAi(token, {
-        messages: [{ role: "user", content: displayText }],
-        attachment: attachments[0] ?? null,
-        attachments,
-        userQuestion: userText,
-        language,
-        userName,
-        userProfile,
-        category: null,
-      });
-      if (!r.complete || !r.text.trim()) {
-        await fail(
-          r.httpError
-            ? `Analyse documentaire: HTTP ${r.httpError}`
-            : "Analyse documentaire interrompue (flux incomplet)",
-        );
-        return;
-      }
-      const docData = extractDocData(r.text);
-      if (!docData) {
-        // Réponse non structurée : elle est conservée comme rapport final.
-        await patchJob(jobId, {
-          status: "completed",
-          current_step: "done",
-          progress: 100,
-          final_report: r.text.trim(),
-          step_results: { ...results, analysis: r.text },
-          error_message: null,
+    // ══ Pièces jointes : pipeline STRICTEMENT par document ═════════════════
+    // Un seul appel IA par document (ou par portion) : fiche compacte + faits
+    // structurés dans la même réponse. Aucun appel global d'extraction.
+    if (originalsAvailable) {
+      if (!results.docs || typeof results.docs !== "object") results.docs = {};
+
+      /** Un appel d'ingestion sur une pièce (document entier ou portion). */
+      const ingestPiece = async (piece: any) => {
+        const r = await callAi(token, {
+          action: "btp_document_ingest",
+          attachment: piece,
+          attachments: [piece],
+          originalsAvailable: true,
+          userQuestion: userText,
+          messages: [],
+          language: "fr",
         });
-        return;
+        if (!r.complete || !r.text.trim()) {
+          return {
+            sheet: null,
+            contract: null,
+            truncated: !r.complete,
+            error: r.httpError
+              ? `Lecture du document: HTTP ${r.httpError}`
+              : "Lecture du document interrompue (flux incomplet)",
+          };
+        }
+        const truncated = looksTruncated(r.text, r.complete);
+        const sheet = extractDocData(r.text);
+        let contract: any = null;
+        let error: string | null = null;
+        try {
+          const parsed = parseFactsBlock(r.text);
+          if (!Array.isArray(parsed) || parsed.length === 0) {
+            throw new Error("bloc de faits illisible ou vide");
+          }
+          const validated = validateBtpFacts(parsed);
+          if (validated.counts.total === 0) throw new Error("aucun fait validé");
+          contract = validated;
+        } catch (e) {
+          error = String((e as Error)?.message || e);
+        }
+        return { sheet, contract, truncated, error };
+      };
+
+      for (let i = 0; i < attachments.length; i++) {
+        const docId = `doc${i + 1}`;
+        const existing = results.docs[docId];
+        if (existing?.done) continue;
+
+        const att = attachments[i];
+        const record: any = existing ?? {
+          name: att?.name ?? docId,
+          sheets: [],
+          entries: [],
+          errors: [],
+          partsDone: 0,
+          subdivided: false,
+          done: false,
+        };
+        results.docs[docId] = record;
+        await saveStep("analyze", {});
+
+        if (!record.subdivided) {
+          const first = await ingestPiece(att);
+          const usable = !first.truncated && (first.sheet || first.contract);
+          if (usable) {
+            if (first.sheet) record.sheets = [first.sheet];
+            if (first.contract) {
+              record.entries = [{ docId, contract: first.contract, sourceFile: record.name }];
+            }
+            if (first.error) record.errors = [first.error];
+            record.done = true;
+            results.docs[docId] = record;
+            await saveStep("analyze", {});
+            if (budgetExceeded()) {
+              chain(jobId, token);
+              return;
+            }
+            continue;
+          }
+          // Réponse tronquée ou inexploitable → subdivision du document.
+          const portions = splitAttachment(att);
+          if (portions.length <= 1) {
+            record.sheets = first.sheet ? [first.sheet] : [];
+            record.entries = first.contract
+              ? [{ docId, contract: first.contract, sourceFile: record.name }]
+              : [];
+            record.errors = [
+              first.error ||
+                (first.truncated
+                  ? "Réponse tronquée et document non subdivisible"
+                  : "Document non exploité"),
+            ];
+            record.done = true;
+            results.docs[docId] = record;
+            await saveStep("analyze", {});
+            if (budgetExceeded()) {
+              chain(jobId, token);
+              return;
+            }
+            continue;
+          }
+          record.subdivided = true;
+          record.partsCount = portions.length;
+          record.sheets = [];
+          record.entries = [];
+          record.errors = [];
+          record.partsDone = 0;
+          results.docs[docId] = record;
+          await saveStep("analyze", {});
+        }
+
+        // Document subdivisé : une ingestion par portion, reprise au grain fin.
+        const portions = splitAttachment(att);
+        for (let p = record.partsDone || 0; p < portions.length; p++) {
+          const part = `p${p + 1}`;
+          const pr = await ingestPiece(portions[p]);
+          if (pr.sheet) record.sheets.push(pr.sheet);
+          if (pr.contract) {
+            record.entries.push({
+              docId: `${docId}_${part}`,
+              part,
+              contract: pr.contract,
+              sourceFile: portions[p]?.name ?? record.name,
+            });
+          }
+          if (pr.error || (!pr.sheet && !pr.contract)) {
+            record.errors.push(
+              `${record.name} — ${part} : ${pr.error || "portion non exploitée"}`,
+            );
+          }
+          record.partsDone = p + 1;
+          results.docs[docId] = record;
+          await saveStep("analyze", {});
+          if (budgetExceeded()) {
+            chain(jobId, token);
+            return;
+          }
+        }
+        record.done = true;
+        results.docs[docId] = record;
+        await saveStep("facts", {});
+        if (budgetExceeded()) {
+          chain(jobId, token);
+          return;
+        }
       }
-      results.analysis = r.text;
-      results.docData = docData;
-      await saveStep("facts", {});
-      if (budgetExceeded()) {
-        chain(jobId, token);
-        return;
+
+      // ── Consolidation déterministe côté serveur (aucun appel IA) ─────────
+      if (!results.factsContractText || !results.docData) {
+        await saveStep("facts", {});
+        const entries: ContractEntry[] = [];
+        const sheets: any[] = [];
+        const notes: string[] = [];
+        for (let i = 0; i < attachments.length; i++) {
+          const rec = results.docs[`doc${i + 1}`];
+          if (!rec) continue;
+          for (const e of rec.entries ?? []) entries.push(e as ContractEntry);
+          for (const s of rec.sheets ?? []) sheets.push(s);
+          for (const err of rec.errors ?? []) notes.push(err);
+        }
+
+        results.docData = {
+          documentMode: true,
+          documents: sheets,
+          unexploited: notes,
+        };
+
+        if (entries.length > 0) {
+          const consolidated = consolidateBtpContracts(entries);
+          results.factsContract = consolidated;
+          results.factsContractText = serializeConsolidatedContract(consolidated);
+          results.factsError = notes.length > 0 ? notes.join(" | ") : null;
+        } else {
+          results.factsContract = null;
+          results.factsContractText = null;
+          results.factsError =
+            notes.length > 0 ? notes.join(" | ") : "Aucun fait validé dans le dossier";
+        }
+        await saveStep("report", {});
+        if (budgetExceeded()) {
+          chain(jobId, token);
+          return;
+        }
+      }
+    } else {
+      // ══ Texte libre sans pièce jointe : parcours inchangé ════════════════
+      if (!results.docData && !results.freeTextDone) {
+        await saveStep("analyze", {});
+        const r = await callAi(token, {
+          messages: [{ role: "user", content: userText || "" }],
+          attachment: null,
+          attachments: [],
+          userQuestion: userText,
+          language,
+          userName,
+          userProfile,
+          category: null,
+        });
+        if (!r.complete || !r.text.trim()) {
+          await fail(
+            r.httpError
+              ? `Analyse documentaire: HTTP ${r.httpError}`
+              : "Analyse documentaire interrompue (flux incomplet)",
+          );
+          return;
+        }
+        const docData = extractDocData(r.text);
+        if (!docData) {
+          // Réponse non structurée : elle est conservée comme rapport final.
+          await patchJob(jobId, {
+            status: "completed",
+            current_step: "done",
+            progress: 100,
+            final_report: r.text.trim(),
+            step_results: { ...results, analysis: r.text },
+            error_message: null,
+          });
+          return;
+        }
+        results.analysis = r.text;
+        results.docData = docData;
+        results.freeTextDone = true;
+        await saveStep("facts", {});
+        if (budgetExceeded()) {
+          chain(jobId, token);
+          return;
+        }
+      }
+
+      if (!results.facts && !results.factsFailed) {
+        await saveStep("facts", {});
+        const r = await callAi(token, {
+          action: "btp_factual_extraction",
+          btpDocData: results.docData,
+          attachments: [],
+          originalsAvailable: false,
+          userQuestion: userText,
+          messages: [],
+          language: "fr",
+        });
+        if (r.complete && r.text.trim()) {
+          results.facts = r.text;
+          try {
+            const parsedFacts = parseFactsBlock(r.text);
+            if (!Array.isArray(parsedFacts) || parsedFacts.length === 0) {
+              throw new Error("bloc de faits illisible ou vide");
+            }
+            const contract = validateBtpFacts(parsedFacts);
+            if (contract.counts.total === 0) throw new Error("aucun fait validé");
+            results.factsContract = contract;
+            results.factsContractText = serializeFactsContract(contract);
+            results.factsError = null;
+          } catch (e) {
+            results.factsContract = null;
+            results.factsContractText = null;
+            results.factsError = String((e as Error)?.message || e);
+          }
+        } else {
+          results.factsFailed = true;
+          results.factsContract = null;
+          results.factsContractText = null;
+          results.factsError = r.httpError
+            ? `Extraction factuelle: HTTP ${r.httpError}`
+            : "Extraction factuelle interrompue (flux incomplet)";
+        }
+        await saveStep("report", {});
+        if (budgetExceeded()) {
+          chain(jobId, token);
+          return;
+        }
       }
     }
 
-    // ── Étape 2 : extraction factuelle (idempotente) ──────────────────────
-    if (!results.facts && !results.factsFailed) {
-      await saveStep("facts", {});
-      const r = await callAi(token, {
-        action: "btp_factual_extraction",
-        btpDocData: results.docData,
-        attachments,
-        originalsAvailable,
-        userQuestion: userText,
-        messages: [],
-        language: "fr",
-      });
-      if (r.complete && r.text.trim()) {
-        results.facts = r.text;
-        // ── Validation serveur : contrat unique de fait BTP ────────────────
-        // Le JSON produit par l'IA est réellement validé ici. Un contrat vide
-        // ou illisible n'est JAMAIS remplacé par un repli silencieux.
-        try {
-          const parsedFacts = parseFactsBlock(r.text);
-          if (!Array.isArray(parsedFacts) || parsedFacts.length === 0) {
-            throw new Error("bloc de faits illisible ou vide");
-          }
-          const contract = validateBtpFacts(parsedFacts);
-          if (contract.counts.total === 0) {
-            throw new Error("aucun fait validé");
-          }
-          results.factsContract = contract;
-          results.factsContractText = serializeFactsContract(contract);
-          results.factsError = null;
-        } catch (e) {
-          results.factsContract = null;
-          results.factsContractText = null;
-          results.factsError = String((e as Error)?.message || e);
-        }
-      } else {
-        // L'extraction factuelle est un contrôle interne : son échec ne doit
-        // pas empêcher la production du rapport final, mais il ne produit
-        // AUCUN contrat : le devis automatique sera refusé côté client.
-        results.factsFailed = true;
-        results.factsContract = null;
-        results.factsContractText = null;
-        results.factsError = r.httpError
-          ? `Extraction factuelle: HTTP ${r.httpError}`
-          : "Extraction factuelle interrompue (flux incomplet)";
-      }
-      await saveStep("report", {});
-      if (budgetExceeded()) {
-        chain(jobId, token);
-        return;
-      }
-    }
 
     // ── Étape 3 : rapport final (idempotent) ──────────────────────────────
     if (!job.final_report) {

@@ -25,7 +25,7 @@ import {
   consolidateBtpContracts,
   serializeConsolidatedContract,
   type ContractEntry,
-} from "../_shared/btpFactsConsolidation.ts";
+} from "./btpFactsConsolidation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

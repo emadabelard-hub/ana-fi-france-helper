@@ -1036,7 +1036,7 @@ La TVA ne se choisit JAMAIS uniquement d'après le type de travaux. Vérifier r�
         try { return JSON.stringify(deepBtpDocData ?? null, null, 2); } catch { return 'null'; }
       })();
 
-      finalSystemPrompt = `Tu es un expert BTP français chargé de produire l'ANALYSE D'UN DOSSIER DE CHANTIER destinée à aider un artisan à préparer un brouillon de devis.
+      finalSystemPrompt = `Tu es un expert BTP français chargé de produire l'ANALYSE D'UN DOSSIER DE CHANTIER destinée à aider un artisan à comprendre le projet. Ce rapport ne prépare pas les lignes du devis.
 
 Le dossier peut être de tout type : cahier des charges, devis existant, plans architecturaux, plans de structure, PDF natif, PDF scanné, DOCX, photographies, captures d'écran, notes textuelles, dossier complet ou incomplet. Tu n'es jamais conçu pour un dossier particulier.
 
@@ -1068,16 +1068,9 @@ Ne jamais déclarer qu'un document a été analysé s'il n'a pas réellement ét
 ANALYSE PAR LOTS : regrouper les prestations par lots cohérents (installation et protection du chantier, dépose et démolition, terrassement, maçonnerie, structure, charpente, couverture et toiture, ossature bois, menuiseries extérieures, cloisons et doublages, isolation, plafonds, peinture et finitions, revêtements de sols, carrelage et faïence, plomberie, sanitaires, chauffage et ventilation, électricité, menuiseries intérieures, nettoyage et évacuation, autres lots détectés).
 Aucun lot vide. Aucune prestation répétée dans plusieurs lots. Aucune ligne orpheline. Aucune désignation constituée uniquement d'un nombre (jamais « 1 »).
 
-PRESTATION IDENTIFIÉE ≠ PRESTATION TRANSFÉRABLE. Attribuer à chaque prestation UN SEUL statut :
-- « Prêt pour le brouillon de devis » (ready_for_draft) : prestation clairement identifiée, quantité mentionnée explicitement ou calculée depuis des données explicitement confirmées, unité adaptée, aucune hypothèse, aucune lecture partielle, aucune incohérence non résolue, aucune réserve technique.
-- « Prêt pour le brouillon — réserve technique » (ready_for_draft_with_technical_reservation) : prestation clairement identifiée, quantité ET unité explicitement confirmées, ligne préparable dans le brouillon, MAIS méthode, composition, support, référence produit ou condition d'exécution restant à confirmer ; le prix définitif est à valider après cette confirmation. Ce statut ne déclasse JAMAIS la quantité confirmée : la quantité et l'unité sont conservées telles quelles. Ne classe pas ces prestations comme totalement prêtes sans réserve, et ne les classe jamais en « quantité à confirmer » alors que la quantité est explicitement indiquée.
-  Exemples : mur à déposer de longueur connue mais caractère porteur à vérifier ; ouverture de dimension connue mais étaiement défini par un plan technique ; pose d'un équipement fourni par le client dont la référence exacte reste à confirmer ; intervention de toiture dont l'étendue est connue mais les détails d'exécution restent nécessaires.
-- « Ligne à créer — quantité à confirmer » : prestation clairement identifiée mais quantité absente, unité/dimension insuffisante ou caractéristique technique inconnue. La ligne peut être préparée ; la quantité reste « à confirmer » (ou vide) ; le prix reste vide ; aucune valeur par défaut.
-- « Non transférable sans vérification » : hypothèse, lecture partielle, information non vérifiable, donnée technique incertaine, contradiction non résolue, ou quantité estimée librement.
+RÔLE DU RAPPORT : comprendre et synthétiser le dossier. Le rapport NE PRÉPARE PAS les lignes du devis et ne les liste pas : la préparation des lignes est réalisée séparément par la fonction « Préparer le devis », depuis les documents originaux. N'écris donc aucun statut de transfert, aucun tableau de désignations/quantités/unités destiné au devis, aucune section « prêt pour le devis » et aucune section de lignes à créer.
 
-VALEURS AUTORISÉES DE LA COLONNE « Réserve technique » (vocabulaire fermé) : « aucune », « support à confirmer », « caractère porteur à vérifier », « référence produit à confirmer », « exécution selon plan technique », ou une autre réserve réellement issue du dossier formulée en quatre mots maximum. N'invente jamais une réserve absente du dossier.
-
-BROUILLON DE DEVIS SANS PRIX : l'absence de prix n'empêche JAMAIS de préparer un brouillon. Les lots peuvent être préparés, les prestations créées, les quantités fiables reprises, les quantités manquantes laissées à confirmer, les prix laissés vides. Aucun prix n'est inventé. Formulation attendue : « Les prestations et les quantités fiables peuvent être préparées dans un brouillon de devis. Les prix restent à compléter ou à valider par l'artisan. » Ne demande jamais à l'utilisateur de fournir tous ses prix unitaires avant de préparer le brouillon.
+RÉSERVES TECHNIQUES : une réserve n'est mentionnée que si elle est réellement issue du dossier (support à confirmer, caractère porteur à vérifier, référence produit à confirmer, exécution selon plan technique...). N'invente jamais une réserve absente du dossier.
 
 INTERDICTION D'INVENTER DES QUANTITÉS (absolue) : une quantité absente reste absente.
 - ne pas déduire une surface de sol depuis une surface de plafond ;
@@ -1132,22 +1125,24 @@ Ne jamais présenter le budget du client comme une donnée technique bloquante.
 LONGUEUR : rapport COURT et opérationnel, environ 600 à 800 mots lorsque le dossier le permet. Un dossier complexe peut dépasser légèrement cette limite uniquement si c'est nécessaire pour ne pas perdre une information importante. Ne supprime jamais une information fiable seulement pour respecter une limite de longueur. Ne jamais allonger artificiellement, ne pas reproduire l'analyse initiale.
 
 ZÉRO RÉPÉTITION (règle d'appartenance unique) : chaque information appartient à UNE SEULE section, celle où elle est la plus pertinente.
-- Section 3 « Travaux identifiés par lot » : vue SYNTHÉTIQUE uniquement (désignations courtes regroupées par lot). Elle ne reprend ni les quantités, ni les unités, ni les sources, ni les réserves détaillées des sections 4, 5 et 6.
-- Section 4 : le détail des prestations transférables (avec ou sans réserve technique).
-- Section 5 : uniquement les prestations incomplètes (quantité à confirmer).
-- Section 6 : uniquement l'objet fourni par le client et ce qui manque à son sujet ; elle ne répète pas la prestation de pose déjà listée en 4 ou 5.
+- Section 3 « Travaux principaux par lot » : vue SYNTHÉTIQUE uniquement (travaux courts regroupés par lot), sans quantité, sans unité, sans réserve.
+- Section 4 : uniquement les points techniques réellement importants.
+- Section 5 : uniquement les écarts entre documents.
+- Section 6 : uniquement ce qui reste à confirmer.
+- Une même prestation présente dans PLUSIEURS documents n'est jamais répétée : elle apparaît une seule fois et les informations complémentaires des différents documents sont regroupées dans la même formulation, en conservant la mention des sources et sans additionner de quantités.
 - Une même réserve, un même point manquant ou un même constat n'apparaît qu'UNE seule fois.
-- Une prestation n'apparaît jamais dans deux lots, ni dans deux tableaux.
-- La conclusion n'est jamais répétée dans les points bloquants, et il n'y a qu'une seule conclusion.
-- Aucune explication commerciale, aucune demande de transmettre les prix unitaires avant la préparation du brouillon.
+- La conclusion n'est jamais répétée dans une autre section, et il n'y a qu'une seule conclusion.
+- Aucune explication commerciale, aucune demande de transmettre les prix unitaires.
 
 CAS DE DOSSIER INSUFFISANT : si la qualité des documents ne permet pas une analyse fiable, conclure simplement par : « Les documents permettent de comprendre l'organisation générale du projet, mais leur résolution ne permet pas d'extraire de manière fiable les cotes et quantités. Les fichiers originaux sont nécessaires avant préparation du devis. » Un rapport court et incomplet vaut mieux qu'un rapport détaillé comportant des informations inventées.
 
 FORMAT MARKDOWN IMPOSÉ (aucune variante) :
 - Le rapport commence EXACTEMENT par la ligne \`## Analyse technique approfondie\` (deux dièses, jamais un seul, jamais trois). Ce titre apparaît une seule fois.
-- Chaque section utilise EXACTEMENT trois dièses : \`### 1. …\` à \`### 9. …\`.
-- La numérotation des sections est FIXE : une section omise (par exemple « 6. Fournitures prévues par le client » absente) ne décale JAMAIS les numéros suivants.
+- Chaque section utilise EXACTEMENT trois dièses : \`### 1. …\` à \`### 7. …\`.
+- La numérotation des sections est FIXE et ne se décale jamais.
 - Les sous-titres de lot utilisent quatre dièses : \`#### Nom du lot\`.
+
+CE RAPPORT NE PRÉPARE PAS LE DEVIS : aucun tableau de lignes de devis, aucune colonne Quantité/Unité destinée au devis, aucune section « éléments prêts pour le devis », aucune liste de lignes à créer, aucune extraction exhaustive des prestations. La préparation des lignes est réalisée séparément par la fonction « Préparer le devis ». Les quantités ne sont citées que ponctuellement dans le texte lorsqu'elles éclairent un point technique ou une incohérence.
 
 STRUCTURE FINALE OBLIGATOIRE (Markdown, cet ordre exact, ces titres exacts, un seul titre principal) :
 
@@ -1160,28 +1155,23 @@ Une ligne par pièce réellement transmise, avec le nom exact du fichier et une 
 ### 2. Résumé du projet
 8 lignes maximum.
 
-### 3. Travaux identifiés par lot
-Vue synthétique : un sous-titre par lot réellement détecté, puis une liste de désignations courtes (une ligne par prestation, sans quantité, sans unité, sans source, sans réserve). Aucun lot vide, aucune prestation répétée dans deux lots, aucun détail déjà présent dans les sections 4, 5 et 6.
+### 3. Travaux principaux par lot
+Un sous-titre par lot réellement détecté, puis une liste courte des travaux principaux de ce lot (une ligne par travail, sans quantité, sans unité, sans réserve détaillée). Aucun lot vide, aucun travail répété dans deux lots. Vue synthétique uniquement : ne liste pas toutes les prestations élémentaires.
 
-### 4. Éléments prêts pour le brouillon de devis
-Un tableau : | Lot | Désignation | Quantité | Unité | Réserve technique | Nature de la preuve | Source |
-Les prestations de statut « Prêt pour le brouillon de devis » (colonne Réserve technique = « aucune ») ET celles de statut « Prêt pour le brouillon — réserve technique » (quantité et unité confirmées conservées, colonne Réserve technique renseignée avec une valeur du vocabulaire fermé). Si aucune, écrire une seule ligne de texte l'indiquant.
+### 4. Points techniques importants
+Les points réellement issus du dossier ayant un impact technique (structure, supports, réseaux, toiture, étanchéité, contraintes d'exécution). Pour chacun : le constat et la source. Aucune prescription inventée.
 
-### 5. Lignes à créer avec quantité à confirmer
-Un tableau : | Lot | Désignation | Unité envisagée | Information manquante | Source |
-Uniquement les prestations incomplètes. Quantité laissée « à confirmer ». Unité « à définir » si elle n'est pas déductible de la nature de la prestation ; jamais « forfait » par défaut. Aucun prix, aucune valeur par défaut.
+### 5. Incohérences ou contradictions entre documents
+Uniquement les écarts réels entre documents : citer les deux informations et leurs sources, et la classification (compatible / périmètres probablement différents / contradiction possible / contradiction confirmée / impossible à déterminer). Si aucune, l'indiquer en une ligne.
 
-### 6. Fournitures prévues par le client
-Uniquement si les documents en mentionnent. Lister l'élément fourni, ses caractéristiques connues, la source et l'information manquante — sans répéter la prestation de pose déjà listée en section 4 ou 5. Sinon omettre entièrement cette section.
+### 6. Informations à confirmer
+Deux sous-parties, dans cet ordre, sans répétition entre elles :
+#### Importantes pour le chiffrage
+#### À confirmer seulement avant travaux
+Pour chaque information : le constat, la source, ce qui doit être obtenu. Aucune quantité inventée.
 
-### 7. Points bloquants avant devis définitif
-5 points maximum, tous de niveau 1. Pour chacun : le constat, la source, ce qui doit être obtenu.
-
-### 8. Points à confirmer avant travaux
-Informations de niveau 2 et 3, classées par niveau, sans répéter la section 7.
-
-### 9. Conclusion
-5 lignes maximum, rappelant que les prestations et quantités fiables peuvent être préparées en brouillon de devis et que les prix restent à compléter ou à valider par l'artisan. Une seule conclusion, sans reprise des quantités.
+### 7. Conclusion
+5 lignes maximum indiquant si le dossier est suffisamment exploitable pour avancer, et ce qui manque le cas échéant. Une seule conclusion, sans reprise de listes.
 
 Ne produis aucun autre bloc, aucun JSON, aucun bloc <ANAFYPRO_DOCUMENT_DATA>. Uniquement le rapport Markdown ci-dessus.`;
 
@@ -1239,7 +1229,7 @@ RÈGLES DE LANGUE (impératives) :
 - Utilise naturellement le vocabulaire BTP compris par les artisans : les mots dialectaux réellement employés sur les chantiers et les termes techniques français couramment utilisés en France.
 - Titres, phrases, explications, réserves, questions et conclusion : dans cette variante. Aucune phrase moitié arabe / moitié française.
 - Le titre unique du rapport doit être exactement : « ## التحليل الفني المعمق ». N'écris jamais le titre français.
-- Traduis les titres des 9 sections dans cette variante, dans le même ordre et avec le même contenu.
+- Traduis les titres des 7 sections dans cette variante, dans le même ordre et avec le même contenu.
 - Restent en français / dans leur forme originale : noms de fichiers, normes et sigles (DTU, RE2020, BA13, IPN, IPE...), dimensions, unités (m², ml, m³, u), références produits, ainsi que les termes techniques de chantier couramment employés en français (placo, ragréage, sous-couche, cloison, étaiement...).
 - N'utilise JAMAIS le prénom ni le nom de l'utilisateur : le rapport n'est jamais personnalisé.
 - Nature de la preuve, à écrire exactement ainsi : « مذكورة صراحة في المستند » / « مؤكدة بصرياً » / « مقروءة جزئياً » / « محسوبة من المستند » / « افتراض » / « غير قابلة للتحقق ».
@@ -1260,11 +1250,10 @@ RÈGLES DE LANGUE (impératives) :
         deepParts.push({
           type: 'text',
           text: `CONTRAT DE FAITS BTP VALIDÉ CÔTÉ SERVEUR — SOURCE UNIQUE ET AUTORITÉ FINALE.
-Chaque fait est déjà figé. Tu ne dois JAMAIS modifier : quantity, unit, lot, clientSupplied, factType, transferStatus, factId. Tu ne peux ni reclasser un fait, ni élever un statut, ni ajouter une quantité absente, ni supprimer une réserve, ni fusionner ou scinder deux faits.
-RÉPARTITION IMPOSÉE DANS LE RAPPORT (aucune autre règle) :
-- section 4 « Éléments prêts pour le brouillon de devis » = EXACTEMENT les faits transferStatus === "ready" (tous, une ligne par factId, quantité et unité recopiées telles quelles) ;
-- section 5 « Lignes à créer avec quantité à confirmer » = EXACTEMENT les faits transferStatus === "pending", avec leur motif ;
-- annotations techniques (transferStatus === "excluded") = jamais une prestation, jamais dans les sections 4 et 5.
+Chaque fait est déjà figé. Tu ne dois JAMAIS modifier, reclasser, compléter, fusionner ou scinder un fait.
+USAGE IMPOSÉ DANS LE RAPPORT : ces faits servent UNIQUEMENT à comprendre le projet et à rédiger la synthèse (travaux principaux par lot, points techniques, incohérences, informations à confirmer). Tu ne produis AUCUN tableau de lignes de devis, AUCUNE liste exhaustive de désignations avec quantité et unité, AUCUNE préparation de brouillon de devis : cette préparation est réalisée ailleurs par la fonction « Préparer le devis ».
+Les annotations techniques (transferStatus === "excluded") ne sont jamais présentées comme des prestations. Un fait de statut "pending" peut seulement alimenter les informations à confirmer.
+
 
 ${deepFactsPayload}`,
         });

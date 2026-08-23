@@ -17,6 +17,8 @@ export type BtpFactType =
   | "information"
   | "to_confirm";
 
+export type BtpFactRole = "main" | "included_component" | "descriptive";
+
 export type BtpQuantityType =
   | "count"
   | "length"

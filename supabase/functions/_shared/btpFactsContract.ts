@@ -282,6 +282,59 @@ const buildFactId = (parts: {
   return parts.used.has(base) ? `${base}_${parts.index}` : (parts.used.add(base), base);
 };
 
+/** Lecture booléenne tolérante (aucune déduction, null si non déclaré). */
+const bool = (v: unknown): boolean | null => {
+  if (v === true || v === false) return v;
+  if (typeof v === "string") {
+    const s = v.trim().toLowerCase();
+    if (["true", "oui", "yes", "1"].includes(s)) return true;
+    if (["false", "non", "no", "0"].includes(s)) return false;
+  }
+  return null;
+};
+
+const normalizeKeyPart = (v: string | null): string =>
+  (v ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9²³.,]+/g, " ")
+    .trim()
+    .replace(/\s+/g, "-");
+
+/**
+ * Clé métier de ligne, calculée EXCLUSIVEMENT par le code (aucune valeur IA).
+ * Phase B : donnée d'observation uniquement — aucun regroupement, filtrage ni
+ * suppression de ligne n'est effectué à partir de cette clé.
+ */
+const buildLineKey = (parts: {
+  operation: string | null;
+  scope: string | null;
+  descriptionExact: string;
+  dimensions: string;
+  unit: BtpUnit;
+  includesMaterials: boolean | null;
+  includesLabor: boolean | null;
+  clientSupplied: boolean | null;
+}): string => {
+  const dims = (`${parts.dimensions} ${parts.scope ?? ""}`.match(/\d+(?:[.,]\d+)?\s*(?:mm|cm|m²|m³|ml|m)\b/gi) ?? [])
+    .map((d) => normalizeKeyPart(d))
+    .sort()
+    .join("+");
+  const supply = [
+    parts.includesMaterials === null ? "f?" : parts.includesMaterials ? "f1" : "f0",
+    parts.includesLabor === null ? "p?" : parts.includesLabor ? "p1" : "p0",
+    parts.clientSupplied === true ? "cli" : "",
+  ].filter(Boolean).join("");
+  return [
+    normalizeKeyPart(parts.operation) || normalizeKeyPart(parts.descriptionExact),
+    normalizeKeyPart(parts.scope),
+    dims,
+    parts.unit ?? "",
+    supply,
+  ].join("|");
+};
+
 /**
  * Valide et fige un tableau de faits bruts issus de l'extraction IA.
  * Aucune donnée n'est inventée : une quantité ou une unité absente reste nulle
@@ -291,6 +344,8 @@ export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
   const arr = Array.isArray(rawFacts) ? rawFacts : [];
   const facts: ValidatedBtpFact[] = [];
   const usedIds = new Set<string>();
+  const refAliases: Set<string>[] = [];
+
 
   arr.forEach((entry, i) => {
     if (!entry || typeof entry !== "object") return;
@@ -412,24 +467,39 @@ export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
         ? "main"
         : "descriptive";
 
+    // Champs sémantiques d'OBSERVATION (Phase B) : lus tels quels, jamais
+    // recalculés, et sans aucune incidence sur factType/quantity/unit/statut.
+    const operation = str(f, ["operation"]);
+    const scope = str(f, ["scope", "perimetre", "périmètre"]);
+    const includesMaterials = bool(f.includesMaterials ?? f.fournitureComprise);
+    const includesLabor = bool(f.includesLabor ?? f.poseComprise);
+    // Référence temporaire locale fournie par l'IA. Jamais un factId définitif.
+    const parentRef = str(f, ["parentRef", "parent", "parent_ref"]);
+
+    // Alias de référence de CE fait, utilisés pour résoudre les parentRef.
+    const aliases = new Set<string>();
+    [str(f, ["factId", "id"]), str(f, ["ref", "localRef"]), String(i), String(i + 1)]
+      .forEach((a) => { if (a) aliases.add(a.trim().toLowerCase()); });
+    refAliases.push(aliases);
+
     facts.push({
       factId,
       lot,
       category,
       factType,
       role,
-      parentRef: null,
+      parentRef,
       coveredByFactId: null,
-      operation: null,
-      scope: null,
+      operation,
+      scope,
       descriptionExact,
       evidenceText,
       quantity,
       quantityType: resolvedQuantityType,
       unit: resolvedUnit,
       clientSupplied,
-      includesMaterials: null,
-      includesLabor: null,
+      includesMaterials,
+      includesLabor,
       transferStatus,
       technicalReservation,
       sourceFile,
@@ -437,8 +507,60 @@ export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
       location,
       material,
       reasons,
+      lineKey: buildLineKey({
+        operation,
+        scope,
+        descriptionExact,
+        dimensions,
+        unit: resolvedUnit,
+        includesMaterials,
+        includesLabor,
+        clientSupplied,
+      }),
     });
   });
+
+  // ── Résolution des parentRef → coveredByFactId (CODE UNIQUEMENT) ─────────
+  // Phase B : purement observationnelle. Une référence absente, invalide,
+  // circulaire ou pointant vers un fait non `main` laisse coveredByFactId à
+  // null et n'ajoute qu'un diagnostic ; aucun déclassement, aucun changement
+  // de transferStatus, de quantité ou de ligne.
+  const aliasToFactId = new Map<string, string>();
+  facts.forEach((fact, idx) => {
+    refAliases[idx]?.forEach((alias) => {
+      if (!aliasToFactId.has(alias)) aliasToFactId.set(alias, fact.factId);
+    });
+    if (!aliasToFactId.has(fact.factId.toLowerCase())) {
+      aliasToFactId.set(fact.factId.toLowerCase(), fact.factId);
+    }
+  });
+  const byFactId = new Map(facts.map((fact) => [fact.factId, fact]));
+  facts.forEach((fact) => {
+    if (!fact.parentRef) return;
+    const targetId = aliasToFactId.get(fact.parentRef.trim().toLowerCase()) ?? null;
+    const parent = targetId ? byFactId.get(targetId) : undefined;
+    if (!parent || parent.factId === fact.factId) {
+      fact.reasons.push("parent_ref_unresolved");
+      return;
+    }
+    if (parent.role !== "main") {
+      fact.reasons.push("parent_ref_not_main");
+      return;
+    }
+    // Anti-cycle : le parent (ou un ancêtre) ne doit pas redescendre sur ce fait.
+    let cursor: ValidatedBtpFact | undefined = parent;
+    const seen = new Set<string>([fact.factId]);
+    while (cursor) {
+      if (seen.has(cursor.factId)) {
+        fact.reasons.push("parent_ref_unresolved");
+        return;
+      }
+      seen.add(cursor.factId);
+      cursor = cursor.coveredByFactId ? byFactId.get(cursor.coveredByFactId) : undefined;
+    }
+    fact.coveredByFactId = parent.factId;
+  });
+
 
 
   const counts = {
@@ -447,6 +569,25 @@ export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
     excluded: facts.filter((f) => f.transferStatus === "excluded").length,
     total: facts.length,
   };
+
+  // Observabilité Phase B : diagnostic serveur uniquement (jamais affiché au
+  // client, jamais dans le PDF).
+  try {
+    console.log("[btpFacts][phaseB] structure observée", JSON.stringify(facts.map((f) => ({
+      factId: f.factId,
+      role: f.role,
+      operation: f.operation,
+      scope: f.scope,
+      parentRef: f.parentRef,
+      coveredByFactId: f.coveredByFactId,
+      includesMaterials: f.includesMaterials,
+      includesLabor: f.includesLabor,
+      lineKey: f.lineKey,
+      sourceFile: f.sourceFile,
+      sourcePage: f.sourcePage,
+      transferStatus: f.transferStatus,
+    }))));
+  } catch { /* diagnostic non bloquant */ }
 
   return { version: 1, facts, counts };
 };

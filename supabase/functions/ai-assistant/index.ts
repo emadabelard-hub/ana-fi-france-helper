@@ -1145,9 +1145,11 @@ CAS DE DOSSIER INSUFFISANT : si la qualité des documents ne permet pas une anal
 
 FORMAT MARKDOWN IMPOSÉ (aucune variante) :
 - Le rapport commence EXACTEMENT par la ligne \`## Analyse technique approfondie\` (deux dièses, jamais un seul, jamais trois). Ce titre apparaît une seule fois.
-- Chaque section utilise EXACTEMENT trois dièses : \`### 1. …\` à \`### 9. …\`.
-- La numérotation des sections est FIXE : une section omise (par exemple « 6. Fournitures prévues par le client » absente) ne décale JAMAIS les numéros suivants.
+- Chaque section utilise EXACTEMENT trois dièses : \`### 1. …\` à \`### 7. …\`.
+- La numérotation des sections est FIXE et ne se décale jamais.
 - Les sous-titres de lot utilisent quatre dièses : \`#### Nom du lot\`.
+
+CE RAPPORT NE PRÉPARE PAS LE DEVIS : aucun tableau de lignes de devis, aucune colonne Quantité/Unité destinée au devis, aucune section « éléments prêts pour le devis », aucune liste de lignes à créer, aucune extraction exhaustive des prestations. La préparation des lignes est réalisée séparément par la fonction « Préparer le devis ». Les quantités ne sont citées que ponctuellement dans le texte lorsqu'elles éclairent un point technique ou une incohérence.
 
 STRUCTURE FINALE OBLIGATOIRE (Markdown, cet ordre exact, ces titres exacts, un seul titre principal) :
 
@@ -1160,28 +1162,23 @@ Une ligne par pièce réellement transmise, avec le nom exact du fichier et une 
 ### 2. Résumé du projet
 8 lignes maximum.
 
-### 3. Travaux identifiés par lot
-Vue synthétique : un sous-titre par lot réellement détecté, puis une liste de désignations courtes (une ligne par prestation, sans quantité, sans unité, sans source, sans réserve). Aucun lot vide, aucune prestation répétée dans deux lots, aucun détail déjà présent dans les sections 4, 5 et 6.
+### 3. Travaux principaux par lot
+Un sous-titre par lot réellement détecté, puis une liste courte des travaux principaux de ce lot (une ligne par travail, sans quantité, sans unité, sans réserve détaillée). Aucun lot vide, aucun travail répété dans deux lots. Vue synthétique uniquement : ne liste pas toutes les prestations élémentaires.
 
-### 4. Éléments prêts pour le brouillon de devis
-Un tableau : | Lot | Désignation | Quantité | Unité | Réserve technique | Nature de la preuve | Source |
-Les prestations de statut « Prêt pour le brouillon de devis » (colonne Réserve technique = « aucune ») ET celles de statut « Prêt pour le brouillon — réserve technique » (quantité et unité confirmées conservées, colonne Réserve technique renseignée avec une valeur du vocabulaire fermé). Si aucune, écrire une seule ligne de texte l'indiquant.
+### 4. Points techniques importants
+Les points réellement issus du dossier ayant un impact technique (structure, supports, réseaux, toiture, étanchéité, contraintes d'exécution). Pour chacun : le constat et la source. Aucune prescription inventée.
 
-### 5. Lignes à créer avec quantité à confirmer
-Un tableau : | Lot | Désignation | Unité envisagée | Information manquante | Source |
-Uniquement les prestations incomplètes. Quantité laissée « à confirmer ». Unité « à définir » si elle n'est pas déductible de la nature de la prestation ; jamais « forfait » par défaut. Aucun prix, aucune valeur par défaut.
+### 5. Incohérences ou contradictions entre documents
+Uniquement les écarts réels entre documents : citer les deux informations et leurs sources, et la classification (compatible / périmètres probablement différents / contradiction possible / contradiction confirmée / impossible à déterminer). Si aucune, l'indiquer en une ligne.
 
-### 6. Fournitures prévues par le client
-Uniquement si les documents en mentionnent. Lister l'élément fourni, ses caractéristiques connues, la source et l'information manquante — sans répéter la prestation de pose déjà listée en section 4 ou 5. Sinon omettre entièrement cette section.
+### 6. Informations à confirmer
+Deux sous-parties, dans cet ordre, sans répétition entre elles :
+#### Importantes pour le chiffrage
+#### À confirmer seulement avant travaux
+Pour chaque information : le constat, la source, ce qui doit être obtenu. Aucune quantité inventée.
 
-### 7. Points bloquants avant devis définitif
-5 points maximum, tous de niveau 1. Pour chacun : le constat, la source, ce qui doit être obtenu.
-
-### 8. Points à confirmer avant travaux
-Informations de niveau 2 et 3, classées par niveau, sans répéter la section 7.
-
-### 9. Conclusion
-5 lignes maximum, rappelant que les prestations et quantités fiables peuvent être préparées en brouillon de devis et que les prix restent à compléter ou à valider par l'artisan. Une seule conclusion, sans reprise des quantités.
+### 7. Conclusion
+5 lignes maximum indiquant si le dossier est suffisamment exploitable pour avancer, et ce qui manque le cas échéant. Une seule conclusion, sans reprise de listes.
 
 Ne produis aucun autre bloc, aucun JSON, aucun bloc <ANAFYPRO_DOCUMENT_DATA>. Uniquement le rapport Markdown ci-dessus.`;
 

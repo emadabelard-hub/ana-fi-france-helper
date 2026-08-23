@@ -80,7 +80,13 @@ Aucun cumul automatique de quantités n'existe dans ce plan, quelle que soit la 
 
 **Quantité principale.** La quantité d'un `included_component` n'est jamais promue vers son parent ; le nombre de composants ne devient jamais la quantité du `main`. Les cotes descriptives restent dans `scope`. Aucune quantité ni unité inventée : sans quantité fiable, le fait reste `pending` plutôt que `1 u`.
 
-**Contrôles avant devis (dans le code, pas dans un prompt) :** zéro ligne issue d'un `included_component` ou d'un `descriptive` ; **zéro quantité/unité inventée** — une ligne `main` devient `ready` si `quantity > 0` et `unit` valide, sinon `pending` avec motif explicite (`quantity_missing`, `unit_unreadable`…) ; **zéro quantité additionnée entre sources** ; **zéro `lineKey` dupliquée non résolue** ; zéro quantité d'un composant promue vers son parent ; `factId` + toutes les sources (`sourceFile`/`sourcePage`) présents sur chaque ligne transférée ; **tout `coveredByFactId` résolu vers un `factId` `main` réellement présent** ; **toute `lineKey` recalculée par le code** (aucune valeur IA). Toute violation bloque le transfert avec un message clair, sans écrire de devis partiel.
+**Contrôles avant devis (dans le code, pas dans un prompt).** Objectif : empêcher les erreurs structurelles, pas les informations à confirmer.
+
+- **Transféré en brouillon :** tout `main` avec `ready` ou `pending` ; `included_component` rattaché en note/designation (pas de ligne séparée) ; `descriptive` ignoré.
+- **Marqué « À confirmer » sans bloquer :** quantité/unité manquante ou non fiable, conflit de quantité entre sources, prestation identifiable mais incomplète. Le brouillon contient la ligne avec un marqueur visible, `quantity` et `unit` conservées telles que lues (ou absentes), et `unitPrice` à 0 (valeur neutre du type `LineItem`).
+- **Bloquants (message clair, pas de devis partiel) :** relation parent/enfant impossible à résoudre (`coveredByFactId` invalide, référence circulaire, parent non `main`) ; contrat corrompu / JSON non conforme ; incohérence empêchant d'identifier quelle opération est facturable (plusieurs `lineKey` contradictoires sans distinction possible) ; `factId` absent ou source manquante.
+
+Une information à confirmer (`pending`) n'est **jamais** une erreur bloquante. Le principe est : **information à confirmer ≠ erreur bloquante.**
 
 ## 5. Fonctions à réutiliser / à ne pas toucher
 

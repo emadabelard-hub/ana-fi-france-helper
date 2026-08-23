@@ -393,28 +393,43 @@ export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
       transferStatus = "excluded";
     }
 
+    const factId = buildFactId({
+      rawId: str(f, ["factId", "id"]),
+      sourceFile,
+      sourcePage,
+      lot,
+      category,
+      descriptionExact,
+      quantity,
+      unit: resolvedUnit,
+      index: i,
+      used: usedIds,
+    });
+
+    const role: BtpFactRole = (f.role === "main" || f.role === "included_component" || f.role === "descriptive")
+      ? f.role
+      : factType === "billable_work"
+        ? "main"
+        : "descriptive";
+
     facts.push({
-      factId: buildFactId({
-        rawId: str(f, ["factId", "id"]),
-        sourceFile,
-        sourcePage,
-        lot,
-        category,
-        descriptionExact,
-        quantity,
-        unit: resolvedUnit,
-        index: i,
-        used: usedIds,
-      }),
+      factId,
       lot,
       category,
       factType,
+      role,
+      parentRef: null,
+      coveredByFactId: null,
+      operation: null,
+      scope: null,
       descriptionExact,
       evidenceText,
       quantity,
       quantityType: resolvedQuantityType,
       unit: resolvedUnit,
       clientSupplied,
+      includesMaterials: null,
+      includesLabor: null,
       transferStatus,
       technicalReservation,
       sourceFile,

@@ -63,7 +63,9 @@ Aucune table, aucune colonne : ces données vivent dans le bloc `<ANAFYPRO_BTP_F
 
 ## 4. Règles déterministes
 
-**Transfert.** Devient une ligne facturable uniquement : `role = main` ET `factType = billable_work` ET (`quantity > 0` avec `unit` non nulle → `ready`, ou quantité/unité manquante → `pending` « à confirmer »).
+**Transfert.** Devient une ligne facturable uniquement : `role = main` ET `factType = billable_work`.
+- **Statut `ready`** (quantité > 0, unité valide, conflits résolus) → ligne normale du brouillon de devis, l'artisan peut ajuster le prix et la finaliser.
+- **Statut `pending`** (quantité/unité absente, unité non fiable, conflit de sources entre quantités, information facturable nécessitant confirmation) → ligne présente dans le brouillon mais **clairement marquée « À confirmer » / « À vérifier »**, **aucune quantité, unité ou prix inventé** ; l'artisan la complète avant la finalisation du devis.
 `included_component` avec `coveredByFactId` → rattaché au périmètre de la ligne parente (mention dans la désignation ou note), jamais une deuxième ligne. `descriptive` → jamais de ligne. Aucune règle par métier.
 
 **Clé de ligne.** `lineKey = operation | scope normalisé | dimensions caractérisantes | unit | mode fourniture/pose`. Le `lot` n'entre jamais dans la clé (classement/affichage seulement).
@@ -78,7 +80,13 @@ Aucun cumul automatique de quantités n'existe dans ce plan, quelle que soit la 
 
 **Quantité principale.** La quantité d'un `included_component` n'est jamais promue vers son parent ; le nombre de composants ne devient jamais la quantité du `main`. Les cotes descriptives restent dans `scope`. Aucune quantité ni unité inventée : sans quantité fiable, le fait reste `pending` plutôt que `1 u`.
 
-**Contrôles avant devis (dans le code, pas dans un prompt) :** zéro ligne issue d'un `included_component` ou d'un `descriptive` ; **zéro quantité/unité inventée** — une ligne `main` devient `ready` si `quantity > 0` et `unit` valide, sinon `pending` avec motif explicite (`quantity_missing`, `unit_unreadable`…) ; **zéro quantité additionnée entre sources** ; **zéro `lineKey` dupliquée non résolue** ; zéro quantité d'un composant promue vers son parent ; `factId` + toutes les sources (`sourceFile`/`sourcePage`) présents sur chaque ligne transférée ; **tout `coveredByFactId` résolu vers un `factId` `main` réellement présent** ; **toute `lineKey` recalculée par le code** (aucune valeur IA). Toute violation bloque le transfert avec un message clair, sans écrire de devis partiel.
+**Contrôles avant devis (dans le code, pas dans un prompt).** Objectif : empêcher les erreurs structurelles, pas les informations à confirmer.
+
+- **Transféré en brouillon :** tout `main` avec `ready` ou `pending` ; `included_component` rattaché en note/designation (pas de ligne séparée) ; `descriptive` ignoré.
+- **Marqué « À confirmer » sans bloquer :** quantité/unité manquante ou non fiable, conflit de quantité entre sources, prestation identifiable mais incomplète. Le brouillon contient la ligne avec un marqueur visible, `quantity` et `unit` conservées telles que lues (ou absentes), et `unitPrice` à 0 (valeur neutre du type `LineItem`).
+- **Bloquants (message clair, pas de devis partiel) :** relation parent/enfant impossible à résoudre (`coveredByFactId` invalide, référence circulaire, parent non `main`) ; contrat corrompu / JSON non conforme ; incohérence empêchant d'identifier quelle opération est facturable (plusieurs `lineKey` contradictoires sans distinction possible) ; `factId` absent ou source manquante.
+
+Une information à confirmer (`pending`) n'est **jamais** une erreur bloquante. Le principe est : **information à confirmer ≠ erreur bloquante.**
 
 ## 5. Fonctions à réutiliser / à ne pas toucher
 
@@ -123,7 +131,7 @@ Suppression du repli « rapport → parsing → IA » dans ce seul parcours, une
 
 - Un `role` mal déduit pourrait faire disparaître une prestation réelle : atténuation par la Phase B en observation seule et par le repli `main` quand le rôle est absent ou incohérent.
 - Sur-fusion si `scope` est mal normalisé : la clé inclut périmètre et dimensions, et le lot est exclu de la décision.
-- Contrôles trop stricts bloquant un transfert légitime : message explicite listant les faits fautifs, jamais de devis partiel silencieux.
+- Contrôles trop stricts bloquant un transfert légitime : le plan distingue explicitement `pending` (marqué « À confirmer ») et erreurs structurelles (bloquantes). Seules les secondes empêchent l'écriture du brouillon. Message explicite listant les faits fautifs, jamais de devis partiel silencieux.
 - Faits anciens sans nouveaux champs : chemin de compatibilité conservé tant que la Phase E n'est pas validée.
 - Le devis actuel (création, prix, PDF, enregistrement, envoi, signature) n'est touché à aucune phase.
 

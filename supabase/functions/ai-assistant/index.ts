@@ -1347,6 +1347,22 @@ STABILITÉ DES FAITS (impératif) : une même entrée documentaire doit toujours
 
 IDENTIFIANTS STABLES : construis "id" de manière déterministe à partir de sourceFile, lot, category, descriptionExact, quantity et unit (ex. "fichier.docx|lot|categorie|description|quantite|unite" normalisé en minuscules, espaces remplacés par "-"). L'identifiant ne doit jamais dépendre de l'ordre de génération. Conserve l'ordre exact d'apparition dans le document et une numérotation continue, sans omission ni réordonnancement.
 
+STRUCTURE SÉMANTIQUE (champs facultatifs, à remplir UNIQUEMENT si l'information est réellement identifiable dans le document ; sinon null) :
+- "role" :
+  • "main" = opération pouvant constituer une prestation facturable autonome ;
+  • "included_component" = élément explicitement écrit comme compris dans le périmètre d'une opération "main" (accessoire, raccordement, essai, mise en service…) ;
+  • "descriptive" = cote, caractéristique ou précision technique qui décrit une prestation sans constituer elle-même une prestation facturable.
+  Exemple générique : « Installation d'un système comprenant 5 accessoires, raccordements et mise en service » → installation = "main" ; les 5 accessoires, les raccordements et la mise en service = "included_component".
+  Exemple générique : « Cloison 4,20 ml, hauteur 2,50 m » → l'ouvrage 4,20 ml = "main" ; la hauteur 2,50 m = "descriptive" (et figure dans "scope").
+  Une quantité qui appartient à un composant ne doit JAMAIS être présentée comme la quantité de l'opération principale.
+- "operation" : verbe métier écrit dans le document (pose, dépose, création, peinture, remplacement…), sans reformulation commerciale.
+- "scope" : périmètre / localisation / dimensions caractérisantes non facturables, tels qu'écrits.
+- "includesMaterials" : true/false uniquement si le document indique explicitement que la fourniture est comprise ou exclue ; sinon null.
+- "includesLabor" : true/false uniquement si le document indique explicitement que la pose / main d'œuvre est comprise ou exclue ; sinon null.
+- "parentRef" : référence temporaire LOCALE (la valeur du "id" du fait "main" concerné) indiquant « ce composant appartient à cette opération principale ». Utilise-la uniquement pour un fait "included_component" et seulement lorsque le rattachement est explicitement écrit ; sinon null.
+INTERDITS ABSOLUS : ne produis JAMAIS "factId", "coveredByFactId" ni "lineKey" — ces valeurs sont calculées exclusivement par le système.
+Aucune règle spécifique à un métier ou à un type d'équipement : ce raisonnement est générique pour tout le BTP. Ces champs sont purement descriptifs : ils ne modifient ni les quantités, ni les unités, ni les désignations relevées.
+
 CARACTÉRISTIQUES MULTIPLES D'UN MÊME OUVRAGE : lorsque le document donne deux valeurs de nature différente pour le même ouvrage (ex. coffrage placo : 12 ml de coffrage et 7 m² d'enduit et peinture), ce n'est ni une incohérence ni une information manquante. Crée deux faits distincts : longueur du coffrage 12 ml, surface de finition 7 m². N'écris jamais « cohérence à vérifier » ni « surface exacte non précisée » lorsque les deux valeurs sont déjà explicitement présentes.
 
 PDF NON LISIBLE : si le texte d'un PDF n'est pas extractible et que son contenu visuel n'a pas été analysé, alors documentType = null et role = null. N'invente jamais « plan de masse », « plan architectural », « permis de construire » ou « dossier structure ». Utilise uniquement la formulation : « Contenu textuel non extractible automatiquement ; type et rôle non déterminés. »

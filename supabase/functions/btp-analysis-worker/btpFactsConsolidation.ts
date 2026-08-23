@@ -15,7 +15,7 @@
 // utilisée comme relation après validation. La seule relation finale conservée
 // est `coveredByFactId`.
 // ============================================================================
-import type { BtpFactsContract, ValidatedBtpFact } from "./btpFactsContract.ts";
+import type { BtpFactsContract, ValidatedBtpFact } from "../_shared/btpFactsContract.ts";
 
 /** Fait consolidé : fait validé + provenance ajoutée par le serveur. */
 export type ConsolidatedBtpFact = ValidatedBtpFact & {

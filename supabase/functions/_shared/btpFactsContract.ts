@@ -46,6 +46,20 @@ export type ValidatedBtpFact = {
   lot: string;
   category: string;
   factType: BtpFactType;
+  /** Rôle sémantique de la ligne : opération principale, composant inclus ou donnée descriptive.
+   *  Déduit de `factType` par défaut : `billable_work` → `main`, sinon `descriptive`. */
+  role: BtpFactRole;
+
+  /** Référence temporaire fournie par l'IA pour désigner un parent (ex. p1, id brut).
+   *  Jamais un factId définitif, jamais une lineKey. */
+  parentRef: string | null;
+  /** Identifiant définitif du fait parent, résolu par le code après génération des factId. */
+  coveredByFactId: string | null;
+
+  /** Verbe métier normalisé (pose, dépose, création, peinture…). */
+  operation: string | null;
+  /** Périmètre/localisation + dimensions caractérisantes non facturables. */
+  scope: string | null;
 
   descriptionExact: string;
   evidenceText: string;
@@ -55,6 +69,10 @@ export type ValidatedBtpFact = {
   unit: BtpUnit;
 
   clientSupplied: boolean | null;
+  /** Fourniture comprise (matériaux). */
+  includesMaterials: boolean | null;
+  /** Pose/ouvrage comprise (main d'œuvre). */
+  includesLabor: boolean | null;
 
   transferStatus: BtpTransferStatus;
   technicalReservation: string | null;
@@ -66,6 +84,9 @@ export type ValidatedBtpFact = {
 
   /** Motifs déterministes de la décision (diagnostic, jamais affiché comme prix). */
   reasons: string[];
+
+  /** Clé métier de la ligne de devis, calculée par le code uniquement. */
+  lineKey?: string;
 };
 
 export type BtpFactsContract = {

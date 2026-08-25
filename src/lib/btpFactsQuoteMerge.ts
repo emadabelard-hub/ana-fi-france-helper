@@ -58,8 +58,7 @@ const ouvrageKey = (text: string): string => {
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
     .filter(Boolean)
-    .filter((t) => !STOP_WORDS.has(t))
-    .filter((t) => !/^\d+([.,]\d+)?$/.test(t));
+    .filter((t) => !STOP_WORDS.has(t));
   return [...new Set(tokens)].sort().join(' ');
 };
 
@@ -112,6 +111,19 @@ export const mergeFactsForQuote = <T extends MergeableFact>(facts: T[]): MergedF
 
   for (const key of order) {
     const group = groups.get(key)!;
+    // Consolidation UNIQUEMENT entre documents différents : deux faits issus
+    // d'un même document restent deux lignes distinctes (comportement actuel).
+    const docs = new Set(group.map((f) => String(f.sourceDocId || f.sourceFile || '')));
+    if (group.length === 1 || docs.size < 2) {
+      for (const f of group) {
+        merged.push({
+          ...f,
+          mergedFactIds: f.factId ? [f.factId] : [],
+          mergedSources: distinct([sourceLabel(f)]),
+        });
+      }
+      continue;
+    }
     if (group.length === 1) {
       const only = group[0];
       merged.push({

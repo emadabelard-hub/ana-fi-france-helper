@@ -24,6 +24,7 @@
 
 import type { ValidatedLine, ValidationMeta } from './btpTransferValidator';
 import { resolveLot } from './btpLotNormalization';
+import { mergeFactsForQuote } from './btpFactsQuoteMerge';
 
 const TRANSFERABLE = new Set([
   'ready_for_draft',
@@ -478,7 +479,11 @@ export const buildDraftLinesFromFacts = (source: unknown): FactsDraftResult => {
   // Quand le contrat est présent, la nature du fait, sa quantité, son unité et
   // son statut de transfert sont déjà figés : ils ne sont jamais réinterprétés.
   if (isFactsContract(parsed)) {
-    return buildFromContract(rawFacts as ContractFact[], rawFacts.length);
+    // Consolidation déterministe avant création des lignes : un même ouvrage
+    // décrit par plusieurs documents devient UNE ligne enrichie (sources
+    // conservées) ; les contradictions passent « à vérifier ».
+    const consolidated = mergeFactsForQuote(rawFacts as ContractFact[]) as ContractFact[];
+    return buildFromContract(consolidated, rawFacts.length);
   }
 
 

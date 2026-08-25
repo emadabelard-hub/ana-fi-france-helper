@@ -24,6 +24,7 @@
 
 import type { ValidatedLine, ValidationMeta } from './btpTransferValidator';
 import { resolveLot } from './btpLotNormalization';
+import { mergeFactsForQuote } from './btpFactsQuoteMerge';
 
 const TRANSFERABLE = new Set([
   'ready_for_draft',

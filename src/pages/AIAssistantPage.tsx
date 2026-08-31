@@ -16,7 +16,7 @@ import { useAssistantDictation } from '@/hooks/useAssistantDictation';
 import FullscreenVoiceModal from '@/components/assistant/FullscreenVoiceModal';
 import MissingInfoForm from '@/components/assistant/MissingInfoForm';
 
-import { buildDraftLinesFromFacts, sanitizeReformulatedDesignation } from '@/lib/btpFactsToDraft';
+import { sanitizeReformulatedDesignation } from '@/lib/btpFactsToDraft';
 import { buildDraftLinesFromQuoteExtraction } from '@/lib/btpQuoteExtraction';
 import { correctArtisanVocabulary } from '@/lib/artisanVocabulary';
 

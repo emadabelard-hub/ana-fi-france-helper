@@ -1543,17 +1543,21 @@ INTERDICTIONS ABSOLUES :
 
 RÈGLES DE RELEVÉ :
 1. Reprends EXACTEMENT toute quantité explicitement écrite dans les documents.
-2. Si une phrase énumère plusieurs ouvrages différents avec leurs quantités, crée AUTANT DE LIGNES que d'ouvrages.
-   Exemple obligatoire : « 2 WC, 2 vasques, 1 baignoire, 1 douche » → 4 lignes (2 WC / 2 vasques / 1 baignoire / 1 douche).
-3. Si aucune quantité n'est indiquée pour une prestation : "quantity": null, "unit": null si l'unité n'est pas écrite, et "status": "quantity_missing". La ligne est conservée.
-4. Une prestation écrite « si nécessaire », « le cas échéant », « éventuellement », « en option » ou « à confirmer » prend "status": "conditional" : elle ne devient jamais une prestation certaine.
-5. Distingue la quantité principale des composants inclus : « 1 VMC comprenant 5 bouches » → UNE ligne : quantity 1, unit "u" uniquement si écrit sinon null, characteristics "comprenant 5 bouches". JAMAIS 5 VMC. Une quantité de composant n'est jamais la quantité de la ligne.
-6. Conserve l'ordre d'apparition dans les documents.
-7. sourceFile : nom EXACT du fichier reçu, jamais attribué à un autre fichier. evidenceText : extrait exact du document justifiant la ligne.
-8. designation : fidèle au document (nettoyage autorisé pour espaces, casse, ponctuation), en français technique, sans reformulation commerciale.
-9. "lot" uniquement si le document nomme explicitement un lot, sinon null.
+2. UNITÉ FIDÈLE AU DOCUMENT : reprends le mot d'unité tel qu'il est écrit (« ensemble », « ensemble complet », « poste », « lot », « u », « ml », « m² »). N'AUCUNE substitution : « 1 ensemble complet » → quantity 1, unit "ensemble" ; ne jamais le transformer en « forfait ». Le mot « forfait » n'apparaît que s'il est écrit dans le document.
+3. Si une phrase énumère plusieurs ouvrages différents avec leurs quantités, crée AUTANT DE LIGNES que d'ouvrages, et la désignation de chaque ligne nomme l'élément réellement compté.
+   Exemple obligatoire : « Dépose de 2 WC, 2 vasques, 1 baignoire, 1 douche » → 4 lignes : « Dépose WC » 2 u / « Dépose vasques » 2 u / « Dépose baignoire » 1 u / « Dépose douche » 1 u.
+4. LISTES EXPLICITEMENT COMPTABLES : quand le document énumère nommément les éléments d'une même prestation, la quantité est le nombre d'éléments listés — ce n'est pas une quantité manquante.
+   Exemple obligatoire : « alimentations dédiées : four, plaque, lave-vaisselle, lave-linge, sèche-linge, VMC » → « Alimentations électriques dédiées » quantity 6, unit "u", characteristics « four, plaque, lave-vaisselle, lave-linge, sèche-linge, VMC », status "confirmed". (Le comptage d'éléments nommément listés est autorisé ; aucune autre addition ne l'est.)
+5. Si aucune quantité n'est indiquée pour une prestation : "quantity": null, "unit": null si l'unité n'est pas écrite, et "status": "quantity_missing" (affiché « À confirmer »). La ligne est conservée. Jamais 1, jamais « 1 u », « 1 forfait » ou « 1 ensemble » par défaut.
+6. N'AJOUTE JAMAIS une prestation ou une intervention absente du document : si le document écrit seulement « fourniture d'un four », la désignation reste « Fourniture d'un four » — jamais « Fourniture et pose ». Aucune pose, dépose, raccordement ou finition implicite.
+7. Une prestation écrite « si nécessaire », « le cas échéant », « éventuellement », « en option » ou « à confirmer » prend "status": "conditional" : elle ne devient jamais une prestation certaine.
+8. ÉQUIPEMENT PRINCIPAL AVEC COMPOSANTS : la quantité est celle de l'équipement principal, jamais celle des composants. « 1 VMC comprenant 5 bouches » → UNE ligne : quantity 1, unit "u" ou l'unité écrite (« ensemble », « système »), characteristics « comprenant 5 bouches ». JAMAIS 5 VMC.
+9. Conserve l'ordre d'apparition dans les documents.
+10. sourceFile : nom EXACT du fichier reçu, jamais attribué à un autre fichier. evidenceText : extrait exact du document justifiant la ligne.
+11. designation : fidèle au document (nettoyage autorisé pour espaces, casse, ponctuation), en français technique, sans reformulation commerciale.
+12. "lot" uniquement si le document nomme explicitement un lot, sinon null.
 
-STATUTS AUTORISÉS : "confirmed" (prestation et quantité écrites), "quantity_missing" (prestation écrite, quantité absente), "conditional" (prestation soumise à condition).
+STATUTS AUTORISÉS : "confirmed" (prestation et quantité écrites ou éléments nommément listés), "quantity_missing" (prestation écrite, quantité absente), "conditional" (prestation soumise à condition).
 
 SORTIE : un unique bloc, sans aucun texte avant ni après, sans markdown, JSON strict (guillemets doubles, aucune virgule finale, balise fermante obligatoire) :
 

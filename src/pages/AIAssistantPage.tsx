@@ -16,7 +16,8 @@ import { useAssistantDictation } from '@/hooks/useAssistantDictation';
 import FullscreenVoiceModal from '@/components/assistant/FullscreenVoiceModal';
 import MissingInfoForm from '@/components/assistant/MissingInfoForm';
 
-import { buildDraftLinesFromFacts, sanitizeReformulatedDesignation } from '@/lib/btpFactsToDraft';
+import { sanitizeReformulatedDesignation } from '@/lib/btpFactsToDraft';
+import { buildDraftLinesFromQuoteExtraction } from '@/lib/btpQuoteExtraction';
 import { correctArtisanVocabulary } from '@/lib/artisanVocabulary';
 
 type ConversationSummary = { id: string; title: string | null; updated_at: string };
@@ -1762,6 +1763,75 @@ const AIAssistantPage = () => {
     }
   };
 
+  // ── « Préparer le devis » : extraction propre depuis les documents ────────
+  // Le devis ne dépend plus des faits de « Analyser mon projet » : il relit les
+  // pièces originales du dossier avec le moteur documentaire habituel
+  // (buildDocParts / buildImageParts côté serveur), en une seule lecture du
+  // dossier complet. Aucune quantité inventée, aucune unité forcée.
+  const findDossierAttachments = (): { attachments: MsgAttachment[]; userText: string | null } => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.role !== 'user') continue;
+      if (m.attachments && m.attachments.length > 0) {
+        return { attachments: m.attachments, userText: m.userText || null };
+      }
+    }
+    return { attachments: [], userText: null };
+  };
+
+  const runQuoteLinesExtraction = async (): Promise<string> => {
+    const { attachments: sourceAttachments, userText } = findDossierAttachments();
+    if (sourceAttachments.length === 0) return '';
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+    const resp = await fetch(STREAM_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        action: 'btp_quote_extract',
+        attachments: sourceAttachments,
+        originalsAvailable: true,
+        userQuestion: userText,
+        language: 'fr',
+      }),
+    });
+    if (!resp.ok || !resp.body) throw new Error(`quote_extract_http_${resp.status}`);
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    let soFar = '';
+    let streamDone = false;
+    readStream: while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      let idx: number;
+      while ((idx = buf.indexOf('\n')) !== -1) {
+        let line = buf.slice(0, idx);
+        buf = buf.slice(idx + 1);
+        if (line.endsWith('\r')) line = line.slice(0, -1);
+        if (line.startsWith(':') || line.trim() === '') continue;
+        if (!line.startsWith('data: ')) continue;
+        const json = line.slice(6).trim();
+        if (json === '[DONE]') { streamDone = true; break readStream; }
+        try {
+          const parsed = JSON.parse(json);
+          const c = parsed.choices?.[0]?.delta?.content;
+          if (c) soFar += c;
+        } catch {
+          buf = line + '\n' + buf;
+          break;
+        }
+      }
+    }
+    // Jamais de JSON partiel exploité comme extraction complète.
+    if (!streamDone || !soFar.trim()) throw new Error('quote_extract_interrupted');
+    return soFar;
+  };
+
   // ── Transfert vers le Devis intelligent ─────────────────────────────────
   // Les désignations sont toujours reformulées/traduites en français technique
   // avant transfert : le document final reste strictement français.
@@ -1769,53 +1839,46 @@ const AIAssistantPage = () => {
     if (isPreparingTransfer) return;
     setIsPreparingTransfer(true);
     try {
-      // Source UNIQUE : le contrat de faits BTP validé côté serveur.
-      // Aucun repli silencieux : ni le Markdown du rapport, ni docData.items.
-      const factsSource = job?.btpFacts ?? null;
-      const factsDraft = buildDraftLinesFromFacts(factsSource);
+      // Source UNIQUE : extraction dédiée « Préparer le devis » réalisée sur les
+      // documents originaux du dossier (aucune dépendance à job.btpFacts).
+      let extractionRaw = '';
+      try {
+        extractionRaw = await runQuoteLinesExtraction();
+      } catch (extractErr) {
+        console.warn('[AIAssistant] quote extraction failed', extractErr);
+      }
+      const quoteDraft = buildDraftLinesFromQuoteExtraction(extractionRaw);
 
-      if (!factsDraft.fromContract) {
-        console.warn('[AIAssistant] BTP transfer refusé : contrat de faits absent ou invalide', {
-          hasSource: Boolean(factsSource),
-          factsDraft,
+      if (!quoteDraft.ok) {
+        console.warn('[AIAssistant] BTP transfer refusé : extraction devis indisponible', {
+          hasSource: Boolean(extractionRaw),
+          quoteDraft,
         });
         toast({
           variant: 'destructive',
-          title: 'Faits techniques non validés',
-          description: "Les faits techniques n’ont pas pu être validés. Le devis automatique n’a pas été créé.",
+          title: 'Extraction du devis impossible',
+          description: "Les prestations n’ont pas pu être extraites des documents. Le devis automatique n’a pas été créé.",
         });
         return;
       }
 
-      // Les lignes issues du contrat portent une provenance (sourceOrigin) qui
-      // verrouille leur unité, leur lot et leur prix en aval.
-      const rawItems: any[] = factsDraft.rawItems;
-      const items: Array<typeof factsDraft.lines[number]> = factsDraft.lines;
-      const meta: typeof factsDraft.meta = factsDraft.meta;
+      // Les lignes portent une provenance (sourceOrigin) qui verrouille leur
+      // unité, leur lot et leur prix en aval.
+      const rawItems: any[] = quoteDraft.rawItems;
+      const items: Array<typeof quoteDraft.lines[number]> = quoteDraft.lines;
+      const meta: typeof quoteDraft.meta = quoteDraft.meta;
 
-      // Les lignes « pending » ne sont jamais transférées mais ne disparaissent
-      // jamais : elles restent visibles avec leur motif exact.
-      if (factsDraft.pendingCount > 0) {
-        console.info('[AIAssistant] BTP pending (non transférées)', factsDraft.pending);
+      // Aucune ligne n'est écartée : les quantités inconnues restent à compléter
+      // et les prestations conditionnelles sont signalées.
+      const toComplete = meta.filter((m) => !m.quantityAccepted).length;
+      const conditional = meta.filter((m) => m.reasons.includes('conditional')).length;
+      if (toComplete > 0 || conditional > 0) {
         toast({
-          title: 'Prestations à confirmer',
-          description: `${factsDraft.pendingCount} prestation(s) restent à confirmer : ${factsDraft.pending
-            .slice(0, 3)
-            .map((p) => `${p.designation}${p.reasons.length ? ` (${p.reasons.join(', ')})` : ''}`)
-            .join(' ; ')}`,
+          title: 'Prestations à contrôler',
+          description: `${toComplete} quantité(s) à compléter${conditional > 0 ? ` — ${conditional} prestation(s) conditionnelle(s)` : ''}.`,
         });
       }
 
-      if (items.length === 0) {
-        console.warn('[AIAssistant] BTP transfer: no ready fact', { factsDraft });
-        toast({
-          variant: 'destructive',
-          title: 'Aucune prestation exploitable',
-          description:
-            "Aucune prestation ne dispose d'une quantité et d'une unité confirmées : ces lignes restent à confirmer dans l'analyse.",
-        });
-        return;
-      }
 
 
 

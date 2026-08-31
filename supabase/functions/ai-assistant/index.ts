@@ -1517,8 +1517,98 @@ Les deux blocs doivent être ENTIÈREMENT fermés. Ne produis aucun autre bloc.`
       }
 
       outgoingMessages.length = 0;
-      outgoingMessages.push({ role: 'user', content: factParts });
     }
+
+    // === BTP QUOTE EXTRACT (action indépendante — « Préparer le devis ») =====
+    // Extraction propre depuis les DOCUMENTS ORIGINAUX, en une seule lecture du
+    // dossier complet (même moteur documentaire que l'assistant normal).
+    // Sortie : un unique bloc <ANAFYPRO_QUOTE_LINES> avec un contrat simple par
+    // ligne. Aucun prix, aucune quantité inventée.
+    if (action === 'btp_quote_extract') {
+      const qImageAtts = attList.filter((a: any) => a?.kind === 'image' && typeof a.dataUrl === 'string');
+      const qTextAtts = attList.filter((a: any) => a?.kind === 'pdf' || a?.kind === 'docx');
+      const qHasOriginals = qImageAtts.length + qTextAtts.length > 0;
+
+      finalSystemPrompt = `Tu es un moteur d'EXTRACTION DE PRESTATIONS pour la préparation d'un devis BTP. Tu lis le dossier complet fourni et tu relèves uniquement ce qui est explicitement écrit.
+
+INTERDICTIONS ABSOLUES :
+- ne jamais indiquer un prix, un coût, un taux de TVA, une durée ou un effectif ;
+- ne jamais inventer une quantité : ni 1, ni « 1 u », ni « 1 forfait », ni « 1 ensemble » ;
+- ne jamais forcer une unité qui n'est pas écrite ;
+- ne jamais calculer, additionner, convertir, ni déduire une quantité depuis un plan ;
+- ne jamais fusionner plusieurs ouvrages différents en une seule ligne ;
+- ne jamais supprimer une prestation écrite au motif que sa quantité est inconnue.
+
+RÈGLES DE RELEVÉ :
+1. Reprends EXACTEMENT toute quantité explicitement écrite dans les documents.
+2. Si une phrase énumère plusieurs ouvrages différents avec leurs quantités, crée AUTANT DE LIGNES que d'ouvrages.
+   Exemple obligatoire : « 2 WC, 2 vasques, 1 baignoire, 1 douche » → 4 lignes (2 WC / 2 vasques / 1 baignoire / 1 douche).
+3. Si aucune quantité n'est indiquée pour une prestation : "quantity": null, "unit": null si l'unité n'est pas écrite, et "status": "quantity_missing". La ligne est conservée.
+4. Une prestation écrite « si nécessaire », « le cas échéant », « éventuellement », « en option » ou « à confirmer » prend "status": "conditional" : elle ne devient jamais une prestation certaine.
+5. Distingue la quantité principale des composants inclus : « 1 VMC comprenant 5 bouches » → UNE ligne : quantity 1, unit "u" uniquement si écrit sinon null, characteristics "comprenant 5 bouches". JAMAIS 5 VMC. Une quantité de composant n'est jamais la quantité de la ligne.
+6. Conserve l'ordre d'apparition dans les documents.
+7. sourceFile : nom EXACT du fichier reçu, jamais attribué à un autre fichier. evidenceText : extrait exact du document justifiant la ligne.
+8. designation : fidèle au document (nettoyage autorisé pour espaces, casse, ponctuation), en français technique, sans reformulation commerciale.
+9. "lot" uniquement si le document nomme explicitement un lot, sinon null.
+
+STATUTS AUTORISÉS : "confirmed" (prestation et quantité écrites), "quantity_missing" (prestation écrite, quantité absente), "conditional" (prestation soumise à condition).
+
+SORTIE : un unique bloc, sans aucun texte avant ni après, sans markdown, JSON strict (guillemets doubles, aucune virgule finale, balise fermante obligatoire) :
+
+<ANAFYPRO_QUOTE_LINES>
+{
+  "documents": [ { "fileName": "" } ],
+  "lines": [
+    {
+      "designation": "",
+      "quantity": null,
+      "unit": null,
+      "characteristics": null,
+      "lot": null,
+      "sourceFile": "",
+      "evidenceText": "",
+      "status": "confirmed | quantity_missing | conditional"
+    }
+  ]
+}
+</ANAFYPRO_QUOTE_LINES>`;
+
+      const quoteParts: any[] = [];
+      quoteParts.push({
+        type: 'text',
+        text: `EXTRACTION DES PRESTATIONS POUR DEVIS DEMANDÉE. Lis l'ensemble du dossier ci-dessous et relève uniquement les prestations explicitement écrites. Réponds uniquement par le bloc <ANAFYPRO_QUOTE_LINES>.`,
+      });
+
+      if (typeof userQuestion === 'string' && userQuestion.trim()) {
+        quoteParts.push({
+          type: 'text',
+          text: `TEXTE D'ORIGINE DE L'UTILISATEUR (contexte, non contractuel — ne rien en déduire) : ${userQuestion.trim()}`,
+        });
+      }
+
+      if (qHasOriginals) {
+        const qFileList = [...qImageAtts, ...qTextAtts].map(fileInventoryLine).join('\n');
+        quoteParts.push({
+          type: 'text',
+          text: `PIÈCES ORIGINALES DU DOSSIER (dossier complet, chaque pièce garde son nom) :\n${qFileList}`,
+        });
+        qImageAtts.forEach((att: any, i: number) => {
+          quoteParts.push(...buildImageParts(att, i, "Document du dossier. N'attribue son contenu à aucun autre fichier."));
+        });
+        qTextAtts.forEach((att: any, i: number) => {
+          quoteParts.push(...buildDocParts(att, i));
+        });
+      } else {
+        quoteParts.push({
+          type: 'text',
+          text: `Aucune pièce originale n'est disponible. Retourne le bloc <ANAFYPRO_QUOTE_LINES> avec "documents": [] et "lines": [].`,
+        });
+      }
+
+      outgoingMessages.length = 0;
+      outgoingMessages.push({ role: 'user', content: quoteParts });
+    }
+
 
     // === BTP DOCUMENT CONTROL (action indépendante : comparaison des faits déjà
     // extraits par btp_factual_extraction). Aucune relecture des pièces, aucun

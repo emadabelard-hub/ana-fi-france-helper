@@ -1517,7 +1517,9 @@ Les deux blocs doivent être ENTIÈREMENT fermés. Ne produis aucun autre bloc.`
       }
 
       outgoingMessages.length = 0;
+      outgoingMessages.push({ role: 'user', content: factParts });
     }
+
 
     // === BTP QUOTE EXTRACT (action indépendante — « Préparer le devis ») =====
     // Extraction propre depuis les DOCUMENTS ORIGINAUX, en une seule lecture du

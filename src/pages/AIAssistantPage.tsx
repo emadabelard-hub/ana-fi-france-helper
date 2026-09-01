@@ -78,24 +78,6 @@ type Msg = {
   internal?: boolean;
 };
 
-// État persistant d'une analyse « Analyser mon projet » (source : base de données).
-type AnalysisJob = {
-  id: string;
-  status: 'queued' | 'processing' | 'completed' | 'failed';
-  language: string;
-  progress: number;
-  current_step: string;
-  final_report: string | null;
-  error_message: string | null;
-  user_text: string | null;
-  documents: { name?: string; kind?: string }[] | null;
-  docData?: any;
-  /** Faits structurés (<ANAFYPRO_BTP_FACTS>) — source du brouillon de devis. */
-  btpFacts?: string | null;
-};
-
-const ANALYSIS_JOB_KEY = 'anafypro_btp_analysis_job_id';
-
 type CategoryKey = 'مهني' | 'اداري' | 'قانوني' | 'شخصي' | null;
 
 const CATEGORIES: { key: CategoryKey; emoji: string; labelAr: string; labelFr: string }[] = [
@@ -620,26 +602,11 @@ const AIAssistantPage = () => {
   const [controlLoading, setControlLoading] = useState(false);
   const controlRunningRef = useRef(false);
   const controlAbortRef = useRef<AbortController | null>(null);
-
-  // ── Parcours unifié « Analyser mon projet » ──────────────────────────────
-  // Le pipeline complet (analyse → faits → contrôle → rapport) est exécuté
-  // automatiquement ; ses étapes intermédiaires restent invisibles.
-  const [pipelineStep, setPipelineStep] = useState<null | 'analyze' | 'facts' | 'control' | 'report'>(null);
-  const pipelineRunningRef = useRef(false);
   // Mode test / administration : réactive les outils techniques et le JSON brut.
   const [techMode] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     try { return localStorage.getItem('anafypro_btp_tech_mode') === 'true'; } catch { return false; }
   });
-
-  // ── Analyse persistante côté serveur ────────────────────────────────────
-  // L'état de référence est enregistré en base (public.btp_analysis_jobs) :
-  // l'écran ne fait que le lire. Le traitement continue donc si l'utilisateur
-  // change de page, met le téléphone en veille, actualise ou ferme l'app.
-  const [job, setJob] = useState<AnalysisJob | null>(null);
-  const [startingJob, setStartingJob] = useState(false);
-  const renderedJobRef = useRef<string | null>(null);
-  const jobActive = !!job && (job.status === 'queued' || job.status === 'processing');
 
   // Libellés du parcours (FR / AR) — le rapport final suit la même langue.
   const L = isRTL
@@ -699,29 +666,12 @@ const AIAssistantPage = () => {
         failedTitle: 'L’analyse n’a pas pu être finalisée',
         retry: 'Relancer l’analyse',
       };
-  const pipelineLabel = pipelineStep === 'analyze' ? L.stepAnalyze
-    : pipelineStep === 'facts' ? L.stepFacts
-    : pipelineStep === 'control' ? L.stepControl
-    : pipelineStep === 'report' ? L.stepReport
-    : '';
-  // Progression consolidée : une seule valeur, issue de l'état serveur.
-  const jobProgressLabel = !job
-    ? ''
-    : job.status === 'completed'
-      ? L.progDone
-      : job.current_step === 'report'
-        ? L.progReport
-        : job.current_step === 'analyze' || job.current_step === 'facts'
-          ? L.progDocs
-          : L.progPrep;
-  const jobProgressValue = Math.max(5, Math.min(100, job?.progress ?? 0));
   useEffect(() => () => {
     deepAnalysisClearIdleRef.current?.();
     try { deepAnalysisAbortRef.current?.abort(); } catch { /* noop */ }
   }, []);
   const { toast } = useToast();
   // Compteur d'échecs consécutifs du suivi d'analyse (visibilité mobile).
-  const pollFailuresRef = useRef(0);
   const dictation = useAssistantDictation(isRTL ? 'ar-EG' : 'fr-FR');
 
   // Auto-fill from profile if available
@@ -2043,198 +1993,6 @@ const AIAssistantPage = () => {
     }
   };
 
-  // ── Analyse persistante : appel direct (fetch) du worker ────────────────
-  // Note mobile : supabase.functions.invoke échoue sur les envois volumineux
-  // (images en base64) — un fetch direct est utilisé, comme pour Smart Devis.
-  const callWorker = useCallback(async (body: Record<string, unknown>) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/btp-analysis-worker`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-      },
-      body: JSON.stringify(body),
-    });
-    const text = await resp.text();
-    let parsed: any = null;
-    try { parsed = text ? JSON.parse(text) : null; } catch { /* réponse non JSON */ }
-    if (!resp.ok) {
-      throw new Error(parsed?.error || `worker_http_${resp.status}`);
-    }
-    return parsed;
-  }, []);
-
-  const fetchJobStatus = useCallback(async (jobId?: string | null): Promise<AnalysisJob | null> => {
-    if (!user) return null;
-    try {
-      const data = await callWorker({ action: 'status', jobId: jobId || undefined });
-      const row = (data as any)?.job ?? null;
-      if (row) setJob(row as AnalysisJob);
-      pollFailuresRef.current = 0;
-      return row as AnalysisJob | null;
-    } catch (e) {
-      console.warn('[AIAssistant] job status failed', e);
-      pollFailuresRef.current += 1;
-      if (pollFailuresRef.current >= 3) {
-        toast({
-          variant: 'destructive',
-          title: isRTL ? 'انقطع الاتصال بالتحليل' : "Connexion à l'analyse interrompue",
-          description: errShort(e, 120),
-        });
-      }
-      return null;
-    }
-  }, [user, callWorker, isRTL, toast]);
-
-
-  // Reprise automatique de l'affichage : au montage / retour sur la page,
-  // l'analyse est retrouvée par son identifiant enregistré (jamais par l'état
-  // local du composant).
-  useEffect(() => {
-    if (!user) return;
-    let stored: string | null = null;
-    try { stored = localStorage.getItem(ANALYSIS_JOB_KEY); } catch { /* noop */ }
-    void fetchJobStatus(stored);
-  }, [user, fetchJobStatus]);
-
-  // Interrogation périodique tant que l'analyse n'est pas terminée
-  // (+ rafraîchissement immédiat au retour d'arrière-plan / de veille).
-  useEffect(() => {
-    if (!user || !jobActive) return;
-    const jobId = job?.id ?? null;
-    const timer = setInterval(() => { void fetchJobStatus(jobId); }, 5000);
-    const onVisible = () => { if (document.visibilityState === 'visible') void fetchJobStatus(jobId); };
-    document.addEventListener('visibilitychange', onVisible);
-    window.addEventListener('online', onVisible);
-    return () => {
-      clearInterval(timer);
-      document.removeEventListener('visibilitychange', onVisible);
-      window.removeEventListener('online', onVisible);
-    };
-  }, [user, jobActive, job?.id, fetchJobStatus]);
-
-  // Affichage du rapport dès qu'il est disponible (aucun doublon possible).
-  useEffect(() => {
-    if (!job || job.status !== 'completed' || !job.final_report) return;
-    const deepId = `job-${job.id}`;
-    if (renderedJobRef.current === deepId) return;
-    renderedJobRef.current = deepId;
-    const names = (job.documents || []).map(d => d?.name).filter(Boolean) as string[];
-    const display = job.user_text || (names.length ? `📎 ${names.join(', ')}` : '');
-    setMessages(prev => {
-      if (prev.some(m => m.deepId === deepId)) return prev;
-      const next: Msg[] = [];
-      if (display) next.push({ role: 'user', content: display });
-      if (job.docData) {
-        // Synthèse structurée conservée hors affichage : elle alimente les
-        // actions finales (transfert vers le Devis intelligent).
-        next.push({
-          role: 'assistant',
-          content: `<ANAFYPRO_DOCUMENT_DATA>${JSON.stringify(job.docData)}</ANAFYPRO_DOCUMENT_DATA>`,
-          resultType: 'document_analysis',
-          internal: true,
-        });
-      }
-      next.push({ role: 'assistant', content: job.final_report as string, resultType: 'btp_deep_analysis', deepId });
-      return [...prev, ...next];
-    });
-    toast({ title: L.progDone });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [job?.id, job?.status, job?.final_report]);
-
-  // ── Lancement : crée l'analyse persistante puis rend la main ────────────
-  const startPersistentAnalysis = async () => {
-    if (startingJob || jobActive) return;
-    const text = input.trim();
-    if (!text && attachments.length === 0) return;
-    setStartingJob(true);
-    try {
-      const payloadAttachments = attachments;
-      const data = await callWorker({
-        action: 'start',
-        attachments: payloadAttachments,
-        userText: text,
-        language: language === 'ar' ? 'ar' : 'fr',
-        userName: profile?.full_name?.trim().split(/\s+/)[0] || userInfo?.name || null,
-        userProfile: profile
-          ? {
-              full_name: profile.full_name || null,
-              company_name: (profile as any).company_name || null,
-              siret: (profile as any).siret || null,
-              dialect: (profile as any).dialect || null,
-            }
-          : null,
-      });
-      const row = (data as any)?.job ?? null;
-      if (!row) throw new Error('start_failed');
-      try { localStorage.setItem(ANALYSIS_JOB_KEY, row.id); } catch { /* noop */ }
-      renderedJobRef.current = null;
-      setJob(row as AnalysisJob);
-      setInput('');
-      setAttachments([]);
-      setUserHasEdited(false);
-      resetTextareaHeight();
-      void fetchJobStatus(row.id);
-    } catch (e) {
-      console.error('[AIAssistant] start analysis failed', e);
-      toast({ variant: 'destructive', title: 'Erreur', description: `L'analyse du projet n'a pas pu être lancée. (${errShort(e, 150)})` });
-    } finally {
-      setStartingJob(false);
-    }
-  };
-
-  const retryPersistentAnalysis = async () => {
-    if (!job) return;
-    try {
-      await callWorker({ action: 'retry', jobId: job.id });
-      renderedJobRef.current = null;
-      void fetchJobStatus(job.id);
-    } catch (e) {
-      console.error('[AIAssistant] retry failed', e);
-    }
-  };
-
-
-
-  // ── Point d'entrée unique : « Analyser mon projet » ──────────────────────
-  // Enchaîne automatiquement les étapes internes puis n'affiche qu'un rapport.
-  const runFullProjectAnalysis = async () => {
-    if (pipelineRunningRef.current) return;
-    const text = input.trim();
-    if (!text && attachments.length === 0) return;
-    pipelineRunningRef.current = true;
-
-    // Les pièces originales sont mémorisées avant l'envoi (l'état est vidé).
-    const originals = attachments;
-    const userText = text || null;
-
-    try {
-      setPipelineStep('analyze');
-      const analysis = await send(text, { internal: true });
-      if (!analysis || !analysis.trim()) return;
-
-      const { data: docData, status } = extractBtpDocData(analysis);
-      if (status !== 'ok' || !docData) {
-        // Analyse non structurée : on rend la réponse visible telle quelle.
-        setMessages(prev => prev.map(m => (m.internal ? { ...m, internal: false } : m)));
-        return;
-      }
-
-      setPipelineStep('facts');
-      await runFactualExtraction(0, docData, { attachments: originals, userText, internal: true });
-
-      setPipelineStep('report');
-      await runDeepAnalysis(0, docData, { attachments: originals, userText });
-    } catch (err) {
-      console.error('[AIAssistant] full project analysis failed', err);
-      toast({ variant: 'destructive', title: 'Erreur', description: `L'analyse du projet n'a pas pu être finalisée. (${errShort(err, 150)})` });
-    } finally {
-      setPipelineStep(null);
-      pipelineRunningRef.current = false;
-    }
-  };
 
   const isArabic = (t: string) => /[\u0600-\u06FF]/.test(t);
 
@@ -2958,7 +2716,6 @@ const AIAssistantPage = () => {
               {(() => {
                 const effectiveBtpDocData = (btpDocStatus === 'ok' && btpDocData) ? btpDocData : panelDataAt[i];
                 if (!(isLastAssistant && !isLoading && effectiveBtpDocData)) return null;
-                if (pipelineStep) return null;
                 const isDeepLoading = deepAnalysisLoadingIndex !== null;
 
                 // ── Utilisateur final : uniquement les trois actions demandées,
@@ -3261,85 +3018,8 @@ const AIAssistantPage = () => {
           </button>
 
         </div>
-
-        {/* Analyse en cours : un seul écran, une seule barre de progression */}
-        {jobActive && (
-          <div className="px-3 pb-3" dir={isRTL ? 'rtl' : 'ltr'}>
-            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-              <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
-                <Loader2 size={16} className="animate-spin text-primary shrink-0" />
-                <h3 className={cn("text-sm font-bold text-foreground", isRTL && "font-cairo text-right")}>
-                  {L.runningTitle}
-                </h3>
-              </div>
-              <p className={cn("text-xs text-muted-foreground leading-relaxed", isRTL && "font-cairo text-right")}>
-                {L.runningText}
-              </p>
-              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full bg-primary transition-all duration-500"
-                  style={{ width: `${jobProgressValue}%` }}
-                />
-              </div>
-              <p className={cn("text-xs font-semibold text-foreground", isRTL && "font-cairo text-right")}>
-                {jobProgressLabel}
-              </p>
-              {techMode && (
-                <p className="text-[11px] text-muted-foreground font-mono break-all">
-                  {job?.id} · {job?.status} · {job?.current_step} · {job?.progress}%
-                  {job?.error_message ? ` · ${job.error_message}` : ''}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Échec confirmé : relance explicite */}
-        {job?.status === 'failed' && (
-          <div className="px-3 pb-3" dir={isRTL ? 'rtl' : 'ltr'}>
-            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-              <p className={cn("text-sm font-semibold text-foreground", isRTL && "font-cairo text-right")}>
-                {L.failedTitle}
-              </p>
-              <button
-                type="button"
-                onClick={() => { void retryPersistentAnalysis(); }}
-                className={cn(
-                  "inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground font-bold text-sm active:scale-95 transition-transform",
-                  isRTL && "font-cairo"
-                )}
-              >
-                <Sparkles size={16} />
-                {L.retry}
-              </button>
-              {job.error_message && (
-                <p className="text-[11px] text-muted-foreground font-mono break-all">{job.error_message}</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Point d'entrée unique : lance tout le parcours d'analyse */}
-        <div className="px-3 pb-3" dir={isRTL ? 'rtl' : 'ltr'}>
-          <button
-            type="button"
-            onClick={() => {
-              // Mode test : pipeline visible dans le navigateur (étapes détaillées).
-              if (techMode) { void runFullProjectAnalysis(); return; }
-              void startPersistentAnalysis();
-            }}
-            disabled={(!input.trim() && attachments.length === 0) || isLoading || pipelineStep !== null || startingJob || jobActive}
-            className={cn(
-              "w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm shadow-md transition-all active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed bg-primary text-primary-foreground",
-              isRTL && "font-cairo"
-            )}
-          >
-            {(pipelineStep || startingJob || jobActive) ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-            {pipelineStep ? (pipelineLabel || L.analyzing) : (startingJob || jobActive) ? L.analyzing : L.analyzeProject}
-          </button>
-        </div>
-
       </div>
+
 
       {/* Room Scanner Modal */}
       <RoomScannerModal open={showScanner} onClose={() => setShowScanner(false)} isRTL={isRTL} />

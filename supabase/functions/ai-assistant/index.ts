@@ -1302,7 +1302,7 @@ ${btpJson}
     // === BTP FACTUAL EXTRACTION (action indépendante : extraction strictement
     // factuelle). Aucune analyse métier, aucune estimation, aucun calcul.
     // Réutilise le pipeline de streaming et les pièces déjà transmises.
-    if (action === 'btp_factual_extraction' || action === 'btp_document_ingest') {
+    if (action === 'btp_factual_extraction') {
       const factImageAtts = attList.filter((a: any) => a?.kind === 'image' && typeof a.dataUrl === 'string');
       const factTextAtts = attList.filter((a: any) => a?.kind === 'pdf' || a?.kind === 'docx');
       const factHasOriginals = factImageAtts.length + factTextAtts.length > 0;
@@ -1445,49 +1445,10 @@ SORTIE — uniquement un bloc <ANAFYPRO_BTP_FACTS> contenant du JSON strict, san
 
 Tous les fichiers réellement reçus doivent apparaître dans "documents[]". Toute information absente ou illisible doit apparaître dans "missingInformation[]". Ne produis aucun autre bloc, aucun bloc <ANAFYPRO_DOCUMENT_DATA>, aucun texte hors du bloc <ANAFYPRO_BTP_FACTS>.`;
 
-      // === INGESTION D'UN SEUL DOCUMENT (ou d'une seule portion) ===========
-      // Même lecture, même exigence factuelle, mais la réponse porte DEUX
-      // blocs : la fiche technique compacte du document PUIS ses faits. La
-      // source originale n'est donc lue qu'une seule fois, et aucune étape
-      // ultérieure ne réinterprète un résumé.
-      if (action === 'btp_document_ingest') {
-        finalSystemPrompt += `
-
-=== SORTIE SPÉCIFIQUE — INGESTION D'UN SEUL DOCUMENT (remplace la consigne de sortie ci-dessus) ===
-Tu reçois UNE SEULE pièce (un document, ou une portion d'un document). Tu ne dois jamais évoquer d'autres pièces.
-Ta réponse contient EXACTEMENT DEUX blocs, dans cet ordre, sans aucun texte avant, entre ou après, sans markdown, sans narratif, sans recommandation, sans prix :
-
-1) <ANAFYPRO_DOCUMENT_DATA>
-{
-  "documentMode": true,
-  "documents": [ { "fileName": "", "type": null, "readingQuality": "bonne | partielle | mauvaise", "pageCount": null, "role": null } ],
-  "readingQuality": "bonne | partielle | insuffisante",
-  "client": { "name": null, "address": null },
-  "project": { "title": null, "address": null, "deadline": null },
-  "summary": "",
-  "constraints": [],
-  "missingInformation": [],
-  "documentTotalHT": null,
-  "documentTotalEvidenceText": ""
-}
-</ANAFYPRO_DOCUMENT_DATA>
-
-2) <ANAFYPRO_BTP_FACTS> … </ANAFYPRO_BTP_FACTS> — exactement la structure JSON décrite plus haut.
-
-Règles de la fiche compacte :
-- JSON strict, guillemets doubles, aucune virgule finale, aucun commentaire, balise fermante obligatoire ;
-- "summary" : 3 phrases maximum, strictement factuelles, décrivant la nature du document et le projet concerné. Aucun prix, aucune quantité inventée, aucune recommandation ;
-- toute valeur inconnue reste null. La fiche ne remplace jamais les faits : elle les situe ;
-- aucun item chiffré dans la fiche : les prestations relevées appartiennent au bloc de faits uniquement.
-Les deux blocs doivent être ENTIÈREMENT fermés. Ne produis aucun autre bloc.`;
-      }
-
       const factParts: any[] = [];
       factParts.push({
         type: 'text',
-        text: action === 'btp_document_ingest'
-          ? `INGESTION D'UN SEUL DOCUMENT DEMANDÉE. Relève uniquement les informations explicitement écrites et parfaitement lisibles dans la pièce ci-dessous. Réponds uniquement par le bloc <ANAFYPRO_DOCUMENT_DATA> suivi du bloc <ANAFYPRO_BTP_FACTS>.`
-          : `EXTRACTION FACTUELLE DEMANDÉE. Relève uniquement les informations explicitement écrites et parfaitement lisibles dans les pièces ci-dessous. Réponds uniquement par le bloc <ANAFYPRO_BTP_FACTS>.`,
+        text: `EXTRACTION FACTUELLE DEMANDÉE. Relève uniquement les informations explicitement écrites et parfaitement lisibles dans les pièces ci-dessous. Réponds uniquement par le bloc <ANAFYPRO_BTP_FACTS>.`,
       });
 
       if (typeof userQuestion === 'string' && userQuestion.trim()) {
@@ -1769,7 +1730,6 @@ Ne produis aucun autre bloc et aucun texte hors du bloc <ANAFYPRO_BTP_CONTROL>.`
     // classification à chaque exécution.
     const deterministicBtpAction =
       action === 'btp_factual_extraction' ||
-      action === 'btp_document_ingest' ||
       action === 'btp_deep_technical_analysis' ||
       action === 'btp_document_control' ||
       action === 'btp_quote_extract';

@@ -78,7 +78,6 @@ type Msg = {
   internal?: boolean;
 };
 
-// État persistant d'une analyse « Analyser mon projet » (source : base de données).
 type CategoryKey = 'مهني' | 'اداري' | 'قانوني' | 'شخصي' | null;
 
 const CATEGORIES: { key: CategoryKey; emoji: string; labelAr: string; labelFr: string }[] = [
@@ -603,7 +602,11 @@ const AIAssistantPage = () => {
   const [controlLoading, setControlLoading] = useState(false);
   const controlRunningRef = useRef(false);
   const controlAbortRef = useRef<AbortController | null>(null);
-
+  // Mode test / administration : réactive les outils techniques et le JSON brut.
+  const [techMode] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try { return localStorage.getItem('anafypro_btp_tech_mode') === 'true'; } catch { return false; }
+  });
 
   // Libellés du parcours (FR / AR) — le rapport final suit la même langue.
   const L = isRTL

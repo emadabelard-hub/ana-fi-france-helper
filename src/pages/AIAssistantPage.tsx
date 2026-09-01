@@ -1993,11 +1993,6 @@ const AIAssistantPage = () => {
     }
   };
 
-    } finally {
-      setPipelineStep(null);
-      pipelineRunningRef.current = false;
-    }
-  };
 
   const isArabic = (t: string) => /[\u0600-\u06FF]/.test(t);
 

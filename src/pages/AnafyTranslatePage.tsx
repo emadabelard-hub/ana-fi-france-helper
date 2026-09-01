@@ -208,8 +208,6 @@ const AnafyTranslatePage = () => {
           </div>
         </section>
 
-        </section>
-
         {/* Chrome translate method */}
         <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 text-right text-[14px] text-foreground leading-relaxed mb-5">
           <h3 className="font-bold mb-2 text-[15px]">📱 لو الموقع مش بيفتح مترجم — استخدم ترجمة كروم</h3>

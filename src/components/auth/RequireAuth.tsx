@@ -20,6 +20,8 @@ const isPublicPath = (pathname: string) => {
   if (PUBLIC_PATHS.has(pathname)) return true;
   // Public document verification link (token embedded in :id).
   if (pathname.startsWith('/verify/')) return true;
+  // Internal isolated test page — accessible without condition.
+  if (pathname === '/dev/zone-vision-test') return true;
   return false;
 };
 

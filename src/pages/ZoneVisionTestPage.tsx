@@ -93,19 +93,21 @@ const ZoneVisionTestPage = () => {
         Une seule page, 4 zones avec chevauchement, envoyées seules à Claude.
       </p>
 
-      <div className="flex items-center gap-2">
-        <label className="text-sm text-foreground">Page&nbsp;:</label>
-        <input
-          type="text"
-          inputMode="numeric"
-          value={pageNumber}
-          onChange={(e) => setPageNumber(Math.max(1, parseInt(e.target.value.replace(/\D/g, '') || '1', 10)))}
-          className="w-16 rounded-md border border-border bg-background px-2 py-1 text-sm"
-        />
-        <input type="file" accept="application/pdf" onChange={onFile} className="text-sm" />
+      <div className="flex flex-col gap-3">
+        <input type="file" accept="application/pdf" onChange={onFile} className="w-full text-sm" />
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-foreground">Page&nbsp;:</label>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={pageNumber}
+            onChange={(e) => setPageNumber(Math.max(1, parseInt(e.target.value.replace(/\D/g, '') || '1', 10)))}
+            className="w-20 rounded-md border border-border bg-background px-2 py-2 text-base"
+          />
+        </div>
       </div>
 
-      <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} className="text-sm min-h-[90px]" />
+      <Textarea rows={8} value={prompt} onChange={(e) => setPrompt(e.target.value)} className="w-full text-base min-h-[200px]" />
 
       {split && (
         <div className="rounded-xl border border-border p-3 space-y-2 text-xs text-muted-foreground">

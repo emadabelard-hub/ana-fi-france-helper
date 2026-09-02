@@ -1767,9 +1767,13 @@ Ne produis aucun autre bloc et aucun texte hors du bloc <ANAFYPRO_BTP_CONTROL>.`
               replaced += 1;
               const fb = Array.isArray(part._fallback) ? part._fallback : [];
               next.push(...(fb.length ? fb : [{ type: 'text', text: 'PDF non exploitable par ce fournisseur.' }]));
+            } else if (part?._claudeOnly) {
+              // Pages déjà fournies à Gemini via `_fallback` : pas de doublon.
+              continue;
             } else {
               next.push(part);
             }
+
           }
           m.content = next;
         }

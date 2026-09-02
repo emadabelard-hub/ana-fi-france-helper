@@ -739,9 +739,14 @@ Après la recommandation, dis-lui :
           { type: 'text', text: `DOCUMENT PDF ${i + 1} — Fichier : ${name}\n${ingestionLabel(a)}. Lis-le réellement, y compris les plans, les pages scannées et les schémas.` },
           { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: a.base64 }, _fallback: fallback },
         ];
+        // Les pages rendues sont AJOUTÉES pour Claude (en plus du PDF natif).
+        // Elles sont marquées `_claudeOnly` afin que la bascule Gateway (Gemini)
+        // ne les reçoive pas en double : Gemini les obtient déjà via `_fallback`.
+        for (const p of pageParts) parts.push({ ...p, _claudeOnly: true });
         if (textBlock) parts.push(textBlock);
         return parts;
       }
+
       if (method === 'page_images') {
         const parts: any[] = [{ type: 'text', text: `DOCUMENT PDF ${i + 1} — Fichier : ${name}\n${ingestionLabel(a)}.` }, ...pageParts];
         if (textBlock) parts.push(textBlock);
@@ -1762,9 +1767,13 @@ Ne produis aucun autre bloc et aucun texte hors du bloc <ANAFYPRO_BTP_CONTROL>.`
               replaced += 1;
               const fb = Array.isArray(part._fallback) ? part._fallback : [];
               next.push(...(fb.length ? fb : [{ type: 'text', text: 'PDF non exploitable par ce fournisseur.' }]));
+            } else if (part?._claudeOnly) {
+              // Pages déjà fournies à Gemini via `_fallback` : pas de doublon.
+              continue;
             } else {
               next.push(part);
             }
+
           }
           m.content = next;
         }
@@ -1791,9 +1800,11 @@ Ne produis aucun autre bloc et aucun texte hors du bloc <ANAFYPRO_BTP_CONTROL>.`
 
     if (!ANTHROPIC_API_KEY) {
       console.warn("[ai-assistant] Bascule Gateway : ANTHROPIC_API_KEY absente");
+      console.log("[ai-assistant] provider_used=gemini reason=missing_anthropic_key");
       response = await callGateway();
     } else {
       let anthropicResponse: Response | null = null;
+      let failureReason = "other";
       try {
         // Un seul essai Anthropic avant bascule.
         anthropicResponse = await anthropicCompatFetch({
@@ -1802,20 +1813,26 @@ Ne produis aucun autre bloc et aucun texte hors du bloc <ANAFYPRO_BTP_CONTROL>.`
           body: aiRequestBody,
         });
       } catch (e) {
-        console.warn("[ai-assistant] Bascule Gateway : appel Anthropic en échec —", e instanceof Error ? e.message : String(e));
+        const msg = e instanceof Error ? e.message : String(e);
+        console.warn("[ai-assistant] Bascule Gateway : appel Anthropic en échec —", msg);
+        failureReason = /timeout|timed out|deadline|abort/i.test(msg) ? "anthropic_timeout" : "anthropic_network_error";
         anthropicResponse = null;
       }
 
       if (anthropicResponse && anthropicResponse.ok) {
+        console.log("[ai-assistant] provider_used=anthropic");
         response = anthropicResponse;
       } else {
         if (anthropicResponse) {
           const reason = await anthropicResponse.text().catch(() => "");
+          failureReason = "anthropic_non_2xx";
           console.warn(`[ai-assistant] Bascule Gateway : Anthropic ${anthropicResponse.status} — ${reason.slice(0, 300)}`);
         }
+        console.log(`[ai-assistant] provider_used=gemini reason=${failureReason}`);
         response = await callGateway();
       }
     }
+
 
 
 

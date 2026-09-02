@@ -739,9 +739,14 @@ Après la recommandation, dis-lui :
           { type: 'text', text: `DOCUMENT PDF ${i + 1} — Fichier : ${name}\n${ingestionLabel(a)}. Lis-le réellement, y compris les plans, les pages scannées et les schémas.` },
           { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: a.base64 }, _fallback: fallback },
         ];
+        // Les pages rendues sont AJOUTÉES pour Claude (en plus du PDF natif).
+        // Elles sont marquées `_claudeOnly` afin que la bascule Gateway (Gemini)
+        // ne les reçoive pas en double : Gemini les obtient déjà via `_fallback`.
+        for (const p of pageParts) parts.push({ ...p, _claudeOnly: true });
         if (textBlock) parts.push(textBlock);
         return parts;
       }
+
       if (method === 'page_images') {
         const parts: any[] = [{ type: 'text', text: `DOCUMENT PDF ${i + 1} — Fichier : ${name}\n${ingestionLabel(a)}.` }, ...pageParts];
         if (textBlock) parts.push(textBlock);

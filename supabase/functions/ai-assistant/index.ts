@@ -1800,9 +1800,11 @@ Ne produis aucun autre bloc et aucun texte hors du bloc <ANAFYPRO_BTP_CONTROL>.`
 
     if (!ANTHROPIC_API_KEY) {
       console.warn("[ai-assistant] Bascule Gateway : ANTHROPIC_API_KEY absente");
+      console.log("[ai-assistant] provider_used=gemini reason=missing_anthropic_key");
       response = await callGateway();
     } else {
       let anthropicResponse: Response | null = null;
+      let failureReason = "other";
       try {
         // Un seul essai Anthropic avant bascule.
         anthropicResponse = await anthropicCompatFetch({
@@ -1811,20 +1813,26 @@ Ne produis aucun autre bloc et aucun texte hors du bloc <ANAFYPRO_BTP_CONTROL>.`
           body: aiRequestBody,
         });
       } catch (e) {
-        console.warn("[ai-assistant] Bascule Gateway : appel Anthropic en échec —", e instanceof Error ? e.message : String(e));
+        const msg = e instanceof Error ? e.message : String(e);
+        console.warn("[ai-assistant] Bascule Gateway : appel Anthropic en échec —", msg);
+        failureReason = /timeout|timed out|deadline|abort/i.test(msg) ? "anthropic_timeout" : "anthropic_network_error";
         anthropicResponse = null;
       }
 
       if (anthropicResponse && anthropicResponse.ok) {
+        console.log("[ai-assistant] provider_used=anthropic");
         response = anthropicResponse;
       } else {
         if (anthropicResponse) {
           const reason = await anthropicResponse.text().catch(() => "");
+          failureReason = "anthropic_non_2xx";
           console.warn(`[ai-assistant] Bascule Gateway : Anthropic ${anthropicResponse.status} — ${reason.slice(0, 300)}`);
         }
+        console.log(`[ai-assistant] provider_used=gemini reason=${failureReason}`);
         response = await callGateway();
       }
     }
+
 
 
 

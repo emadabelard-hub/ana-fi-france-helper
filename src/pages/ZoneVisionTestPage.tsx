@@ -117,7 +117,7 @@ const ZoneVisionTestPage = () => {
           <p>
             Chevauchement : {Math.round(split.overlapRatio * 100)} % — JPEG qualité {split.jpegQuality}
           </p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {split.zones.map((z) => (
               <div key={z.index} className="space-y-1">
                 <p className="text-foreground">
@@ -130,7 +130,7 @@ const ZoneVisionTestPage = () => {
         </div>
       )}
 
-      <Button onClick={send} disabled={!split || busy}>
+      <Button onClick={send} disabled={!split || busy} className="w-full">
         {busy ? <Loader2 className="animate-spin" size={16} /> : 'Envoyer les 4 zones à Claude'}
       </Button>
 

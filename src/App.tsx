@@ -204,7 +204,9 @@ const AppRoutes = () => {
                       <Route path="/opportunites/:sector" element={<OpportuniteSectorPage />} />
                       <Route path="/accounting/supplier-invoices" element={<SupplierInvoicesPage />} />
                       <Route path="/accounting/supplier-invoices/:id" element={<SupplierInvoiceDetailPage />} />
+                      <Route path="/dev/zone-vision-test" element={<ZoneVisionTestPage />} />
                       <Route path="*" element={<NotFound />} />
+
                     </Routes>
                   </RequireAuth>
                 </Suspense>

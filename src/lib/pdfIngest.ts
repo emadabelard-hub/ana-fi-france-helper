@@ -85,8 +85,11 @@ export async function ingestPdf(dataUrl: string): Promise<PdfIngestResult> {
     result.textStatus = 'failed';
   }
 
-  // 2) Rendu image des pages si la couche texte n'est pas exploitable
-  if (result.textStatus !== 'text_layer') {
+  // 2) Rendu image des pages — TOUJOURS effectué, y compris lorsque la couche
+  // texte est exploitable : un PDF de plans contient des dessins, cotes et
+  // annotations invisibles dans la couche texte, et le repli Gemini n'a que
+  // ces images pour « voir » le document.
+  {
     let budget = PAGE_IMAGES_BUDGET_BYTES;
     const pagesToRender = Math.min(pdf.numPages, MAX_RENDERED_PAGES);
     result.pagesSkipped = Math.max(0, pdf.numPages - pagesToRender);

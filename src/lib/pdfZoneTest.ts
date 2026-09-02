@@ -66,8 +66,9 @@ export async function splitPdfPageIntoZones(
   const pdf = await pdfjsLib.getDocument({ data: dataUrlToBytes(dataUrl) }).promise;
   const safePage = Math.min(Math.max(1, pageNumber), pdf.numPages);
   const page = await pdf.getPage(safePage);
+  const nativeRotation = page.rotate || 0;
 
-  const base = page.getViewport({ scale: 1 });
+  const base = page.getViewport({ scale: 1, rotation: nativeRotation });
   const baseLongEdge = Math.max(base.width, base.height);
   // Chaque zone couvre (0.5 + overlap/2) de la page => on dimensionne la page
   // pour que la zone atteigne ZONE_TARGET_LONG_EDGE.
@@ -75,7 +76,8 @@ export async function splitPdfPageIntoZones(
   const targetPageLongEdge = ZONE_TARGET_LONG_EDGE / zoneCoverage;
   const renderScale = Math.min(MAX_RENDER_SCALE, Math.max(1, targetPageLongEdge / baseLongEdge));
 
-  const viewport = page.getViewport({ scale: renderScale });
+  const viewport = page.getViewport({ scale: renderScale, rotation: nativeRotation });
+  console.log('[zone-test] page:', safePage, '| rotation native:', nativeRotation, '| viewport:', Math.round(viewport.width), 'x', Math.round(viewport.height), '| orientation:', viewport.width > viewport.height ? 'paysage' : 'portrait');
   const pageCanvas = document.createElement('canvas');
   pageCanvas.width = Math.round(viewport.width);
   pageCanvas.height = Math.round(viewport.height);

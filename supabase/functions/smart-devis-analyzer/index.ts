@@ -96,7 +96,7 @@ async function callClaude(opts: {
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-5",
-      max_tokens: 16000,
+      max_tokens: 20000,
       system: CLAUDE_SYSTEM_PROMPT,
       messages: [{ role: "user", content: userContent }],
     }),

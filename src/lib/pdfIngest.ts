@@ -97,9 +97,10 @@ export async function ingestPdf(dataUrl: string): Promise<PdfIngestResult> {
     for (let i = 1; i <= pagesToRender; i++) {
       try {
         const page = await pdf.getPage(i);
-        const base = page.getViewport({ scale: 1 });
+        const nativeRotation = page.rotate || 0;
+        const base = page.getViewport({ scale: 1, rotation: nativeRotation });
         const scale = Math.max(1, Math.min(3, PAGE_TARGET_WIDTH / base.width));
-        const viewport = page.getViewport({ scale });
+        const viewport = page.getViewport({ scale, rotation: nativeRotation });
         const canvas = document.createElement('canvas');
         canvas.width = Math.round(viewport.width);
         canvas.height = Math.round(viewport.height);

@@ -7,7 +7,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
 // Limites d'ingestion : suffisantes pour lire un plan, sans dépasser la taille
 // de requête acceptable pour l'Edge Function.
 const MAX_RENDERED_PAGES = 8;
-const PAGE_TARGET_WIDTH = 1800; // px — cotes de plan restent lisibles
+const PAGE_TARGET_WIDTH = 2800; // px — cotes de plan restent lisibles
 const PAGE_JPEG_QUALITY = 0.82;
 const PAGE_IMAGES_BUDGET_BYTES = 7 * 1024 * 1024;
 const TEXT_LAYER_MIN_CHARS = 200; // en-dessous : PDF considéré non textuel
@@ -99,7 +99,7 @@ export async function ingestPdf(dataUrl: string): Promise<PdfIngestResult> {
         const page = await pdf.getPage(i);
         const nativeRotation = page.rotate || 0;
         const base = page.getViewport({ scale: 1, rotation: nativeRotation });
-        const scale = Math.max(1, Math.min(3, PAGE_TARGET_WIDTH / base.width));
+        const scale = Math.max(1, Math.min(5, PAGE_TARGET_WIDTH / base.width));
         const viewport = page.getViewport({ scale, rotation: nativeRotation });
         const canvas = document.createElement('canvas');
         canvas.width = Math.round(viewport.width);

@@ -1073,7 +1073,8 @@ const AIAssistantPage = () => {
             compressed: ing.compressed, lowResolution: ing.lowResolution,
           });
         } else if (isDocx) {
-          const text = await extractTextFromDocx(file);
+          const structured = await extractDocxWithTables(file);
+          const text = structured.text;
           const truncated = text.length > 50000;
           added.push({
             kind: 'docx',
@@ -1082,6 +1083,7 @@ const AIAssistantPage = () => {
             docxExtractionMode: 'raw_text',
             textOriginalLength: text.length,
             textTruncated: truncated,
+            tables: structured.tables.length > 0 ? structured.tables : undefined,
           });
           console.log('[AIAssistant][ingestion]', {
             file: file.name, type: 'docx', bytes: file.size,

@@ -2215,6 +2215,7 @@ export type Database = {
         Args: { _year: number }
         Returns: string
       }
+      get_analysis_worker_token: { Args: never; Returns: string }
       get_chantier_invitation: {
         Args: { _token: string }
         Returns: {
@@ -2316,6 +2317,7 @@ export type Database = {
         Args: { _chantier_id: string; _user_id: string }
         Returns: boolean
       }
+      requeue_stale_analysis_jobs: { Args: never; Returns: number }
       save_chantier_report: { Args: { _payload: Json }; Returns: string }
       submit_chantier_report_signature: {
         Args: { _signature_data: string; _signer_name: string; _token: string }

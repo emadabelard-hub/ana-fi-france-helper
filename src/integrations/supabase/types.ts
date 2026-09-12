@@ -2211,6 +2211,54 @@ export type Database = {
     }
     Functions: {
       accept_chantier_invitation: { Args: { _token: string }; Returns: Json }
+      claim_analysis_job: {
+        Args: { _job_id: string; _owner: string }
+        Returns: {
+          attempts: number
+          created_at: string
+          current_step: string
+          documents: Json
+          error_message: string | null
+          final_report: string | null
+          id: string
+          language: string
+          payload: Json
+          progress: number
+          status: string
+          step_results: Json
+          updated_at: string
+          user_id: string
+          user_text: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "btp_analysis_jobs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      commit_analysis_step: {
+        Args: {
+          _current_step: string
+          _final_report?: string
+          _job_id: string
+          _owner: string
+          _progress: number
+          _result: Json
+          _status: string
+          _step: string
+        }
+        Returns: boolean
+      }
+      fail_analysis_step: {
+        Args: {
+          _job_id: string
+          _message: string
+          _owner: string
+          _terminal?: boolean
+        }
+        Returns: string
+      }
       generate_opportunite_reference: {
         Args: { _year: number }
         Returns: string
@@ -2295,6 +2343,10 @@ export type Database = {
           patron_user_id: string
           site_address: string
         }[]
+      }
+      heartbeat_analysis_job: {
+        Args: { _job_id: string; _owner: string }
+        Returns: boolean
       }
       increment_annonce_shares: {
         Args: { _annonce_id: string }

@@ -1748,7 +1748,7 @@ Ne produis aucun autre bloc et aucun texte hors du bloc <ANAFYPRO_BTP_CONTROL>.`
       ...(deterministicBtpAction ? { temperature: 0 } : {}),
       // Aligned with smart-devis-analyzer to avoid truncation of the
       // documentary block on long BTP analyses (ex-4096 default was too low).
-      max_tokens: 16000,
+      max_tokens: (attList.length > 0 && !action) ? 64000 : 16000,
       stream: true,
     });
 

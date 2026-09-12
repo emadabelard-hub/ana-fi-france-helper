@@ -3,7 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, Send, Sparkles, Mic, ScanLine, MessageSquarePlus, History, X, Trash2, Paperclip, FileText, Loader2, Copy, Check, ChevronDown, ChevronUp, Search, ClipboardList, Building, Layers, Ruler, Package, AlertTriangle, HelpCircle, Percent, Calculator } from 'lucide-react';
 import { ingestPdf, ingestImage, dataUrlToBase64 } from '@/lib/pdfIngest';
-import { extractTextFromDocx } from '@/lib/docxExtractor';
+import { extractTextFromDocx, extractDocxWithTables, type DocxTable } from '@/lib/docxExtractor';
 import RoomScannerModal from '@/components/scanner/RoomScannerModal';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import DeepAnalysisReport from '@/components/assistant/DeepAnalysisReport';

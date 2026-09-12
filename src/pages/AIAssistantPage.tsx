@@ -1211,6 +1211,21 @@ const AIAssistantPage = () => {
         dialect: (liveProfile as any)?.dialect || null,
       } : null;
 
+      // Relance texte seule : reprendre les pièces réelles du dernier message
+      // utilisateur porteur (même logique que runDeepAnalysis), sans toucher à
+      // l'affichage des bulles ni au vidage de la zone d'upload.
+      let payloadAttachments = currentAttachments;
+      if (payloadAttachments.length === 0) {
+        for (let i = messages.length - 1; i >= 0; i--) {
+          const m = messages[i];
+          if (m.role !== 'user') continue;
+          if (m.attachments && m.attachments.length > 0) {
+            payloadAttachments = m.attachments;
+          }
+          break;
+        }
+      }
+
       const resp = await fetch(STREAM_URL, {
         method: 'POST',
         headers: {
@@ -1219,9 +1234,9 @@ const AIAssistantPage = () => {
         },
         body: JSON.stringify({
           messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })),
-          attachment: currentAttachments[0] ?? null,
+          attachment: payloadAttachments[0] ?? null,
           // Les pièces sont transmises intégralement (PDF original inclus).
-          attachments: currentAttachments,
+          attachments: payloadAttachments,
           userQuestion: text || null,
           language: language === 'ar' ? 'ar' : 'fr',
           userName: (liveProfile?.full_name?.trim().split(/\s+/)[0]) || userInfo?.name || null,

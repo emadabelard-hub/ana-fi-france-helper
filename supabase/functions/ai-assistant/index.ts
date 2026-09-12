@@ -31,7 +31,7 @@ serve(async (req) => {
       });
     }
 
-    const { messages, language, userName: rawUserName, userGender, category, attachment, attachments, userQuestion, userProfile, action, btpDocData: deepBtpDocData, btpFacts: rawBtpFacts, originalsAvailable } = await req.json();
+    const { messages, language, userName: rawUserName, userGender, category, attachment, attachments, userQuestion, userProfile, action, btpDocData: deepBtpDocData, btpFacts: rawBtpFacts, originalsAvailable, batchRows } = await req.json();
 
     // Bug 2 fix: ALWAYS prefer the real first name from the Supabase profile.
     const profileFirstName = (typeof userProfile?.full_name === 'string' && userProfile.full_name.trim())
@@ -1582,6 +1582,65 @@ SORTIE : un unique bloc, sans aucun texte avant ni après, sans markdown, JSON s
     }
 
 
+    // === BTP DOCX BATCH EXTRACT (lot de lignes de tableau DOCX déjà découpées
+    // et indexées par le client). Aucune relecture de fichier, aucun calcul.
+    if (action === 'btp_docx_batch_extract') {
+      const batchFileName = typeof batchRows?.fileName === 'string' ? batchRows.fileName : '';
+      const batchColumns = Array.isArray(batchRows?.columns) ? batchRows.columns : [];
+      const batchList = Array.isArray(batchRows?.rows) ? batchRows.rows : [];
+
+      finalSystemPrompt = `Tu es un moteur d'EXTRACTION LIGNE À LIGNE d'un tableau de devis BTP. Tu reçois un LOT de lignes déjà découpées et déjà indexées. Tu ne relis aucun fichier, tu ne recomposes rien.
+
+INTERDICTIONS ABSOLUES :
+- ne jamais créer, estimer, recalculer, arrondir ni déduire un prix ;
+- ne jamais calculer un total ni un prix unitaire à partir d'une autre valeur ;
+- ne jamais inventer une quantité ni une unité ;
+- ne jamais inventer une ligne ;
+- ne jamais fusionner deux lignes ;
+- ne jamais diviser une ligne ;
+- ne jamais réorganiser les lignes ;
+- ne jamais supprimer silencieusement une ligne.
+
+RÈGLES :
+1. Chaque ligne source produit AU MAXIMUM un item, et tu dois renvoyer un item pour CHAQUE sourceLineIndex reçu.
+2. "sourceLineIndex" : recopie EXACTEMENT celui reçu. Jamais inventé, jamais renuméroté.
+3. "description" : la désignation réellement écrite dans la ligne. Aucune prestation supposée.
+4. "quantity" : la valeur réellement écrite, sinon null.
+5. "unit" : l'unité réellement écrite, sinon null.
+6. "unitPrice" : le prix unitaire HT réellement écrit, converti en nombre (« 48,00 € » → 48), sinon null.
+7. "total" : le total HT de ligne réellement écrit, converti en nombre (« 1 200,00 € » → 1200), sinon null. NE LE CALCULE JAMAIS.
+8. "priceSource" : "document" si un prix est réellement présent, sinon "missing".
+9. "lot" : uniquement si un lot/catégorie est explicitement identifiable dans la ligne ou l'en-tête du tableau, sinon null.
+10. "sourceFile" : le nom de fichier fourni.
+11. "evidenceText" : le texte de la ligne source réellement utilisée.
+
+SORTIE : JSON strict uniquement, sans markdown, sans texte avant ni après :
+{
+  "items": [
+    {
+      "sourceLineIndex": 0,
+      "description": "",
+      "quantity": null,
+      "unit": null,
+      "unitPrice": null,
+      "total": null,
+      "priceSource": "document",
+      "lot": null,
+      "sourceFile": "",
+      "evidenceText": ""
+    }
+  ]
+}`;
+
+      const batchParts: any[] = [{
+        type: 'text',
+        text: `LOT DE LIGNES À EXTRAIRE — fichier : ${batchFileName}\nCOLONNES DU TABLEAU : ${batchColumns.join(' | ')}\n\nLIGNES (chaque objet est indivisible, "cells" suit l'ordre des colonnes ci-dessus) :\n${JSON.stringify(batchList, null, 2)}\n\nRéponds uniquement par l'objet JSON { "items": [...] } contenant exactement un item par sourceLineIndex reçu.`,
+      }];
+
+      outgoingMessages.length = 0;
+      outgoingMessages.push({ role: 'user', content: batchParts });
+    }
+
     // === BTP DOCUMENT CONTROL (action indépendante : comparaison des faits déjà
     // extraits par btp_factual_extraction). Aucune relecture des pièces, aucun
     // calcul, aucune conversion, aucune valeur nouvelle.
@@ -1737,7 +1796,8 @@ Ne produis aucun autre bloc et aucun texte hors du bloc <ANAFYPRO_BTP_CONTROL>.`
       action === 'btp_factual_extraction' ||
       action === 'btp_deep_technical_analysis' ||
       action === 'btp_document_control' ||
-      action === 'btp_quote_extract';
+      action === 'btp_quote_extract' ||
+      action === 'btp_docx_batch_extract';
 
     const aiRequestBody = JSON.stringify({
       model: "google/gemini-2.5-flash",

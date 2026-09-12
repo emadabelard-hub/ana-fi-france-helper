@@ -30,3 +30,37 @@ export async function extractTextFromDocx(file: File): Promise<string> {
 
   return text.slice(0, MAX_CHARS);
 }
+
+export type DocxTableRow = { cells: string[] };
+export type DocxTable = { rows: DocxTableRow[] };
+export type DocxStructured = { text: string; tables: DocxTable[] };
+
+/**
+ * Extraction ADDITIVE : renvoie le texte brut (identique à extractTextFromDocx)
+ * et les tableaux structurés du DOCX, sans aucune interprétation des valeurs.
+ * L'ordre des tableaux, des lignes et des cellules est strictement conservé.
+ */
+export async function extractDocxWithTables(file: File): Promise<DocxStructured> {
+  const text = await extractTextFromDocx(file);
+
+  let tables: DocxTable[] = [];
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const html = String((await mammoth.convertToHtml({ arrayBuffer }))?.value || '');
+    if (html) {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      tables = Array.from(doc.querySelectorAll('table')).map((tableEl) => ({
+        rows: Array.from(tableEl.querySelectorAll('tr')).map((trEl) => ({
+          cells: Array.from(trEl.querySelectorAll('th,td')).map((c) =>
+            (c.textContent || '').replace(/\s+/g, ' ').trim()
+          ),
+        })),
+      }));
+    }
+  } catch (err) {
+    console.warn('[docxExtractor] table extraction failed', err);
+    tables = [];
+  }
+
+  return { text, tables };
+}

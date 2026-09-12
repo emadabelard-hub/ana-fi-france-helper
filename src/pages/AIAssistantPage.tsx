@@ -3,7 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, Send, Sparkles, Mic, ScanLine, MessageSquarePlus, History, X, Trash2, Paperclip, FileText, Loader2, Copy, Check, ChevronDown, ChevronUp, Search, ClipboardList, Building, Layers, Ruler, Package, AlertTriangle, HelpCircle, Percent, Calculator } from 'lucide-react';
 import { ingestPdf, ingestImage, dataUrlToBase64 } from '@/lib/pdfIngest';
-import { extractTextFromDocx } from '@/lib/docxExtractor';
+import { extractTextFromDocx, extractDocxWithTables, type DocxTable } from '@/lib/docxExtractor';
 import RoomScannerModal from '@/components/scanner/RoomScannerModal';
 import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
 import DeepAnalysisReport from '@/components/assistant/DeepAnalysisReport';
@@ -54,6 +54,9 @@ type MsgAttachment =
       docxExtractionMode?: 'raw_text';
       textOriginalLength?: number;
       textTruncated?: boolean;
+      // Tableaux structurés du DOCX (additif : le texte brut reste la source
+      // du parcours documentaire actuel).
+      tables?: DocxTable[];
     };
 
 
@@ -1070,7 +1073,8 @@ const AIAssistantPage = () => {
             compressed: ing.compressed, lowResolution: ing.lowResolution,
           });
         } else if (isDocx) {
-          const text = await extractTextFromDocx(file);
+          const structured = await extractDocxWithTables(file);
+          const text = structured.text;
           const truncated = text.length > 50000;
           added.push({
             kind: 'docx',
@@ -1079,6 +1083,7 @@ const AIAssistantPage = () => {
             docxExtractionMode: 'raw_text',
             textOriginalLength: text.length,
             textTruncated: truncated,
+            tables: structured.tables.length > 0 ? structured.tables : undefined,
           });
           console.log('[AIAssistant][ingestion]', {
             file: file.name, type: 'docx', bytes: file.size,
@@ -1825,6 +1830,226 @@ const AIAssistantPage = () => {
     return soFar;
   };
 
+  // ── DOCX volumineux : extraction par lots de 50 lignes de tableau ────────
+  // Périmètre strict : un seul DOCX joint, contenant au moins un tableau
+  // exploitable, et plus de 60 lignes de données au total. Tous les autres cas
+  // (PDF, images, plusieurs fichiers, petits DOCX) suivent le parcours actuel.
+  const DOCX_BATCH_THRESHOLD = 60;
+  const DOCX_BATCH_SIZE = 50;
+
+  type DocxBatchRow = {
+    sourceLineIndex: number;
+    tableIndex: number;
+    rowIndex: number;
+    cells: string[];
+  };
+  type DocxBatchPlan = {
+    fileName: string;
+    columns: string[];
+    rows: DocxBatchRow[];
+  };
+
+  const buildDocxBatchPlan = (atts: MsgAttachment[]): DocxBatchPlan | null => {
+    if (atts.length !== 1) return null;
+    const att = atts[0];
+    if (att.kind !== 'docx' || !Array.isArray(att.tables) || att.tables.length === 0) return null;
+
+    const rows: DocxBatchRow[] = [];
+    let columns: string[] = [];
+    let sourceLineIndex = 0;
+
+    att.tables.forEach((table, tableIndex) => {
+      const nonEmpty = (table.rows || []).filter((r) => (r.cells || []).some((c) => c.trim().length > 0));
+      if (nonEmpty.length < 2) return;
+      const header = nonEmpty[0].cells;
+      if (columns.length === 0) columns = header;
+      for (let i = 1; i < nonEmpty.length; i++) {
+        rows.push({
+          sourceLineIndex: sourceLineIndex++,
+          tableIndex,
+          rowIndex: i,
+          cells: nonEmpty[i].cells,
+        });
+      }
+    });
+
+    if (rows.length <= DOCX_BATCH_THRESHOLD) return null;
+    return { fileName: att.name, columns, rows };
+  };
+
+  type DocxBatchItem = {
+    sourceLineIndex: number;
+    description: string;
+    quantity: number | null;
+    unit: string | null;
+    unitPrice: number | null;
+    total: number | null;
+    priceSource: string | null;
+    lot: string | null;
+    sourceFile: string | null;
+    evidenceText: string | null;
+  };
+
+  const readSseText = async (resp: Response): Promise<string> => {
+    if (!resp.ok || !resp.body) throw new Error(`docx_batch_http_${resp.status}`);
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    let soFar = '';
+    let streamDone = false;
+    readStream: while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      let idx: number;
+      while ((idx = buf.indexOf('\n')) !== -1) {
+        let line = buf.slice(0, idx);
+        buf = buf.slice(idx + 1);
+        if (line.endsWith('\r')) line = line.slice(0, -1);
+        if (line.startsWith(':') || line.trim() === '') continue;
+        if (!line.startsWith('data: ')) continue;
+        const json = line.slice(6).trim();
+        if (json === '[DONE]') { streamDone = true; break readStream; }
+        try {
+          const parsed = JSON.parse(json);
+          const c = parsed.choices?.[0]?.delta?.content;
+          if (c) soFar += c;
+        } catch {
+          buf = line + '\n' + buf;
+          break;
+        }
+      }
+    }
+    if (!streamDone || !soFar.trim()) throw new Error('docx_batch_interrupted');
+    return soFar;
+  };
+
+  const runDocxBatchOnce = async (plan: DocxBatchPlan, chunk: DocxBatchRow[]): Promise<DocxBatchItem[]> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+    const resp = await fetch(STREAM_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        action: 'btp_docx_batch_extract',
+        language: 'fr',
+        batchRows: {
+          fileName: plan.fileName,
+          columns: plan.columns,
+          rows: chunk.map((r) => ({ sourceLineIndex: r.sourceLineIndex, cells: r.cells })),
+        },
+      }),
+    });
+
+    const raw = await readSseText(resp);
+    const start = raw.indexOf('{');
+    const end = raw.lastIndexOf('}');
+    if (start === -1 || end <= start) throw new Error('docx_batch_json_missing');
+    const parsed = JSON.parse(raw.slice(start, end + 1));
+    const items: DocxBatchItem[] = Array.isArray(parsed?.items) ? parsed.items : [];
+
+    // Validation des index : aucun inconnu, aucun doublon, aucun manquant.
+    const expected = new Set(chunk.map((r) => r.sourceLineIndex));
+    const seen = new Set<number>();
+    for (const it of items) {
+      const idx = typeof it?.sourceLineIndex === 'number' ? it.sourceLineIndex : NaN;
+      if (!expected.has(idx)) throw new Error('docx_batch_unknown_index');
+      if (seen.has(idx)) throw new Error('docx_batch_duplicate_index');
+      seen.add(idx);
+    }
+    if (seen.size !== expected.size) throw new Error('docx_batch_missing_index');
+    return items;
+  };
+
+  const runDocxBatchExtraction = async (plan: DocxBatchPlan): Promise<DocxBatchItem[]> => {
+    const collected: DocxBatchItem[] = [];
+    const batchCount = Math.ceil(plan.rows.length / DOCX_BATCH_SIZE);
+    for (let b = 0; b < batchCount; b++) {
+      const chunk = plan.rows.slice(b * DOCX_BATCH_SIZE, (b + 1) * DOCX_BATCH_SIZE);
+      let items: DocxBatchItem[];
+      try {
+        items = await runDocxBatchOnce(plan, chunk);
+      } catch (firstErr) {
+        console.warn('[AIAssistant][docx-batch] lot en échec, relance unique', b + 1, firstErr);
+        items = await runDocxBatchOnce(plan, chunk).catch(() => {
+          throw new Error(String(b + 1));
+        });
+      }
+      collected.push(...items);
+    }
+
+    collected.sort((a, b) => a.sourceLineIndex - b.sourceLineIndex);
+    const seen = new Set<number>();
+    for (const it of collected) {
+      if (seen.has(it.sourceLineIndex)) throw new Error('merge_duplicate_index');
+      seen.add(it.sourceLineIndex);
+    }
+    for (const r of plan.rows) {
+      if (!seen.has(r.sourceLineIndex)) throw new Error('merge_missing_index');
+    }
+    return collected;
+  };
+
+  const transferDocxBatchToSmartDevis = async (plan: DocxBatchPlan, btpDocData: any): Promise<boolean> => {
+    let merged: DocxBatchItem[];
+    try {
+      merged = await runDocxBatchExtraction(plan);
+    } catch (err) {
+      const msg = String((err as Error)?.message || '');
+      const isBatchNumber = /^\d+$/.test(msg);
+      console.error('[AIAssistant][docx-batch] échec', err);
+      toast({
+        variant: 'destructive',
+        title: 'Extraction du devis impossible',
+        description: isBatchNumber
+          ? `Le lot ${msg} n’a pas pu être extrait. Le devis n’a pas été créé.`
+          : 'Les lignes du tableau n’ont pas pu être extraites. Le devis n’a pas été créé.',
+      });
+      return false;
+    }
+
+    const items = merged
+      .filter((it) => typeof it.description === 'string' && it.description.trim().length > 0)
+      .map((it) => ({
+        designation_fr: it.description.trim(),
+        designation_ar: '',
+        quantity: typeof it.quantity === 'number' && it.quantity > 0 ? it.quantity : 1,
+        unit: typeof it.unit === 'string' && it.unit.trim() ? it.unit.trim() : 'u',
+        unitPrice: typeof it.unitPrice === 'number' && it.unitPrice > 0 ? it.unitPrice : 0,
+        lot: typeof it.lot === 'string' && it.lot.trim() ? it.lot.trim() : null,
+      }));
+
+    const subject =
+      (btpDocData?.project?.title && String(btpDocData.project.title).trim()) ||
+      (btpDocData?.client?.name ? `Devis — ${String(btpDocData.client.name).trim()}` : '');
+
+    sessionStorage.removeItem('smart_devis_prefill_v1');
+    sessionStorage.setItem('smart_devis_prefill_v1', JSON.stringify({
+      subject,
+      items,
+      client: btpDocData?.client || null,
+      project: btpDocData?.project || null,
+      vat: btpDocData?.vat || null,
+      constraints: btpDocData?.constraints || [],
+      missingInformation: btpDocData?.missingInformation || [],
+      copyText: btpDocData?.copyText || '',
+      _validation: {
+        totalItems: items.length,
+        source: 'docx_batch',
+        batches: Math.ceil(plan.rows.length / DOCX_BATCH_SIZE),
+        extracted: merged.map((it) => ({
+          sourceLineIndex: it.sourceLineIndex,
+          unitPrice: it.unitPrice ?? null,
+          total: it.total ?? null,
+          priceSource: it.priceSource ?? null,
+        })),
+      },
+    }));
+    navigate('/pro/smart-devis');
+    return true;
+  };
+
   // ── Transfert vers le Devis intelligent ─────────────────────────────────
   // Les désignations sont toujours reformulées/traduites en français technique
   // avant transfert : le document final reste strictement français.
@@ -1832,6 +2057,14 @@ const AIAssistantPage = () => {
     if (isPreparingTransfer) return;
     setIsPreparingTransfer(true);
     try {
+      // Cas strict : un seul DOCX, tableau structuré, plus de 60 lignes de
+      // données → extraction par lots de 50 avec conservation des prix.
+      const batchPlan = buildDocxBatchPlan(findDossierAttachments().attachments);
+      if (batchPlan) {
+        await transferDocxBatchToSmartDevis(batchPlan, btpDocData);
+        return;
+      }
+
       // Source UNIQUE : extraction dédiée « Préparer le devis » réalisée sur les
       // documents originaux du dossier (aucune dépendance à job.btpFacts).
       let extractionRaw = '';

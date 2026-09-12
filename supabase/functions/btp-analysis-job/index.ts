@@ -184,12 +184,14 @@ async function handleWork(req: Request): Promise<Response> {
     console.error('lock error', lockError.message);
     return json({ error: 'Verrouillage impossible.' }, 500);
   }
-  if (!locked) {
+  // PostgREST peut renvoyer un enregistrement composite entièrement nul lorsque la
+  // fonction ne retourne aucune ligne : l'absence d'id est le seul test fiable.
+  const job = (locked ?? {}) as Record<string, unknown>;
+  if (!job.id) {
     // Job inexistant, lease encore détenu par un worker vivant, ou statut terminal.
     return json({ skipped: true, reason: 'not_lockable' });
   }
 
-  const job = locked as Record<string, unknown>;
   const stepResults = (job.step_results ?? {}) as Record<string, unknown>;
   const step = nextStep(stepResults);
 

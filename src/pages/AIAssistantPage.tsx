@@ -1226,73 +1226,98 @@ const AIAssistantPage = () => {
         }
       }
 
-      const resp = await fetch(STREAM_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })),
-          attachment: payloadAttachments[0] ?? null,
-          // Les pièces sont transmises intégralement (PDF original inclus).
-          attachments: payloadAttachments,
-          userQuestion: text || null,
-          language: language === 'ar' ? 'ar' : 'fr',
-          userName: (liveProfile?.full_name?.trim().split(/\s+/)[0]) || userInfo?.name || null,
-          userGender: userInfo?.gender || null,
-          userProfile: userProfilePayload,
-          category: activeCategory,
-        }),
-      });
+      // Garde-fous mobile : le flux peut geler si l'écran se verrouille.
+      // On coupe proprement au bout d'un silence prolongé au lieu de rester
+      // bloqué indéfiniment sur « réfléchit ».
+      const abortController = new AbortController();
+      const INACTIVITY_MS = 120000;
+      const MAX_MS = 600000;
+      let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
+      let timedOut = false;
+      const armInactivity = () => {
+        if (inactivityTimer) clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(() => { timedOut = true; abortController.abort(); }, INACTIVITY_MS);
+      };
+      const maxTimer = setTimeout(() => { timedOut = true; abortController.abort(); }, MAX_MS);
+      armInactivity();
 
+      try {
+        const resp = await fetch(STREAM_URL, {
+          method: 'POST',
+          signal: abortController.signal,
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })),
+            attachment: payloadAttachments[0] ?? null,
+            // Les pièces sont transmises intégralement (PDF original inclus).
+            attachments: payloadAttachments,
+            userQuestion: text || null,
+            language: language === 'ar' ? 'ar' : 'fr',
+            userName: (liveProfile?.full_name?.trim().split(/\s+/)[0]) || userInfo?.name || null,
+            userGender: userInfo?.gender || null,
+            userProfile: userProfilePayload,
+            category: activeCategory,
+          }),
+        });
 
-      if (!resp.ok || !resp.body) {
-        const errorMsg = t('aiAssistant.error.generic');
-        try {
-          const errData = await resp.json();
-          if (errData?.error) console.error('AI Assistant server error detail:', errData.error);
-        } catch {}
-        console.error('AI Assistant error:', resp.status);
-        upsert(errorMsg);
-        setIsLoading(false);
-        return '';
-      }
-
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-
-        let idx: number;
-        while ((idx = buf.indexOf('\n')) !== -1) {
-          let line = buf.slice(0, idx);
-          buf = buf.slice(idx + 1);
-          if (line.endsWith('\r')) line = line.slice(0, -1);
-          if (line.startsWith(':') || line.trim() === '') continue;
-          if (!line.startsWith('data: ')) continue;
-          const json = line.slice(6).trim();
-          if (json === '[DONE]') break;
+        if (!resp.ok || !resp.body) {
+          const errorMsg = t('aiAssistant.error.generic');
           try {
-            const parsed = JSON.parse(json);
-            const c = parsed.choices?.[0]?.delta?.content;
-            if (c) upsert(c);
-          } catch {
-            buf = line + '\n' + buf;
-            break;
+            const errData = await resp.json();
+            if (errData?.error) console.error('AI Assistant server error detail:', errData.error);
+          } catch {}
+          console.error('AI Assistant error:', resp.status);
+          upsert(errorMsg);
+          return '';
+        }
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          armInactivity();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+
+          let idx: number;
+          while ((idx = buf.indexOf('\n')) !== -1) {
+            let line = buf.slice(0, idx);
+            buf = buf.slice(idx + 1);
+            if (line.endsWith('\r')) line = line.slice(0, -1);
+            if (line.startsWith(':') || line.trim() === '') continue;
+            if (!line.startsWith('data: ')) continue;
+            const json = line.slice(6).trim();
+            if (json === '[DONE]') break;
+            try {
+              const parsed = JSON.parse(json);
+              const c = parsed.choices?.[0]?.delta?.content;
+              if (c) upsert(c);
+            } catch {
+              buf = line + '\n' + buf;
+              break;
+            }
           }
+        }
+      } finally {
+        if (inactivityTimer) clearTimeout(inactivityTimer);
+        clearTimeout(maxTimer);
+        if (timedOut && !assistantSoFar.trim()) {
+          upsert(language === 'ar'
+            ? 'الاتصال اتقطع قبل ما يوصل الرد. من فضلك ابعت طلبك تاني والشاشة فاتحة. 🔄'
+            : "La connexion a été interrompue avant l'arrivée de la réponse. Merci de renvoyer votre demande en gardant l'écran allumé.");
         }
       }
     } catch (err) {
       console.error('AI Assistant network error:', err);
       upsert(t('aiAssistant.error.network'));
+    } finally {
       setIsLoading(false);
     }
-    setIsLoading(false);
     return assistantSoFar;
   };
 

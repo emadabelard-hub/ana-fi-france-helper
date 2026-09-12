@@ -1303,14 +1303,17 @@ const AIAssistantPage = () => {
             }
           }
         }
-      } finally {
-        if (inactivityTimer) clearTimeout(inactivityTimer);
-        clearTimeout(maxTimer);
-        if (timedOut && !assistantSoFar.trim()) {
+      } catch (streamErr) {
+        if (timedOut) {
           upsert(language === 'ar'
             ? 'الاتصال اتقطع قبل ما يوصل الرد. من فضلك ابعت طلبك تاني والشاشة فاتحة. 🔄'
             : "La connexion a été interrompue avant l'arrivée de la réponse. Merci de renvoyer votre demande en gardant l'écran allumé.");
+          return assistantSoFar;
         }
+        throw streamErr;
+      } finally {
+        if (inactivityTimer) clearTimeout(inactivityTimer);
+        clearTimeout(maxTimer);
       }
     } catch (err) {
       console.error('AI Assistant network error:', err);

@@ -1,11 +1,16 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { anthropicCompatFetch } from '../_shared/anthropic-compat.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Battement de coeur : prouve que le worker est vivant pendant un appel IA long.
+// Le cron "stale" utilise un seuil de 3 minutes ; 30 s laisse une marge de 6x.
+const HEARTBEAT_MS = 30_000;
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -18,7 +23,8 @@ const admin = () =>
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-type StepName = 'prepare' | 'test_step' | 'finalize' | 'completed';
+type Db = ReturnType<typeof admin>;
+type StepName = 'prepare' | 'ai_test' | 'finalize' | 'completed';
 
 /**
  * Source de vérité = step_results. current_step n'est qu'un indicateur.
@@ -28,7 +34,7 @@ type StepName = 'prepare' | 'test_step' | 'finalize' | 'completed';
 function nextStep(stepResults: Record<string, unknown> | null): StepName {
   const sr = stepResults ?? {};
   if (!('prepare' in sr)) return 'prepare';
-  if (!('test_step' in sr)) return 'test_step';
+  if (!('ai_test' in sr)) return 'ai_test';
   if (!('final' in sr)) return 'finalize';
   return 'completed';
 }
@@ -72,7 +78,7 @@ async function handleCreate(req: Request): Promise<Response> {
       user_text: userText,
       current_step: 'prepare',
       progress: 0,
-      payload: { phase: 1, kind: 'test' },
+      payload: { phase: 2, kind: 'ai_test' },
       step_results: {},
       attempts: 0,
     })
@@ -88,7 +94,7 @@ async function handleCreate(req: Request): Promise<Response> {
 }
 
 // ------------------------------------------------------------------ mode work
-async function assertWorkerAuthorized(req: Request, db: ReturnType<typeof admin>): Promise<boolean> {
+async function assertWorkerAuthorized(req: Request, db: Db): Promise<boolean> {
   const provided = req.headers.get('x-worker-token') ?? '';
   if (!provided) return false;
   const { data, error } = await db.rpc('get_analysis_worker_token');
@@ -101,6 +107,52 @@ async function assertWorkerAuthorized(req: Request, db: ReturnType<typeof admin>
   let diff = 0;
   for (let i = 0; i < data.length; i++) diff |= provided.charCodeAt(i) ^ data.charCodeAt(i);
   return diff === 0;
+}
+
+class TerminalStepError extends Error {}
+
+/** Un seul petit appel IA déterministe, via le fournisseur déjà utilisé dans le projet. */
+async function runAiTest(jobId: string, owner: string): Promise<{ persistentJobTest: true }> {
+  console.log('ai_test:provider_call', JSON.stringify({ jobId, owner, at: new Date().toISOString() }));
+
+  const resp = await anthropicCompatFetch({
+    body: JSON.stringify({
+      max_tokens: 64,
+      temperature: 0,
+      messages: [
+        {
+          role: 'user',
+          content:
+            'Réponds uniquement avec le JSON suivant :\n{"persistentJobTest":true}\nN\'écris rien d\'autre.',
+        },
+      ],
+    }),
+  });
+
+  if (!resp.ok) {
+    const text = (await resp.text()).slice(0, 300);
+    if (resp.status === 401 || resp.status === 402 || resp.status === 403) {
+      throw new TerminalStepError(`IA refus permanent ${resp.status}: ${text}`);
+    }
+    throw new Error(`IA erreur ${resp.status}: ${text}`);
+  }
+
+  const data = await resp.json();
+  const raw = data?.choices?.[0]?.message?.content;
+  const text = typeof raw === 'string' ? raw.trim() : '';
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error(`Réponse IA non exploitable: ${text.slice(0, 200)}`);
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(match[0]);
+  } catch {
+    throw new Error(`JSON IA invalide: ${match[0].slice(0, 200)}`);
+  }
+  if (!parsed || typeof parsed !== 'object' || (parsed as Record<string, unknown>).persistentJobTest !== true) {
+    throw new Error(`Contrat ai_test non respecté: ${match[0].slice(0, 200)}`);
+  }
+  return { persistentJobTest: true };
 }
 
 async function handleWork(req: Request): Promise<Response> {
@@ -121,78 +173,96 @@ async function handleWork(req: Request): Promise<Response> {
     return json({ error: 'jobId invalide.' }, 400);
   }
 
-  // Lock atomique : compare-and-set queued -> running.
-  const { data: locked, error: lockError } = await db
-    .from('btp_analysis_jobs')
-    .update({ status: 'running', updated_at: new Date().toISOString() })
-    .eq('id', jobId)
-    .eq('status', 'queued')
-    .select('id, step_results, progress, attempts')
-    .maybeSingle();
+  // Lease atomique côté serveur : queued -> running + propriétaire enregistré.
+  const owner = crypto.randomUUID();
+  const { data: locked, error: lockError } = await db.rpc('claim_analysis_job', {
+    _job_id: jobId,
+    _owner: owner,
+  });
 
   if (lockError) {
     console.error('lock error', lockError.message);
     return json({ error: 'Verrouillage impossible.' }, 500);
   }
-  if (!locked) {
-    // Job inexistant, déjà pris par un autre worker, ou terminal.
+  // PostgREST peut renvoyer un enregistrement composite entièrement nul lorsque la
+  // fonction ne retourne aucune ligne : l'absence d'id est le seul test fiable.
+  const job = (locked ?? {}) as Record<string, unknown>;
+  if (!job.id) {
+    // Job inexistant, lease encore détenu par un worker vivant, ou statut terminal.
     return json({ skipped: true, reason: 'not_lockable' });
   }
 
-  const stepResults = (locked.step_results ?? {}) as Record<string, unknown>;
+  const stepResults = (job.step_results ?? {}) as Record<string, unknown>;
   const step = nextStep(stepResults);
+
+  let heartbeat: number | undefined;
+  let leaseLost = false;
 
   try {
     if (step === 'prepare') {
-      const { error } = await db
-        .from('btp_analysis_jobs')
-        .update({
-          step_results: { ...stepResults, prepare: { ok: true } },
-          progress: 30,
-          current_step: 'test_step',
-          status: 'queued',
-          error_message: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', jobId);
-      if (error) throw new Error(error.message);
+      const ok = await db.rpc('commit_analysis_step', {
+        _job_id: jobId,
+        _owner: owner,
+        _step: 'prepare',
+        _result: { ok: true },
+        _progress: 30,
+        _current_step: 'ai_test',
+        _status: 'queued',
+      });
+      if (ok.error) throw new Error(ok.error.message);
+      if (ok.data !== true) return json({ skipped: true, reason: 'lease_lost_or_duplicate' });
       return json({ jobId, executed: 'prepare', status: 'queued', progress: 30 });
     }
 
-    if (step === 'test_step') {
-      const { error } = await db
-        .from('btp_analysis_jobs')
-        .update({
-          step_results: { ...stepResults, test_step: { ok: true } },
-          progress: 70,
-          current_step: 'finalize',
-          status: 'queued',
-          error_message: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', jobId);
-      if (error) throw new Error(error.message);
-      return json({ jobId, executed: 'test_step', status: 'queued', progress: 70 });
+    if (step === 'ai_test') {
+      // Le lease est déjà détenu (claim atomique) et step_results.ai_test est absent :
+      // aucun autre worker ne peut être dans cette branche au même instant.
+      heartbeat = setInterval(async () => {
+        const hb = await db.rpc('heartbeat_analysis_job', { _job_id: jobId, _owner: owner });
+        if (hb.data !== true) {
+          leaseLost = true;
+          console.error('ai_test:lease_lost', jobId, owner);
+        }
+      }, HEARTBEAT_MS) as unknown as number;
+
+      const result = await runAiTest(jobId, owner);
+      clearInterval(heartbeat);
+      heartbeat = undefined;
+
+      if (leaseLost) throw new Error('Lease perdu pendant l\'appel IA.');
+
+      const ok = await db.rpc('commit_analysis_step', {
+        _job_id: jobId,
+        _owner: owner,
+        _step: 'ai_test',
+        _result: result,
+        _progress: 70,
+        _current_step: 'finalize',
+        _status: 'queued',
+      });
+      if (ok.error) throw new Error(ok.error.message);
+      if (ok.data !== true) return json({ skipped: true, reason: 'lease_lost_or_duplicate' });
+      return json({ jobId, executed: 'ai_test', status: 'queued', progress: 70 });
     }
 
     if (step === 'finalize') {
-      const { error } = await db
-        .from('btp_analysis_jobs')
-        .update({
-          step_results: { ...stepResults, final: { kind: 'test', data: { ok: true } } },
-          progress: 100,
-          current_step: 'completed',
-          status: 'completed',
-          final_report: 'Job persistant terminé',
-          error_message: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', jobId);
-      if (error) throw new Error(error.message);
+      const aiTest = (stepResults.ai_test ?? {}) as Record<string, unknown>;
+      const ok = await db.rpc('commit_analysis_step', {
+        _job_id: jobId,
+        _owner: owner,
+        _step: 'final',
+        _result: { kind: 'test', data: { persistentJobTest: aiTest.persistentJobTest === true } },
+        _progress: 100,
+        _current_step: 'completed',
+        _status: 'completed',
+        _final_report: 'Test IA persistant terminé',
+      });
+      if (ok.error) throw new Error(ok.error.message);
+      if (ok.data !== true) return json({ skipped: true, reason: 'lease_lost_or_duplicate' });
       return json({ jobId, executed: 'finalize', status: 'completed', progress: 100 });
     }
 
-    // Toutes les étapes sont déjà présentes : on clôture sans rien rejouer.
+    // Toutes les étapes sont déjà présentes : clôture sans rien rejouer.
     const { error } = await db
       .from('btp_analysis_jobs')
       .update({
@@ -201,23 +271,22 @@ async function handleWork(req: Request): Promise<Response> {
         status: 'completed',
         updated_at: new Date().toISOString(),
       })
-      .eq('id', jobId);
+      .eq('id', jobId)
+      .eq('status', 'running');
     if (error) throw new Error(error.message);
     return json({ jobId, executed: 'none', status: 'completed', progress: 100 });
   } catch (e) {
+    if (heartbeat !== undefined) clearInterval(heartbeat);
+    const terminal = e instanceof TerminalStepError;
     const message = e instanceof Error ? e.message : 'Erreur inconnue';
-    console.error('step failed', step, message);
-    const attempts = (locked.attempts ?? 0) + 1;
-    await db
-      .from('btp_analysis_jobs')
-      .update({
-        status: attempts >= 3 ? 'failed' : 'queued',
-        attempts,
-        error_message: message.slice(0, 500),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', jobId);
-    return json({ jobId, executed: step, status: attempts >= 3 ? 'failed' : 'queued', error: true }, 500);
+    console.error('step failed', step, terminal ? '(terminal)' : '(retryable)', message);
+    const { data: newStatus } = await db.rpc('fail_analysis_step', {
+      _job_id: jobId,
+      _owner: owner,
+      _message: message,
+      _terminal: terminal,
+    });
+    return json({ jobId, executed: step, status: newStatus ?? 'unchanged', error: true }, 500);
   }
 }
 
@@ -232,7 +301,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   let mode = url.searchParams.get('mode') ?? '';
 
-  // Le corps est lu une seule fois : on le clone pour pouvoir y relire le mode.
+  // Le corps est lu une seule fois : on le reconstruit pour les handlers.
   const raw = await req.text();
   let parsed: Record<string, unknown> = {};
   try {

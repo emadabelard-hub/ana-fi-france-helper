@@ -138,3 +138,6 @@ verify_jwt = false
 [functions.chantier-report-finalize]
 verify_jwt = false
 
+[functions.btp-analysis-job]
+verify_jwt = false
+

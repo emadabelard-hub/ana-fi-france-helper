@@ -54,6 +54,9 @@ type MsgAttachment =
       docxExtractionMode?: 'raw_text';
       textOriginalLength?: number;
       textTruncated?: boolean;
+      // Tableaux structurés du DOCX (additif : le texte brut reste la source
+      // du parcours documentaire actuel).
+      tables?: DocxTable[];
     };
 
 

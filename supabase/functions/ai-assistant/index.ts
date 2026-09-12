@@ -1796,7 +1796,8 @@ Ne produis aucun autre bloc et aucun texte hors du bloc <ANAFYPRO_BTP_CONTROL>.`
       action === 'btp_factual_extraction' ||
       action === 'btp_deep_technical_analysis' ||
       action === 'btp_document_control' ||
-      action === 'btp_quote_extract';
+      action === 'btp_quote_extract' ||
+      action === 'btp_docx_batch_extract';
 
     const aiRequestBody = JSON.stringify({
       model: "google/gemini-2.5-flash",

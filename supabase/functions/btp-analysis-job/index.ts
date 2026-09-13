@@ -78,7 +78,8 @@ async function handleCreate(req: Request): Promise<Response> {
       user_text: userText,
       current_step: 'prepare',
       progress: 0,
-      payload: { phase: 2, kind: 'ai_test' },
+      // Marqueur imposé par le serveur : le client ne peut rien injecter dans payload.
+      payload: { phase: 3, kind: 'persistent_ui_test' },
       step_results: {},
       attempts: 0,
     })

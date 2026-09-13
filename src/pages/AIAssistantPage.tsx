@@ -673,6 +673,107 @@ const AIAssistantPage = () => {
     deepAnalysisClearIdleRef.current?.();
     try { deepAnalysisAbortRef.current?.abort(); } catch { /* noop */ }
   }, []);
+
+  // ─────────────────────────────────────────────────────────────
+  // TEMPORAIRE (Phase 3) : test du job persistant, mode technique uniquement.
+  // La source de vérité est la table btp_analysis_jobs, jamais l'état React.
+  type PersistentTestJob = {
+    id: string;
+    status: string;
+    current_step: string | null;
+    progress: number | null;
+    error_message: string | null;
+    final_report: string | null;
+    step_results: any;
+    created_at: string;
+    updated_at: string;
+  };
+  const PERSISTENT_JOB_FIELDS =
+    'id, status, current_step, progress, error_message, final_report, step_results, created_at, updated_at';
+  const [persistentJob, setPersistentJob] = useState<PersistentTestJob | null>(null);
+  const [persistentStarting, setPersistentStarting] = useState(false);
+
+  // Recherche du job de test le plus récent (marqueur serveur payload.kind).
+  const fetchLatestPersistentJob = useCallback(async (): Promise<PersistentTestJob | null> => {
+    const { data, error } = await supabase
+      .from('btp_analysis_jobs')
+      .select(PERSISTENT_JOB_FIELDS)
+      .contains('payload', { kind: 'persistent_ui_test' })
+      .in('status', ['queued', 'running', 'completed', 'failed'])
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (error) { console.error('[persistent-test] lookup', error.message); return null; }
+    return (data?.[0] as PersistentTestJob | undefined) ?? null;
+  }, []);
+
+  // Reprise automatique au montage : aucun state ni stockage client requis.
+  useEffect(() => {
+    if (!techMode) return;
+    let alive = true;
+    (async () => {
+      const job = await fetchLatestPersistentJob();
+      if (alive && job) setPersistentJob(job);
+    })();
+    return () => { alive = false; };
+  }, [techMode, fetchLatestPersistentJob]);
+
+  // Polling 3 s tant que le job n'est pas terminal. Le démontage arrête
+  // seulement l'observation : aucune annulation serveur n'est émise.
+  useEffect(() => {
+    const id = persistentJob?.id;
+    const status = persistentJob?.status;
+    if (!id || (status !== 'queued' && status !== 'running')) return;
+    let alive = true;
+    const timer = setInterval(async () => {
+      const { data, error } = await supabase
+        .from('btp_analysis_jobs')
+        .select(PERSISTENT_JOB_FIELDS)
+        .eq('id', id)
+        .maybeSingle();
+      if (!alive) return;
+      if (error) { console.error('[persistent-test] poll', error.message); return; }
+      if (data) setPersistentJob(data as PersistentTestJob);
+    }, 3000);
+    return () => { alive = false; clearInterval(timer); };
+  }, [persistentJob?.id, persistentJob?.status]);
+
+  const startPersistentTest = useCallback(async () => {
+    if (persistentStarting) return;
+    setPersistentStarting(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) { console.error('[persistent-test] session absente'); return; }
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/btp-analysis-job?mode=create`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ mode: 'create', language: isRTL ? 'ar' : 'fr' }),
+        },
+      );
+      const body = await resp.json().catch(() => null);
+      if (!resp.ok || !body?.jobId) {
+        console.error('[persistent-test] create', resp.status, body);
+        return;
+      }
+      setPersistentJob({
+        id: body.jobId,
+        status: body.status ?? 'queued',
+        current_step: 'prepare',
+        progress: 0,
+        error_message: null,
+        final_report: null,
+        step_results: {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    } finally {
+      setPersistentStarting(false);
+    }
+  }, [persistentStarting, isRTL]);
+  // ─────────────────────────────────────────────────────────────
+
   const { toast } = useToast();
   // Compteur d'échecs consécutifs du suivi d'analyse (visibilité mobile).
   const dictation = useAssistantDictation(isRTL ? 'ar-EG' : 'fr-FR');
@@ -2555,6 +2656,50 @@ const AIAssistantPage = () => {
         </>
       )}
 
+
+      {/* TEMPORAIRE (Phase 3) : test du job persistant — mode technique uniquement */}
+      {techMode && (
+        <div className="mx-4 mb-3 shrink-0 rounded-xl border border-border bg-muted/40 p-3 space-y-2">
+          <button
+            onClick={startPersistentTest}
+            disabled={persistentStarting}
+            className="text-[13px] font-bold text-primary underline disabled:opacity-50"
+          >
+            Tester analyse persistante
+          </button>
+          {persistentJob && (
+            <div className="text-[12px] text-foreground space-y-1">
+              {(persistentJob.status === 'queued' || persistentJob.status === 'running') && (
+                <>
+                  <div className="font-bold">{L.runningTitle}</div>
+                  <div>{persistentJob.progress ?? 0} %</div>
+                  <div className="text-muted-foreground">{L.runningText}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {persistentJob.id} · {persistentJob.current_step}
+                  </div>
+                </>
+              )}
+              {persistentJob.status === 'completed' && (
+                <>
+                  <div className="font-bold">{L.progDone}</div>
+                  <div>
+                    {persistentJob.step_results?.final?.kind === 'test' &&
+                     persistentJob.step_results?.final?.data?.persistentJobTest === true
+                      ? (persistentJob.final_report || 'Test IA persistant terminé')
+                      : 'Résultat de test non conforme.'}
+                  </div>
+                </>
+              )}
+              {persistentJob.status === 'failed' && (
+                <>
+                  <div className="font-bold">{L.failedTitle}</div>
+                  <div className="text-muted-foreground">{persistentJob.error_message}</div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">

@@ -240,16 +240,15 @@ const SmartDevisPage = () => {
 
   const handleScanFile = useCallback(async (file: File | null) => {
     if (!file) return;
-    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-    if (!allowed.includes(file.type)) {
+    const mimeType = normalizeScanMimeType(file);
+    if (!mimeType) {
       toast({ variant: 'destructive', title: isRTL ? 'نوع الملف غير مدعوم' : 'Type de fichier non supporté' });
       return;
     }
     setScanning(true);
     try {
       let base64: string;
-      let mimeType = file.type;
-      if (file.type.startsWith('image/')) {
+      if (mimeType.startsWith('image/')) {
         const dataUrl: string = await new Promise((resolve, reject) => {
           const r = new FileReader();
           r.onload = () => resolve(r.result as string);

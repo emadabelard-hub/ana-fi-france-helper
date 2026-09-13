@@ -1942,6 +1942,9 @@ const AIAssistantPage = () => {
     sourceLineIndex: number;
     tableIndex: number;
     rowIndex: number;
+    // En-têtes PROPRES au tableau d'origine de cette ligne : jamais ceux d'un
+    // autre tableau. Corrige le mélange de colonnes entre tableaux successifs.
+    headers: string[];
     cells: string[];
   };
   type DocxBatchPlan = {
@@ -1969,6 +1972,7 @@ const AIAssistantPage = () => {
           sourceLineIndex: sourceLineIndex++,
           tableIndex,
           rowIndex: i,
+          headers: header,
           cells: nonEmpty[i].cells,
         });
       }
@@ -2092,6 +2096,147 @@ const AIAssistantPage = () => {
     return collected;
   };
 
+  // ── DOCX volumineux : job persistant serveur (lots exécutés hors navigateur)
+  // Source de vérité : btp_analysis_jobs (payload.kind = 'docx_quote_batch',
+  // imposé par le serveur). Aucun état React ni stockage local ne fait autorité.
+  const [docxJob, setDocxJob] = useState<PersistentTestJob | null>(null);
+  const [docxJobStarting, setDocxJobStarting] = useState(false);
+
+  const fetchLatestDocxJob = useCallback(async (): Promise<PersistentTestJob | null> => {
+    const { data, error } = await supabase
+      .from('btp_analysis_jobs')
+      .select(PERSISTENT_JOB_FIELDS)
+      .contains('payload', { kind: 'docx_quote_batch' })
+      .in('status', ['queued', 'running', 'completed', 'failed'])
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (error) { console.error('[docx-job] lookup', error.message); return null; }
+    return (data?.[0] as PersistentTestJob | undefined) ?? null;
+  }, []);
+
+  // Reprise au montage : le job est retrouvé depuis la base, jamais du state.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const job = await fetchLatestDocxJob();
+      if (alive && job) setDocxJob(job);
+    })();
+    return () => { alive = false; };
+  }, [fetchLatestDocxJob]);
+
+  // Polling 3 s tant que le job est actif. Le démontage arrête seulement
+  // l'observation : aucune annulation n'est envoyée au serveur.
+  useEffect(() => {
+    const id = docxJob?.id;
+    const status = docxJob?.status;
+    if (!id || (status !== 'queued' && status !== 'running')) return;
+    let alive = true;
+    const timer = setInterval(async () => {
+      const { data, error } = await supabase
+        .from('btp_analysis_jobs')
+        .select(PERSISTENT_JOB_FIELDS)
+        .eq('id', id)
+        .maybeSingle();
+      if (!alive) return;
+      if (error) { console.error('[docx-job] poll', error.message); return; }
+      if (data) setDocxJob(data as PersistentTestJob);
+    }, 3000);
+    return () => { alive = false; clearInterval(timer); };
+  }, [docxJob?.id, docxJob?.status]);
+
+  /** Création du job persistant : le client n'envoie ni user_id, ni statut. */
+  const startDocxQuoteJob = async (plan: DocxBatchPlan): Promise<boolean> => {
+    if (docxJobStarting) return false;
+    setDocxJobStarting(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) { console.error('[docx-job] session absente'); return false; }
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/btp-analysis-job?mode=create`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            mode: 'create',
+            kind: 'docx_quote_batch',
+            language: isRTL ? 'ar' : 'fr',
+            fileName: plan.fileName,
+            sourceRows: plan.rows,
+          }),
+        },
+      );
+      const body = await resp.json().catch(() => null);
+      if (!resp.ok || !body?.jobId) {
+        console.error('[docx-job] create', resp.status, body);
+        return false;
+      }
+      setDocxJob({
+        id: body.jobId,
+        status: body.status ?? 'queued',
+        current_step: 'prepare',
+        progress: 0,
+        error_message: null,
+        final_report: null,
+        step_results: {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+      return true;
+    } finally {
+      setDocxJobStarting(false);
+    }
+  };
+
+  /**
+   * Transfert du résultat persistant vers le Devis intelligent, SANS repasser
+   * par btp_quote_extract. Mapping identique à celui déjà validé.
+   */
+  const openDocxJobInSmartDevis = (job: PersistentTestJob) => {
+    const final = job.step_results?.final;
+    if (!final || final.kind !== 'quote_items' || !Array.isArray(final.data?.items)) {
+      console.error('[docx-job] résultat final non conforme');
+      return;
+    }
+    const merged: DocxBatchItem[] = final.data.items;
+    const items = merged
+      .filter((it) => typeof it.description === 'string' && it.description.trim().length > 0)
+      .map((it) => ({
+        designation_fr: it.description.trim(),
+        designation_ar: '',
+        quantity: typeof it.quantity === 'number' && it.quantity > 0 ? it.quantity : 1,
+        unit: typeof it.unit === 'string' && it.unit.trim() ? it.unit.trim() : 'u',
+        unitPrice: typeof it.unitPrice === 'number' && it.unitPrice > 0 ? it.unitPrice : 0,
+        lot: typeof it.lot === 'string' && it.lot.trim() ? it.lot.trim() : null,
+      }));
+
+    sessionStorage.removeItem('smart_devis_prefill_v1');
+    sessionStorage.setItem('smart_devis_prefill_v1', JSON.stringify({
+      subject: '',
+      items,
+      client: null,
+      project: null,
+      vat: null,
+      constraints: [],
+      missingInformation: [],
+      copyText: '',
+      _validation: {
+        totalItems: items.length,
+        source: 'docx_batch_job',
+        jobId: job.id,
+        sourceFile: final.data.sourceFile ?? '',
+        sourceRowCount: final.data.sourceRowCount ?? merged.length,
+        extracted: merged.map((it) => ({
+          sourceLineIndex: it.sourceLineIndex,
+          unitPrice: it.unitPrice ?? null,
+          total: it.total ?? null,
+          priceSource: it.priceSource ?? null,
+        })),
+      },
+    }));
+    navigate('/pro/smart-devis');
+  };
+
   const transferDocxBatchToSmartDevis = async (plan: DocxBatchPlan, btpDocData: any): Promise<boolean> => {
     let merged: DocxBatchItem[];
     try {
@@ -2162,7 +2307,16 @@ const AIAssistantPage = () => {
       // données → extraction par lots de 50 avec conservation des prix.
       const batchPlan = buildDocxBatchPlan(findDossierAttachments().attachments);
       if (batchPlan) {
-        await transferDocxBatchToSmartDevis(batchPlan, btpDocData);
+        // Les lots ne sont plus exécutés par le navigateur : un job persistant
+        // serveur traite le DOCX, l'utilisateur peut quitter la page.
+        const started = await startDocxQuoteJob(batchPlan);
+        if (!started) {
+          toast({
+            variant: 'destructive',
+            title: 'Extraction du devis impossible',
+            description: 'Le traitement du document n’a pas pu être lancé. Le devis n’a pas été créé.',
+          });
+        }
         return;
       }
 
@@ -2656,6 +2810,38 @@ const AIAssistantPage = () => {
         </>
       )}
 
+
+      {/* Extraction d'un gros devis Word : état réel du job serveur */}
+      {docxJob && (
+        <div className="mx-4 mb-3 shrink-0 rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-1">
+          {(docxJob.status === 'queued' || docxJob.status === 'running') && (
+            <>
+              <div className="text-[14px] font-bold text-foreground">{L.runningTitle}</div>
+              <div className="text-[13px] text-foreground">{docxJob.progress ?? 0} %</div>
+              <div className="text-[12px] text-muted-foreground">{L.runningText}</div>
+            </>
+          )}
+          {docxJob.status === 'completed' && (
+            <>
+              <div className="text-[14px] font-bold text-foreground">
+                {docxJob.final_report || 'Extraction du devis terminée'}
+              </div>
+              <button
+                onClick={() => openDocxJobInSmartDevis(docxJob)}
+                className="mt-1 rounded-lg bg-primary px-3 py-2 text-[13px] font-bold text-primary-foreground active:scale-[0.99]"
+              >
+                Ouvrir dans Devis intelligent
+              </button>
+            </>
+          )}
+          {docxJob.status === 'failed' && (
+            <>
+              <div className="text-[14px] font-bold text-foreground">{L.failedTitle}</div>
+              <div className="text-[12px] text-muted-foreground">{docxJob.error_message}</div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* TEMPORAIRE (Phase 3) : test du job persistant — mode technique uniquement */}
       {techMode && (

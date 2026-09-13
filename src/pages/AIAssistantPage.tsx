@@ -771,7 +771,7 @@ const AIAssistantPage = () => {
     } finally {
       setPersistentStarting(false);
     }
-  }, [persistentStarting, isRTL, toast]);
+  }, [persistentStarting, isRTL]);
   // ─────────────────────────────────────────────────────────────
 
   const { toast } = useToast();

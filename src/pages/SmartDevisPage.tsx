@@ -131,6 +131,24 @@ interface LineItem {
 
 const generateId = () => `id-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
+const ALLOWED_SCAN_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+
+const EXT_TO_SCAN_MIME: Record<string, string> = {
+  '.pdf': 'application/pdf',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+};
+
+const normalizeScanMimeType = (file: File): string | null => {
+  const rawType = (file.type || '').toLowerCase();
+  const canonicalType = rawType === 'image/jpg' ? 'image/jpeg' : rawType;
+  if (ALLOWED_SCAN_TYPES.includes(canonicalType)) return canonicalType;
+  const ext = (file.name || '').slice((file.name || '').lastIndexOf('.')).toLowerCase();
+  return EXT_TO_SCAN_MIME[ext] || null;
+};
+
 const SmartDevisPage = () => {
   const { isRTL } = useLanguage();
   const { toast } = useToast();

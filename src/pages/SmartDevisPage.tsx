@@ -689,7 +689,7 @@ const SmartDevisPage = () => {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/jpg,image/png,application/pdf"
+                accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
                 className="hidden"
                 onChange={(e) => { handleScanFile(e.target.files?.[0] || null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
               />

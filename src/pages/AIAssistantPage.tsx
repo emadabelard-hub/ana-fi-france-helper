@@ -743,7 +743,7 @@ const AIAssistantPage = () => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
-      if (!token) { toast({ title: 'Session expirée', variant: 'destructive' }); return; }
+      if (!token) { console.error('[persistent-test] session absente'); return; }
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/btp-analysis-job?mode=create`,
         {

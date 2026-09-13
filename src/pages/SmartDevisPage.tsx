@@ -240,7 +240,7 @@ const SmartDevisPage = () => {
 
   const handleScanFile = useCallback(async (file: File | null) => {
     if (!file) return;
-    const mimeType = normalizeScanMimeType(file);
+    let mimeType = normalizeScanMimeType(file);
     if (!mimeType) {
       toast({ variant: 'destructive', title: isRTL ? 'نوع الملف غير مدعوم' : 'Type de fichier non supporté' });
       return;

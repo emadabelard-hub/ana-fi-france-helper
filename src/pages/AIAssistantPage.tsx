@@ -2657,6 +2657,50 @@ const AIAssistantPage = () => {
       )}
 
 
+      {/* TEMPORAIRE (Phase 3) : test du job persistant — mode technique uniquement */}
+      {techMode && (
+        <div className="mx-4 mb-3 shrink-0 rounded-xl border border-border bg-muted/40 p-3 space-y-2">
+          <button
+            onClick={startPersistentTest}
+            disabled={persistentStarting}
+            className="text-[13px] font-bold text-primary underline disabled:opacity-50"
+          >
+            Tester analyse persistante
+          </button>
+          {persistentJob && (
+            <div className="text-[12px] text-foreground space-y-1">
+              {(persistentJob.status === 'queued' || persistentJob.status === 'running') && (
+                <>
+                  <div className="font-bold">{L.runningTitle}</div>
+                  <div>{persistentJob.progress ?? 0} %</div>
+                  <div className="text-muted-foreground">{L.runningText}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {persistentJob.id} · {persistentJob.current_step}
+                  </div>
+                </>
+              )}
+              {persistentJob.status === 'completed' && (
+                <>
+                  <div className="font-bold">{L.progDone}</div>
+                  <div>
+                    {persistentJob.step_results?.final?.kind === 'test' &&
+                     persistentJob.step_results?.final?.data?.persistentJobTest === true
+                      ? (persistentJob.final_report || 'Test IA persistant terminé')
+                      : 'Résultat de test non conforme.'}
+                  </div>
+                </>
+              )}
+              {persistentJob.status === 'failed' && (
+                <>
+                  <div className="font-bold">{L.failedTitle}</div>
+                  <div className="text-muted-foreground">{persistentJob.error_message}</div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
         {messages.length === 0 && (

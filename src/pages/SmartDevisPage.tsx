@@ -131,6 +131,24 @@ interface LineItem {
 
 const generateId = () => `id-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
+const ALLOWED_SCAN_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+
+const EXT_TO_SCAN_MIME: Record<string, string> = {
+  '.pdf': 'application/pdf',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+};
+
+const normalizeScanMimeType = (file: File): string | null => {
+  const rawType = (file.type || '').toLowerCase();
+  const canonicalType = rawType === 'image/jpg' ? 'image/jpeg' : rawType;
+  if (ALLOWED_SCAN_TYPES.includes(canonicalType)) return canonicalType;
+  const ext = (file.name || '').slice((file.name || '').lastIndexOf('.')).toLowerCase();
+  return EXT_TO_SCAN_MIME[ext] || null;
+};
+
 const SmartDevisPage = () => {
   const { isRTL } = useLanguage();
   const { toast } = useToast();
@@ -222,16 +240,15 @@ const SmartDevisPage = () => {
 
   const handleScanFile = useCallback(async (file: File | null) => {
     if (!file) return;
-    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-    if (!allowed.includes(file.type)) {
+    let mimeType = normalizeScanMimeType(file);
+    if (!mimeType) {
       toast({ variant: 'destructive', title: isRTL ? 'نوع الملف غير مدعوم' : 'Type de fichier non supporté' });
       return;
     }
     setScanning(true);
     try {
       let base64: string;
-      let mimeType = file.type;
-      if (file.type.startsWith('image/')) {
+      if (mimeType.startsWith('image/')) {
         const dataUrl: string = await new Promise((resolve, reject) => {
           const r = new FileReader();
           r.onload = () => resolve(r.result as string);
@@ -672,7 +689,7 @@ const SmartDevisPage = () => {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/jpg,image/png,application/pdf"
+                accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
                 className="hidden"
                 onChange={(e) => { handleScanFile(e.target.files?.[0] || null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
               />

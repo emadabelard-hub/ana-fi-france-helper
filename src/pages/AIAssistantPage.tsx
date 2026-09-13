@@ -755,7 +755,6 @@ const AIAssistantPage = () => {
       const body = await resp.json().catch(() => null);
       if (!resp.ok || !body?.jobId) {
         console.error('[persistent-test] create', resp.status, body);
-        toast({ title: 'Création du test impossible', variant: 'destructive' });
         return;
       }
       setPersistentJob({

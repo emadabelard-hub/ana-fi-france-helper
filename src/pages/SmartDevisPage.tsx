@@ -527,7 +527,7 @@ const SmartDevisPage = () => {
     } finally {
       setScanning(false);
     }
-  }, [toast, isRTL]);
+  }, [toast, isRTL, handleDocxFile]);
 
   const handleAnalyze = async () => {
     const arabic = rawArabic.trim();

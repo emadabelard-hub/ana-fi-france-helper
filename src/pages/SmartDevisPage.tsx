@@ -471,7 +471,7 @@ const SmartDevisPage = () => {
     try {
       const structured = await extractDocxWithTables(file);
       const analysis = buildDocxSourceRows(structured.tables || []);
-      if (analysis && 'ambiguousTable' in analysis) {
+      if (analysis.status === 'ambiguous') {
         // Structure ambiguë : arrêt, aucune interprétation devinée.
         console.error('[SmartDevis][docx] tableau ambigu', analysis.ambiguousTable);
         toast({

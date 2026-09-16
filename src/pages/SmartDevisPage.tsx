@@ -912,6 +912,14 @@ const SmartDevisPage = () => {
                   <>📎 {isRTL ? 'سكان أو حمّل وثيقة' : 'Scanner ou importer un document'}</>
                 )}
               </Button>
+              {(docxJobStatus === 'queued' || docxJobStatus === 'running') && (
+                <p className="mt-2 text-sm text-muted-foreground text-center">
+                  <Loader2 className="inline h-4 w-4 mr-1 animate-spin" />
+                  {isRTL
+                    ? `جاري استخراج بنود الوثيقة… ${docxProgress}%`
+                    : `Extraction des lignes du document Word… ${docxProgress}%`}
+                </p>
+              )}
             </div>
 
 

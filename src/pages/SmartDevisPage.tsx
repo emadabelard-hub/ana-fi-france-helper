@@ -171,33 +171,121 @@ type DocxSourceRow = {
   cells: string[];
 };
 
-/**
- * Construit les sourceRows du tableau de prestations : seul le tableau
- * contenant le plus de lignes de données est converti en lignes de devis.
- * Les tableaux annexes (récapitulatif, totaux) ne produisent aucune ligne.
- * Chaque ligne conserve les en-têtes de son propre tableau.
- */
-const buildDocxSourceRows = (
-  tables: DocxTable[],
-): { rows: DocxSourceRow[]; ignoredTables: number } | null => {
-  const candidates = tables
-    .map((t, tableIndex) => ({
-      tableIndex,
-      nonEmpty: (t.rows || []).filter((r) => (r.cells || []).some((c) => c.trim().length > 0)),
-    }))
-    .filter((c) => c.nonEmpty.length >= 2);
-  if (candidates.length === 0) return null;
+// Classification STRUCTURELLE des tableaux Word : seule la structure des
+// colonnes de l'en-tête décide. Aucun mot-clé de cellule ne supprime un
+// tableau, et aucun tableau de prestations valide n'est écarté.
+const normHeader = (s: string) =>
+  (s || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
 
-  const main = candidates.reduce((a, b) => (b.nonEmpty.length > a.nonEmpty.length ? b : a));
-  const headers = main.nonEmpty[0].cells;
-  const rows: DocxSourceRow[] = main.nonEmpty.slice(1).map((r, i) => ({
-    sourceLineIndex: i,
-    tableIndex: main.tableIndex,
-    rowIndex: i + 1,
-    headers,
-    cells: r.cells,
-  }));
-  return { rows, ignoredTables: candidates.length - 1 };
+const HEADER_DESIGNATION = /(designation|description|prestation|libelle|ouvrage|poste|travaux)/;
+const HEADER_QTY = /(quantite|quantites|qte|qty|nombre)/;
+const HEADER_UNIT = /(^u$|^unite$|^unit$|^unite\b|\bunite\b|^u\.|^un\.)/;
+const HEADER_PRICE = /(prix unitaire|p\.?\s?u\.?(\s|$|ht)|prix ht|prix)/;
+const HEADER_TOTAL = /(total|montant)/;
+
+/** Analyse de l'en-tête d'un tableau : colonne désignation + colonnes de devis. */
+const classifyHeaderRow = (cells: string[]) => {
+  const norm = cells.map(normHeader);
+  const hasDesignation = norm.some((c) => HEADER_DESIGNATION.test(c));
+  const kinds = new Set<string>();
+  norm.forEach((c) => {
+    if (HEADER_QTY.test(c)) kinds.add('qty');
+    if (HEADER_UNIT.test(c)) kinds.add('unit');
+    if (HEADER_PRICE.test(c)) kinds.add('price');
+    if (HEADER_TOTAL.test(c)) kinds.add('total');
+  });
+  return { hasDesignation, quoteColumns: kinds.size, isHeaderLike: hasDesignation || kinds.size >= 2 };
+};
+
+type DocxRowsResult =
+  | { rows: DocxSourceRow[]; tablesKept: number[]; tablesIgnored: number[] }
+  | { ambiguousTable: number }
+  | null;
+
+/**
+ * Règle déterministe et structurelle :
+ * - tableau de prestations = en-tête avec une colonne de désignation ET au
+ *   moins deux colonnes typiques de devis (quantité, unité, PU, total) ;
+ * - tableau récapitulatif (ex. Lot | Nombre de lignes | Sous-total HT) =
+ *   aucune colonne de désignation → exclu, sans jamais se fonder sur les
+ *   mots « total », « TVA » ou « sous-total » présents dans les cellules ;
+ * - continuation d'un tableau de prestations (aucun en-tête répété, même
+ *   nombre de colonnes) → en-têtes précédents réutilisés, TOUTES les lignes
+ *   conservées, y compris la première ;
+ * - plusieurs tableaux de prestations valides → tous conservés ;
+ * - structure réellement ambiguë → arrêt, sans deviner.
+ */
+const buildDocxSourceRows = (tables: DocxTable[]): DocxRowsResult => {
+  const rows: DocxSourceRow[] = [];
+  const tablesKept: number[] = [];
+  const tablesIgnored: number[] = [];
+  let lastQuoteHeaders: string[] | null = null;
+  let sourceLineIndex = 0;
+
+  for (let tableIndex = 0; tableIndex < tables.length; tableIndex++) {
+    const nonEmpty = (tables[tableIndex].rows || []).filter((r) =>
+      (r.cells || []).some((c) => c.trim().length > 0),
+    );
+    if (nonEmpty.length === 0) continue;
+
+    const firstInfo = classifyHeaderRow(nonEmpty[0].cells);
+
+    // a) En-tête de prestations explicite : désignation + ≥ 2 colonnes de devis.
+    if (firstInfo.hasDesignation && firstInfo.quoteColumns >= 2) {
+      if (nonEmpty.length < 2) { tablesIgnored.push(tableIndex); continue; }
+      const headers = nonEmpty[0].cells;
+      lastQuoteHeaders = headers;
+      tablesKept.push(tableIndex);
+      for (let i = 1; i < nonEmpty.length; i++) {
+        rows.push({
+          sourceLineIndex: sourceLineIndex++,
+          tableIndex,
+          rowIndex: i,
+          headers,
+          cells: nonEmpty[i].cells,
+        });
+      }
+      continue;
+    }
+
+    // b) Continuation : aucun en-tête répété, même nombre de colonnes que le
+    //    tableau de prestations précédent → toutes les lignes sont conservées.
+    if (
+      lastQuoteHeaders &&
+      !firstInfo.isHeaderLike &&
+      nonEmpty.every((r) => (r.cells || []).length === lastQuoteHeaders!.length)
+    ) {
+      tablesKept.push(tableIndex);
+      for (let i = 0; i < nonEmpty.length; i++) {
+        rows.push({
+          sourceLineIndex: sourceLineIndex++,
+          tableIndex,
+          rowIndex: i,
+          headers: lastQuoteHeaders,
+          cells: nonEmpty[i].cells,
+        });
+      }
+      continue;
+    }
+
+    // c) Tableau sans colonne de désignation : structure de synthèse
+    //    (récapitulatif, totaux) → exclu des prestations.
+    if (!firstInfo.hasDesignation) {
+      tablesIgnored.push(tableIndex);
+      continue;
+    }
+
+    // d) Désignation présente mais structure de devis incomplète → ambigu.
+    return { ambiguousTable: tableIndex };
+  }
+
+  if (rows.length === 0) return null;
+  return { rows, tablesKept, tablesIgnored };
 };
 
 const SmartDevisPage = () => {

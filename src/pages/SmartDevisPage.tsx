@@ -203,9 +203,9 @@ const classifyHeaderRow = (cells: string[]) => {
 };
 
 type DocxRowsResult =
-  | { rows: DocxSourceRow[]; tablesKept: number[]; tablesIgnored: number[] }
-  | { ambiguousTable: number }
-  | null;
+  | { status: 'ok'; rows: DocxSourceRow[]; tablesKept: number[]; tablesIgnored: number[] }
+  | { status: 'ambiguous'; ambiguousTable: number }
+  | { status: 'empty' };
 
 /**
  * Règle déterministe et structurelle :

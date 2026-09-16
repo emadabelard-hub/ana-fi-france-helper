@@ -150,6 +150,56 @@ const normalizeScanMimeType = (file: File): string | null => {
   return EXT_TO_SCAN_MIME[ext] || null;
 };
 
+// ── Import DOCX (devis Word) ────────────────────────────────────────────────
+// Réutilise strictement l'architecture validée : extractDocxWithTables →
+// sourceRows → btp-analysis-job (kind docx_quote_batch) → quote_items.
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const DOCX_JOB_KEY = 'smart_devis_docx_job_v1';
+
+/** Reconnaissance DOCX par MIME OU extension (Android : type vide/octet-stream). */
+const isDocxFile = (file: File): boolean => {
+  const type = (file.type || '').toLowerCase();
+  if (type === DOCX_MIME) return true;
+  return (file.name || '').toLowerCase().endsWith('.docx');
+};
+
+type DocxSourceRow = {
+  sourceLineIndex: number;
+  tableIndex: number;
+  rowIndex: number;
+  headers: string[];
+  cells: string[];
+};
+
+/**
+ * Construit les sourceRows du tableau de prestations : seul le tableau
+ * contenant le plus de lignes de données est converti en lignes de devis.
+ * Les tableaux annexes (récapitulatif, totaux) ne produisent aucune ligne.
+ * Chaque ligne conserve les en-têtes de son propre tableau.
+ */
+const buildDocxSourceRows = (
+  tables: DocxTable[],
+): { rows: DocxSourceRow[]; ignoredTables: number } | null => {
+  const candidates = tables
+    .map((t, tableIndex) => ({
+      tableIndex,
+      nonEmpty: (t.rows || []).filter((r) => (r.cells || []).some((c) => c.trim().length > 0)),
+    }))
+    .filter((c) => c.nonEmpty.length >= 2);
+  if (candidates.length === 0) return null;
+
+  const main = candidates.reduce((a, b) => (b.nonEmpty.length > a.nonEmpty.length ? b : a));
+  const headers = main.nonEmpty[0].cells;
+  const rows: DocxSourceRow[] = main.nonEmpty.slice(1).map((r, i) => ({
+    sourceLineIndex: i,
+    tableIndex: main.tableIndex,
+    rowIndex: i + 1,
+    headers,
+    cells: r.cells,
+  }));
+  return { rows, ignoredTables: candidates.length - 1 };
+};
+
 const SmartDevisPage = () => {
   const { isRTL } = useLanguage();
   const { toast } = useToast();

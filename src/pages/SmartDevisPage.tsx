@@ -470,7 +470,20 @@ const SmartDevisPage = () => {
     setScanning(true);
     try {
       const structured = await extractDocxWithTables(file);
-      const plan = buildDocxSourceRows(structured.tables || []);
+      const analysis = buildDocxSourceRows(structured.tables || []);
+      if (analysis && 'ambiguousTable' in analysis) {
+        // Structure ambiguë : arrêt, aucune interprétation devinée.
+        console.error('[SmartDevis][docx] tableau ambigu', analysis.ambiguousTable);
+        toast({
+          variant: 'destructive',
+          title: isRTL ? 'جدول غير واضح في الوثيقة' : 'Structure de tableau ambiguë',
+          description: isRTL
+            ? `الجدول رقم ${analysis.ambiguousTable + 1} غير واضح — التحليل موقوف`
+            : `Le tableau n°${analysis.ambiguousTable + 1} n'a pas une structure de devis claire. Traitement arrêté.`,
+        });
+        return;
+      }
+      const plan = analysis;
       if (!plan || plan.rows.length === 0) {
         toast({
           variant: 'destructive',

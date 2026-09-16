@@ -281,11 +281,11 @@ const buildDocxSourceRows = (tables: DocxTable[]): DocxRowsResult => {
     }
 
     // d) Désignation présente mais structure de devis incomplète → ambigu.
-    return { ambiguousTable: tableIndex };
+    return { status: 'ambiguous', ambiguousTable: tableIndex };
   }
 
-  if (rows.length === 0) return null;
-  return { rows, tablesKept, tablesIgnored };
+  if (rows.length === 0) return { status: 'empty' };
+  return { status: 'ok', rows, tablesKept, tablesIgnored };
 };
 
 const SmartDevisPage = () => {

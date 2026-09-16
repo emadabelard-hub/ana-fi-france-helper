@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, ArrowRight, Camera, Loader2, Plus, Sparkles, Trash2, X, Send, Languages } from 'lucide-react';
 import VoiceInputButton from '@/components/shared/VoiceInputButton';
+import { extractDocxWithTables, type DocxTable } from '@/lib/docxExtractor';
 
 const INTRO_TIP_KEY = 'smart_devis_intro_tip_v1';
 const introTipTitleAr = '💡 كيف تستخدم الديڤي الذكي ؟';

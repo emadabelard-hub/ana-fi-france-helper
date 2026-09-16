@@ -483,14 +483,14 @@ const SmartDevisPage = () => {
         });
         return;
       }
-      const plan = analysis;
-      if (!plan || plan.rows.length === 0) {
+      if (analysis.status !== 'ok' || analysis.rows.length === 0) {
         toast({
           variant: 'destructive',
           title: isRTL ? 'لا يوجد جدول بنود في الوثيقة' : 'Aucun tableau de prestations trouvé dans ce document',
         });
         return;
       }
+      const plan = analysis;
 
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;

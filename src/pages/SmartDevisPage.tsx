@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, ArrowRight, Camera, Loader2, Plus, Sparkles, Trash2, X, Send, Languages } from 'lucide-react';
 import VoiceInputButton from '@/components/shared/VoiceInputButton';
+import { extractDocxWithTables, type DocxTable } from '@/lib/docxExtractor';
 
 const INTRO_TIP_KEY = 'smart_devis_intro_tip_v1';
 const introTipTitleAr = '💡 كيف تستخدم الديڤي الذكي ؟';
@@ -149,6 +150,56 @@ const normalizeScanMimeType = (file: File): string | null => {
   return EXT_TO_SCAN_MIME[ext] || null;
 };
 
+// ── Import DOCX (devis Word) ────────────────────────────────────────────────
+// Réutilise strictement l'architecture validée : extractDocxWithTables →
+// sourceRows → btp-analysis-job (kind docx_quote_batch) → quote_items.
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const DOCX_JOB_KEY = 'smart_devis_docx_job_v1';
+
+/** Reconnaissance DOCX par MIME OU extension (Android : type vide/octet-stream). */
+const isDocxFile = (file: File): boolean => {
+  const type = (file.type || '').toLowerCase();
+  if (type === DOCX_MIME) return true;
+  return (file.name || '').toLowerCase().endsWith('.docx');
+};
+
+type DocxSourceRow = {
+  sourceLineIndex: number;
+  tableIndex: number;
+  rowIndex: number;
+  headers: string[];
+  cells: string[];
+};
+
+/**
+ * Construit les sourceRows du tableau de prestations : seul le tableau
+ * contenant le plus de lignes de données est converti en lignes de devis.
+ * Les tableaux annexes (récapitulatif, totaux) ne produisent aucune ligne.
+ * Chaque ligne conserve les en-têtes de son propre tableau.
+ */
+const buildDocxSourceRows = (
+  tables: DocxTable[],
+): { rows: DocxSourceRow[]; ignoredTables: number } | null => {
+  const candidates = tables
+    .map((t, tableIndex) => ({
+      tableIndex,
+      nonEmpty: (t.rows || []).filter((r) => (r.cells || []).some((c) => c.trim().length > 0)),
+    }))
+    .filter((c) => c.nonEmpty.length >= 2);
+  if (candidates.length === 0) return null;
+
+  const main = candidates.reduce((a, b) => (b.nonEmpty.length > a.nonEmpty.length ? b : a));
+  const headers = main.nonEmpty[0].cells;
+  const rows: DocxSourceRow[] = main.nonEmpty.slice(1).map((r, i) => ({
+    sourceLineIndex: i,
+    tableIndex: main.tableIndex,
+    rowIndex: i + 1,
+    headers,
+    cells: r.cells,
+  }));
+  return { rows, ignoredTables: candidates.length - 1 };
+};
+
 const SmartDevisPage = () => {
   const { isRTL } = useLanguage();
   const { toast } = useToast();
@@ -238,8 +289,159 @@ const SmartDevisPage = () => {
 
   const removeImage = (id: string) => setImages(prev => prev.filter(i => i.id !== id));
 
+  // ── Job DOCX persistant : la base est la seule source de vérité ───────────
+  const [docxJobId, setDocxJobId] = useState<string | null>(null);
+  const [docxJobStatus, setDocxJobStatus] = useState<string | null>(null);
+  const [docxProgress, setDocxProgress] = useState(0);
+
+  const applyDocxJob = useCallback((job: any): boolean => {
+    const final = job?.step_results?.final;
+    if (!final || final.kind !== 'quote_items' || !Array.isArray(final.data?.items)) return false;
+    const items: any[] = final.data.items;
+    // Aucune valeur artificielle : aucun prix réellement lu n'est remplacé.
+    const mapped: LineItem[] = items
+      .filter((it) => typeof it?.description === 'string' && it.description.trim().length > 0)
+      .map((it, idx) => ({
+        id: `docx-${job.id}-${idx}`,
+        designation_fr: String(it.description).trim(),
+        designation_ar: '',
+        quantity: Number(it.quantity) > 0 ? Number(it.quantity) : ('' as unknown as number),
+        unit: typeof it.unit === 'string' ? it.unit.trim() : '',
+        unitPrice: Number(it.unitPrice) > 0 ? Number(it.unitPrice) : 0,
+        lot: typeof it.lot === 'string' && it.lot.trim() ? it.lot.trim() : undefined,
+      }));
+    if (mapped.length === 0) return false;
+    setLineItems(mapped);
+    toast({ title: isRTL ? '✅ تم استخراج بنود الوثيقة' : `✅ ${mapped.length} ligne(s) importée(s) du document Word` });
+    return true;
+  }, [toast, isRTL]);
+
+  // Reprise : au retour sur la page, le job est retrouvé depuis la base.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      let stored: string | null = null;
+      try { stored = localStorage.getItem(DOCX_JOB_KEY); } catch { stored = null; }
+      if (!stored) return;
+      const { data, error } = await supabase
+        .from('btp_analysis_jobs')
+        .select('id, status, progress, step_results, error_message')
+        .eq('id', stored)
+        .maybeSingle();
+      if (!alive) return;
+      if (error || !data) { console.error('[SmartDevis][docx-job] lookup', error?.message); return; }
+      setDocxJobStatus(data.status);
+      setDocxProgress(Number(data.progress) || 0);
+      if (data.status === 'completed') {
+        applyDocxJob(data);
+        try { localStorage.removeItem(DOCX_JOB_KEY); } catch {}
+      } else if (data.status === 'queued' || data.status === 'running') {
+        setDocxJobId(data.id);
+      } else {
+        try { localStorage.removeItem(DOCX_JOB_KEY); } catch {}
+      }
+    })();
+    return () => { alive = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Observation 3 s : quitter la page n'annule rien côté serveur.
+  useEffect(() => {
+    if (!docxJobId || (docxJobStatus !== 'queued' && docxJobStatus !== 'running')) return;
+    let alive = true;
+    const timer = setInterval(async () => {
+      const { data, error } = await supabase
+        .from('btp_analysis_jobs')
+        .select('id, status, progress, step_results, error_message')
+        .eq('id', docxJobId)
+        .maybeSingle();
+      if (!alive) return;
+      if (error || !data) { console.error('[SmartDevis][docx-job] poll', error?.message); return; }
+      setDocxJobStatus(data.status);
+      setDocxProgress(Number(data.progress) || 0);
+      if (data.status === 'completed') {
+        applyDocxJob(data);
+        setDocxJobId(null);
+        try { localStorage.removeItem(DOCX_JOB_KEY); } catch {}
+      } else if (data.status === 'failed') {
+        console.error('[SmartDevis][docx-job] failed', data.error_message);
+        setDocxJobId(null);
+        try { localStorage.removeItem(DOCX_JOB_KEY); } catch {}
+        toast({
+          variant: 'destructive',
+          title: isRTL ? 'تعذّر استخراج الوثيقة' : 'Extraction du document impossible',
+        });
+      }
+    }, 3000);
+    return () => { alive = false; clearInterval(timer); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docxJobId, docxJobStatus, applyDocxJob]);
+
+  /** DOCX → sourceRows → btp-analysis-job (kind docx_quote_batch). */
+  const handleDocxFile = useCallback(async (file: File) => {
+    setScanning(true);
+    try {
+      const structured = await extractDocxWithTables(file);
+      const plan = buildDocxSourceRows(structured.tables || []);
+      if (!plan || plan.rows.length === 0) {
+        toast({
+          variant: 'destructive',
+          title: isRTL ? 'لا يوجد جدول بنود في الوثيقة' : 'Aucun tableau de prestations trouvé dans ce document',
+        });
+        return;
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) throw new Error(isRTL ? 'الجلسة منتهية، سجّل الدخول من جديد' : 'Session expirée, reconnecte-toi');
+
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/btp-analysis-job?mode=create`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            mode: 'create',
+            kind: 'docx_quote_batch',
+            language: isRTL ? 'ar' : 'fr',
+            fileName: file.name,
+            sourceRows: plan.rows,
+          }),
+        },
+      );
+      const body = await resp.json().catch(() => null);
+      if (!resp.ok || !body?.jobId) {
+        console.error('[SmartDevis][docx-job] create', resp.status, body);
+        throw new Error(body?.error || `HTTP ${resp.status}`);
+      }
+      try { localStorage.setItem(DOCX_JOB_KEY, body.jobId); } catch {}
+      setDocxJobId(body.jobId);
+      setDocxJobStatus(body.status || 'queued');
+      setDocxProgress(0);
+      toast({
+        title: isRTL ? '⏳ جاري تحليل الوثيقة' : 'Analyse du document Word en cours',
+        description: isRTL
+          ? `${plan.rows.length} بند — ممكن تسيب الصفحة، الشغل مكمل`
+          : `${plan.rows.length} ligne(s) détectée(s). Vous pouvez quitter la page, le traitement continue.`,
+      });
+    } catch (e: any) {
+      console.error('[SmartDevis] docx error:', e);
+      toast({
+        variant: 'destructive',
+        title: isRTL ? 'خطأ في تحليل الوثيقة' : 'Erreur d\'analyse',
+        description: e?.message,
+      });
+    } finally {
+      setScanning(false);
+    }
+  }, [toast, isRTL]);
+
   const handleScanFile = useCallback(async (file: File | null) => {
     if (!file) return;
+    if (isDocxFile(file)) {
+      await handleDocxFile(file);
+      return;
+    }
     let mimeType = normalizeScanMimeType(file);
     if (!mimeType) {
       toast({ variant: 'destructive', title: isRTL ? 'نوع الملف غير مدعوم' : 'Type de fichier non supporté' });
@@ -325,7 +527,7 @@ const SmartDevisPage = () => {
     } finally {
       setScanning(false);
     }
-  }, [toast, isRTL]);
+  }, [toast, isRTL, handleDocxFile]);
 
   const handleAnalyze = async () => {
     const arabic = rawArabic.trim();
@@ -689,7 +891,7 @@ const SmartDevisPage = () => {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx"
                 className="hidden"
                 onChange={(e) => { handleScanFile(e.target.files?.[0] || null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
               />
@@ -710,6 +912,14 @@ const SmartDevisPage = () => {
                   <>📎 {isRTL ? 'سكان أو حمّل وثيقة' : 'Scanner ou importer un document'}</>
                 )}
               </Button>
+              {(docxJobStatus === 'queued' || docxJobStatus === 'running') && (
+                <p className="mt-2 text-sm text-muted-foreground text-center">
+                  <Loader2 className="inline h-4 w-4 mr-1 animate-spin" />
+                  {isRTL
+                    ? `جاري استخراج بنود الوثيقة… ${docxProgress}%`
+                    : `Extraction des lignes du document Word… ${docxProgress}%`}
+                </p>
+              )}
             </div>
 
 

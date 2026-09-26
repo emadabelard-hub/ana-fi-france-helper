@@ -32,6 +32,11 @@ export type DocumentFactsResult = {
   error: string | null;
 };
 
+/** Appel IA pour UN seul document. Retourne le texte brut de la réponse. */
+export type SingleDocumentAiCall = (doc: ProjectDocument) => Promise<string>;
+
+export class InvalidFactsContractError extends Error {}
+
 /** Une relance maximum du même document. */
 export const MAX_DOCUMENT_ATTEMPTS = 2;
 

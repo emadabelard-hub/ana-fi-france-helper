@@ -82,7 +82,7 @@ export const imageBase64Length = (dataUrl: string): number => {
   return comma === -1 ? dataUrl.length : dataUrl.length - comma - 1;
 };
 
-export type SizeCheck = { ok: true; estimatedInputTokens: number } | { ok: false; reason: string };
+export type SizeCheck = { ok: boolean; estimatedInputTokens?: number; reason?: string };
 
 export const checkDocumentFits = (doc: ProjectDocument, systemPrompt: string): SizeCheck => {
   if (typeof doc.dataUrl === "string") {

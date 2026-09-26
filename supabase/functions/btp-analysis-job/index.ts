@@ -9,6 +9,7 @@ import {
   RESPONSE_MAX_TOKENS,
   type ProjectDocument,
 } from '../_shared/btpDocumentSequence.ts';
+import { buildProjectFactsDossier } from '../_shared/btpProjectDossier.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -871,13 +872,17 @@ async function workProjectDocs(
       return json({ jobId, executed: step, status: 'queued', documentStatus: result.status });
     }
     if (step === 'finalize') {
-      // Aucune consolidation à cette étape : contrats indépendants par document.
+      // Consolidation déterministe (aucun appel IA) des contrats indépendants.
       const results = documents.map((_, i) => stepResults[`doc:${i}`]);
+      const dossier = buildProjectFactsDossier(results);
+      console.log('[projectDocs] dossier', JSON.stringify({ jobId, complete: dossier.complete, facts: dossier.contract.counts.total, missing: dossier.missingDocuments.length }));
       const ok = await db.rpc('commit_analysis_step', {
         _job_id: jobId, _owner: owner, _step: 'final',
-        _result: { kind: 'project_document_contracts', data: { documents: results } },
+        _result: { kind: 'project_facts_dossier', data: { documents: results, dossier } },
         _progress: 100, _current_step: 'completed', _status: 'completed',
-        _final_report: 'Extraction factuelle par document terminée',
+        _final_report: dossier.complete
+          ? 'Dossier factuel consolidé complet'
+          : 'Dossier factuel consolidé incomplet',
       });
       if (ok.error) throw new Error(ok.error.message);
       return json({ jobId, executed: 'finalize', status: 'completed' });

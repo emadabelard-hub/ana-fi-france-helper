@@ -32,21 +32,98 @@ export type DocumentFactsResult = {
   error: string | null;
 };
 
-/** Au-delà, le document relève du futur traitement par portions : jamais tronqué. */
-export const MAX_DOCUMENT_TEXT_CHARS = 300_000;
-export const MAX_DOCUMENT_IMAGE_CHARS = 14_000_000;
 /** Une relance maximum du même document. */
 export const MAX_DOCUMENT_ATTEMPTS = 2;
 
-/** Appel IA pour UN seul document. Retourne le texte brut de la réponse. */
-export type SingleDocumentAiCall = (doc: ProjectDocument) => Promise<string>;
+// ---------------------------------------------------------------- budget IA
+// Modèle : claude-sonnet-4-5 (voir _shared/anthropic-compat.ts).
+/** Fenêtre de contexte du modèle (entrée + sortie), en tokens. */
+export const MODEL_CONTEXT_TOKENS = 200_000;
+/** Espace réservé à la réponse = max_tokens réellement envoyé par le worker. */
+export const RESPONSE_MAX_TOKENS = 32_000;
+/** Marge de sécurité : 15 % de la fenêtre ne sont jamais utilisés. */
+export const CONTEXT_SAFETY_RATIO = 0.15;
+/** Texte fixe ajouté autour du document (consignes, nom de fichier, balises). */
+export const REQUEST_OVERHEAD_TOKENS = 1_000;
+/** Coût maximal documenté d'une image (redimensionnée à ~1,15 Mpx ≈ 1 600 tokens), arrondi. */
+export const IMAGE_TOKENS_MAX = 2_000;
+/** Limite API Anthropic par image, appliquée à la chaîne base64 réellement envoyée. */
+export const API_IMAGE_BASE64_LIMIT_BYTES = 5 * 1024 * 1024;
+/** Marge sous la limite image : 10 %. */
+export const IMAGE_SAFETY_RATIO = 0.10;
 
-export class InvalidFactsContractError extends Error {}
+/** Budget d'entrée disponible pour la pièce + le prompt. */
+export const inputTokenBudget = (): number =>
+  Math.floor(MODEL_CONTEXT_TOKENS * (1 - CONTEXT_SAFETY_RATIO)) - RESPONSE_MAX_TOKENS;
 
-export const documentNeedsChunking = (doc: ProjectDocument): boolean => {
-  if (typeof doc.text === "string" && doc.text.length > MAX_DOCUMENT_TEXT_CHARS) return true;
-  if (typeof doc.dataUrl === "string" && doc.dataUrl.length > MAX_DOCUMENT_IMAGE_CHARS) return true;
-  return false;
+/**
+ * Estimation CONSERVATRICE (aucun tokenizer Claude officiel côté serveur) :
+ * - caractère ASCII : 0,5 token (1 token pour 2 caractères ; un texte français
+ *   courant fait plutôt 3 à 4 caractères/token, on surestime volontairement) ;
+ * - caractère non ASCII (accents, arabe, symboles) : 1 token chacun.
+ * L'estimation est toujours supérieure ou égale au réel attendu.
+ */
+export const estimateTokensConservative = (text: string): number => {
+  let ascii = 0, other = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text.charCodeAt(i) < 128) ascii++; else other++;
+  }
+  return Math.ceil(ascii / 2) + other;
+};
+
+/** Taille réellement envoyée pour une image : la partie base64 de la data URL. */
+export const imageBase64Length = (dataUrl: string): number => {
+  const comma = dataUrl.indexOf(",");
+  return comma === -1 ? dataUrl.length : dataUrl.length - comma - 1;
+};
+
+export type SizeCheck = { ok: true; estimatedInputTokens: number } | { ok: false; reason: string };
+
+export const checkDocumentFits = (doc: ProjectDocument, systemPrompt: string): SizeCheck => {
+  if (typeof doc.dataUrl === "string") {
+    const b64 = imageBase64Length(doc.dataUrl);
+    const max = Math.floor(API_IMAGE_BASE64_LIMIT_BYTES * (1 - IMAGE_SAFETY_RATIO));
+    if (b64 > max) {
+      return { ok: false, reason: `Image trop volumineuse : ${b64} octets base64 envoyés > ${max} autorisés (limite API ${API_IMAGE_BASE64_LIMIT_BYTES} − 10 %).` };
+    }
+  }
+  const tokens = estimateTokensConservative(systemPrompt)
+    + REQUEST_OVERHEAD_TOKENS
+    + (typeof doc.text === "string" ? estimateTokensConservative(doc.text) : 0)
+    + (typeof doc.dataUrl === "string" ? IMAGE_TOKENS_MAX : 0);
+  const budget = inputTokenBudget();
+  if (tokens > budget) {
+    return { ok: false, reason: `Document trop volumineux : ~${tokens} tokens estimés > budget ${budget} (fenêtre ${MODEL_CONTEXT_TOKENS} − 15 % − réponse ${RESPONSE_MAX_TOKENS}).` };
+  }
+  return { ok: true, estimatedInputTokens: tokens };
+};
+
+/** Compatibilité : vrai si le document ne tient pas dans un seul appel. */
+export const documentNeedsChunking = (doc: ProjectDocument, systemPrompt = ""): boolean =>
+  !checkDocumentFits(doc, systemPrompt).ok;
+
+// ------------------------------------------------ erreur API de taille réelle
+/** Levée quand l'API refuse la requête pour cause de taille/contexte. */
+export class DocumentTooLargeError extends Error {}
+
+const SIZE_ERROR_PATTERNS = [
+  /prompt is too long/i,
+  /too many (input )?tokens/i,
+  /context (length|window)/i,
+  /exceeds? (the )?(maximum|max) (context|token|prompt|request|image)/i,
+  /image exceeds/i,
+  /request[_ ]too[_ ]large/i,
+  /maximum (allowed )?(request |image )?size/i,
+];
+
+/**
+ * Seuls 413, et les 400 dont le message décrit explicitement un dépassement de
+ * taille/contexte, sont des erreurs de taille. Tout autre 400 reste une erreur normale.
+ */
+export const isApiSizeLimitError = (status: number, bodyText: string): boolean => {
+  if (status === 413) return true;
+  if (status !== 400) return false;
+  return SIZE_ERROR_PATTERNS.some((re) => re.test(bodyText || ""));
 };
 
 /**
@@ -83,12 +160,14 @@ export const parseStrictFactsContract = (text: string, fileName: string): BtpFac
 export const processSingleDocument = async (
   doc: ProjectDocument,
   callAi: SingleDocumentAiCall,
+  systemPrompt = "",
 ): Promise<DocumentFactsResult> => {
   const base = { docId: doc.docId, fileName: doc.fileName };
-  if (documentNeedsChunking(doc)) {
+  const fit = checkDocumentFits(doc, systemPrompt);
+  if (!fit.ok) {
     return {
       ...base, status: "needs_chunking", attempts: 0, contract: null,
-      error: "Document trop volumineux : nécessite le futur traitement par portions (aucune troncature appliquée).",
+      error: `${fit.reason} Nécessite le futur traitement par portions (aucune troncature appliquée).`,
     };
   }
   let lastError = "";
@@ -98,6 +177,11 @@ export const processSingleDocument = async (
       const contract = parseStrictFactsContract(typeof text === "string" ? text : "", doc.fileName);
       return { ...base, status: "completed", attempts: attempt, contract, error: null };
     } catch (e) {
+      if (e instanceof DocumentTooLargeError) {
+        // Refus de taille confirmé par l'API : aucune relance.
+        return { ...base, status: "needs_chunking", attempts: attempt, contract: null,
+          error: `Refus de taille par l'API : ${e.message} Nécessite le futur traitement par portions.` };
+      }
       lastError = e instanceof Error ? e.message : String(e);
     }
   }
@@ -114,12 +198,13 @@ export const processDocumentsSequentially = async (
   callAi: SingleDocumentAiCall,
   existing: Record<string, DocumentFactsResult> = {},
   onResult?: (r: DocumentFactsResult) => Promise<void> | void,
+  systemPrompt = "",
 ): Promise<DocumentFactsResult[]> => {
   const out: DocumentFactsResult[] = [];
   for (const doc of docs) {
     const done = existing[doc.docId];
     if (done) { out.push(done); continue; }
-    const r = await processSingleDocument(doc, callAi);
+    const r = await processSingleDocument(doc, callAi, systemPrompt);
     out.push(r);
     if (onResult) await onResult(r);
   }

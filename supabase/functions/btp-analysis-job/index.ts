@@ -4,6 +4,9 @@ import { anthropicCompatFetch } from '../_shared/anthropic-compat.ts';
 import { BTP_FACTUAL_EXTRACTION_PROMPT } from '../_shared/btpFactualPrompt.ts';
 import {
   processSingleDocument,
+  isApiSizeLimitError,
+  DocumentTooLargeError,
+  RESPONSE_MAX_TOKENS,
   type ProjectDocument,
 } from '../_shared/btpDocumentSequence.ts';
 
@@ -801,7 +804,7 @@ async function callFactualForOneDocument(doc: ProjectDocument): Promise<string> 
   if (doc.text) parts.push({ type: 'text', text: `CONTENU DU FICHIER ${doc.fileName} :\n${doc.text}` });
   const resp = await anthropicCompatFetch({
     body: JSON.stringify({
-      max_tokens: 32000,
+      max_tokens: RESPONSE_MAX_TOKENS,
       temperature: 0,
       messages: [
         { role: 'system', content: BTP_FACTUAL_EXTRACTION_PROMPT },
@@ -810,7 +813,11 @@ async function callFactualForOneDocument(doc: ProjectDocument): Promise<string> 
     }),
   });
   if (!resp.ok) {
-    const t = (await resp.text()).slice(0, 300);
+    const full = await resp.text();
+    const t = full.slice(0, 300);
+    if (isApiSizeLimitError(resp.status, full)) {
+      throw new DocumentTooLargeError(`HTTP ${resp.status}: ${t}`);
+    }
     if (resp.status === 401 || resp.status === 402 || resp.status === 403) {
       throw new TerminalStepError(`IA refus permanent ${resp.status}: ${t}`);
     }
@@ -847,7 +854,7 @@ async function workProjectDocs(
         if (terminal) throw terminal;
         try { return await callFactualForOneDocument(d); }
         catch (e) { if (e instanceof TerminalStepError) terminal = e; throw e; }
-      });
+      }, BTP_FACTUAL_EXTRACTION_PROMPT);
       clearInterval(heartbeat);
       heartbeat = undefined;
       if (terminal) throw terminal;

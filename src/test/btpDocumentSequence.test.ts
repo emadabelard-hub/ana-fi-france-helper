@@ -2,7 +2,12 @@ import { describe, it, expect } from "vitest";
 import {
   processDocumentsSequentially,
   processSingleDocument,
-  MAX_DOCUMENT_TEXT_CHARS,
+  inputTokenBudget,
+  estimateTokensConservative,
+  checkDocumentFits,
+  isApiSizeLimitError,
+  DocumentTooLargeError,
+  API_IMAGE_BASE64_LIMIT_BYTES,
   type ProjectDocument,
 } from "../../supabase/functions/_shared/btpDocumentSequence";
 import { BTP_FACTUAL_EXTRACTION_PROMPT } from "../../supabase/functions/_shared/btpFactualPrompt";
@@ -55,11 +60,50 @@ describe("Analyser mon projet — étape 1 : document par document", () => {
     expect(child.coveredByFactId).toBe(main.factId);
   });
 
-  it("document trop volumineux : signalé, aucun appel, aucune troncature", async () => {
+  it("texte : budget de contexte réel (prompt + contenu + réponse + marge), sans appel ni troncature", async () => {
+    const P = BTP_FACTUAL_EXTRACTION_PROMPT;
+    expect(inputTokenBudget()).toBe(138_000); // 200 000 × 0,85 − 32 000
+    expect(estimateTokensConservative("abcd")).toBe(2);
+    expect(estimateTokensConservative("éé")).toBe(2);
+    const room = inputTokenBudget() - estimateTokensConservative(P) - 1_000;
+    expect(checkDocumentFits(doc(1, "a".repeat(room * 2)), P).ok).toBe(true);
     let calls = 0;
-    const r = await processSingleDocument(doc(1, "x".repeat(MAX_DOCUMENT_TEXT_CHARS + 1)), async () => { calls++; return ""; });
+    const big = await processSingleDocument(doc(1, "a".repeat(room * 2 + 2)), async () => { calls++; return ""; }, P);
+    expect(big.status).toBe("needs_chunking");
     expect(calls).toBe(0);
+    // Moins de 300 000 caractères mais non ASCII (arabe) : refusé aussi.
+    expect(checkDocumentFits(doc(1, "م".repeat(200_000)), P).ok).toBe(false);
+    // Le prompt compte dans le budget.
+    expect(checkDocumentFits(doc(1, "a".repeat(room * 2)), P + "x".repeat(10)).ok).toBe(false);
+  });
+
+  it("image : taille base64 réellement envoyée, marge 10 % sous 5 Mo, aucun appel si trop grosse", async () => {
+    const max = Math.floor(API_IMAGE_BASE64_LIMIT_BYTES * 0.9);
+    const img = (n: number): ProjectDocument => ({ docId: "i", fileName: "p.jpg", kind: "image", dataUrl: "data:image/jpeg;base64," + "A".repeat(n) });
+    expect(checkDocumentFits(img(max), "").ok).toBe(true);
+    let calls = 0;
+    const r = await processSingleDocument(img(max + 1), async () => { calls++; return ""; });
     expect(r.status).toBe("needs_chunking");
+    expect(r.error).toContain("Image trop volumineuse");
+    expect(calls).toBe(0);
+  });
+
+  it("HTTP 400 de taille → needs_chunking sans relance ; autre 400 → erreur normale", async () => {
+    expect(isApiSizeLimitError(400, '{"error":{"type":"invalid_request_error","message":"prompt is too long: 210000 tokens > 200000 maximum"}}')).toBe(true);
+    expect(isApiSizeLimitError(400, "messages.0.content.1.image.source.base64: image exceeds 5 MB maximum")).toBe(true);
+    expect(isApiSizeLimitError(413, "")).toBe(true);
+    expect(isApiSizeLimitError(400, '{"error":{"message":"messages: roles must alternate"}}')).toBe(false);
+    expect(isApiSizeLimitError(400, "temperature: must be between 0 and 1")).toBe(false);
+    expect(isApiSizeLimitError(500, "prompt is too long")).toBe(false);
+    let calls = 0;
+    const r = await processSingleDocument(doc(1), async () => { calls++; throw new DocumentTooLargeError("HTTP 400: prompt is too long"); });
+    expect(r.status).toBe("needs_chunking");
+    expect(calls).toBe(1);
+    let c2 = 0;
+    const r2 = await processSingleDocument(doc(1), async () => { c2++; throw new Error("IA erreur 400: roles must alternate"); });
+    expect(r2.status).toBe("failed");
+    expect(c2).toBe(2);
+    expect(r2.error).toContain("roles must alternate");
   });
 
   it("reprise : un document déjà traité n'est jamais rappelé", async () => {

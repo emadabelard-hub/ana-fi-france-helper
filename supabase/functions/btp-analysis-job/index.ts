@@ -818,7 +818,7 @@ async function callFactualForOneDocument(doc: ProjectDocument): Promise<string> 
   }
   const data = await resp.json();
   const choice = data?.choices?.[0];
-  if (choice?.finish_reason === 'length') throw new Error('Réponse IA tronquée (longueur maximale).');
+  if (choice?.finish_reason === 'length' || choice?.finish_reason === 'max_tokens') throw new Error('Réponse IA tronquée (longueur maximale).');
   return typeof choice?.message?.content === 'string' ? choice.message.content : '';
 }
 

@@ -1,6 +1,11 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { anthropicCompatFetch } from '../_shared/anthropic-compat.ts';
+import { BTP_FACTUAL_EXTRACTION_PROMPT } from '../_shared/btpFactualPrompt.ts';
+import {
+  processSingleDocument,
+  type ProjectDocument,
+} from '../_shared/btpDocumentSequence.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -187,6 +192,44 @@ async function handleCreate(req: Request): Promise<Response> {
     // Démarrage immédiat best effort ; le cron reste la garantie.
     triggerNext(admin(), data.id).catch(() => {});
     return json({ jobId: data.id, status: data.status, batchCount: plan.batchCount, rowCount: rows.length });
+  }
+
+  // ---- « Analyser mon projet » Étape 1 : un job, N documents séquentiels ----
+  if (body.kind === 'project_docs_facts') {
+    const list = Array.isArray(body.documents) ? body.documents : [];
+    if (list.length === 0 || list.length > 20) return json({ error: 'documents invalides.' }, 400);
+    const documents: ProjectDocument[] = [];
+    for (let i = 0; i < list.length; i++) {
+      const d = list[i] as Record<string, unknown>;
+      const kind = d?.kind;
+      if (kind !== 'image' && kind !== 'pdf' && kind !== 'docx' && kind !== 'text') {
+        return json({ error: `Document ${i} : type invalide.` }, 400);
+      }
+      const fileName = typeof d.fileName === 'string' ? d.fileName.trim().slice(0, 300) : '';
+      const text = typeof d.text === 'string' ? d.text : undefined;
+      const dataUrl = typeof d.dataUrl === 'string' && d.dataUrl.startsWith('data:image/') ? d.dataUrl : undefined;
+      if (!fileName || (!text && !dataUrl)) return json({ error: `Document ${i} : contenu manquant.` }, 400);
+      documents.push({ docId: `doc${i + 1}`, fileName, kind, text, dataUrl });
+    }
+    const { data, error } = await admin()
+      .from('btp_analysis_jobs')
+      .insert({
+        user_id: user.id,
+        status: 'queued',
+        language,
+        documents: documents.map((d) => ({ docId: d.docId, fileName: d.fileName, kind: d.kind })),
+        user_text: null,
+        current_step: 'doc:0',
+        progress: 0,
+        payload: { phase: 5, kind: 'project_docs_facts', documents },
+        step_results: {},
+        attempts: 0,
+      })
+      .select('id, status')
+      .single();
+    if (error || !data) return json({ error: 'Création du job impossible.' }, 500);
+    triggerNext(admin(), data.id).catch(() => {});
+    return json({ jobId: data.id, status: data.status, documentCount: documents.length });
   }
 
   // ---- Test technique Phase 3 (inchangé) -----------------------------------
@@ -582,6 +625,9 @@ async function handleWork(req: Request): Promise<Response> {
   if (payload.kind === 'docx_quote_batch') {
     return await workDocx(db, jobId, owner, job, payload);
   }
+  if (payload.kind === 'project_docs_facts') {
+    return await workProjectDocs(db, jobId, owner, job, payload);
+  }
   return await workTest(db, jobId, owner, job);
 }
 
@@ -730,6 +776,111 @@ async function workDocx(
       _owner: owner,
       _message: message,
       _terminal: terminal,
+    });
+    if (newStatus === 'queued') triggerNext(db, jobId).catch(() => {});
+    return json({ jobId, executed: step, status: newStatus ?? 'unchanged', error: true }, 500);
+  }
+}
+
+// ------------------------ worker : « Analyser mon projet » — Étape 1
+/** Prochaine étape = premier document sans résultat (step_results fait foi). */
+export function nextStepProjectDocs(stepResults: Record<string, unknown> | null, docCount: number): string {
+  const sr = stepResults ?? {};
+  for (let i = 0; i < docCount; i++) if (!(`doc:${i}` in sr)) return `doc:${i}`;
+  if (!('final' in sr)) return 'finalize';
+  return 'completed';
+}
+
+/** Un seul document par appel IA : Prompt n°1 + la seule pièce concernée. */
+async function callFactualForOneDocument(doc: ProjectDocument): Promise<string> {
+  const parts: any[] = [
+    { type: 'text', text: 'EXTRACTION FACTUELLE DEMANDÉE. Relève uniquement les informations explicitement écrites et parfaitement lisibles dans la pièce ci-dessous. Réponds uniquement par le bloc <ANAFYPRO_BTP_FACTS>.' },
+    { type: 'text', text: `PIÈCE ORIGINALE (document unique) : ${doc.fileName} (${doc.kind})` },
+  ];
+  if (doc.dataUrl) parts.push({ type: 'image_url', image_url: { url: doc.dataUrl } });
+  if (doc.text) parts.push({ type: 'text', text: `CONTENU DU FICHIER ${doc.fileName} :\n${doc.text}` });
+  const resp = await anthropicCompatFetch({
+    body: JSON.stringify({
+      max_tokens: 32000,
+      temperature: 0,
+      messages: [
+        { role: 'system', content: BTP_FACTUAL_EXTRACTION_PROMPT },
+        { role: 'user', content: parts },
+      ],
+    }),
+  });
+  if (!resp.ok) {
+    const t = (await resp.text()).slice(0, 300);
+    if (resp.status === 401 || resp.status === 402 || resp.status === 403) {
+      throw new TerminalStepError(`IA refus permanent ${resp.status}: ${t}`);
+    }
+    throw new Error(`IA erreur ${resp.status}: ${t}`);
+  }
+  const data = await resp.json();
+  const choice = data?.choices?.[0];
+  if (choice?.finish_reason === 'length' || choice?.finish_reason === 'max_tokens') throw new Error('Réponse IA tronquée (longueur maximale).');
+  return typeof choice?.message?.content === 'string' ? choice.message.content : '';
+}
+
+async function workProjectDocs(
+  db: Db,
+  jobId: string,
+  owner: string,
+  job: Record<string, unknown>,
+  payload: Record<string, unknown>,
+): Promise<Response> {
+  const stepResults = (job.step_results ?? {}) as Record<string, unknown>;
+  const documents = (Array.isArray(payload.documents) ? payload.documents : []) as ProjectDocument[];
+  const step = nextStepProjectDocs(stepResults, documents.length);
+  let heartbeat: number | undefined;
+  let leaseLost = false;
+  try {
+    if (step.startsWith('doc:')) {
+      const i = Number(step.slice(4));
+      heartbeat = setInterval(async () => {
+        const hb = await db.rpc('heartbeat_analysis_job', { _job_id: jobId, _owner: owner });
+        if (hb.data !== true) leaseLost = true;
+      }, HEARTBEAT_MS) as unknown as number;
+      // Refus permanent (401/402/403) : aucune relance, job en échec terminal.
+      let terminal: TerminalStepError | null = null;
+      const result = await processSingleDocument(documents[i], async (d) => {
+        if (terminal) throw terminal;
+        try { return await callFactualForOneDocument(d); }
+        catch (e) { if (e instanceof TerminalStepError) terminal = e; throw e; }
+      });
+      clearInterval(heartbeat);
+      heartbeat = undefined;
+      if (terminal) throw terminal;
+      if (leaseLost) throw new Error(`Lease perdu pendant le document ${i}.`);
+      console.log('[projectDocs] document', JSON.stringify({ jobId, i, status: result.status, attempts: result.attempts, facts: result.contract?.facts.length ?? 0 }));
+      const progress = Math.round((95 * (i + 1)) / documents.length);
+      const ok = await db.rpc('commit_analysis_step', {
+        _job_id: jobId, _owner: owner, _step: step, _result: result, _progress: progress,
+        _current_step: i + 1 < documents.length ? `doc:${i + 1}` : 'finalize', _status: 'queued',
+      });
+      if (ok.error) throw new Error(ok.error.message);
+      if (ok.data !== true) return json({ skipped: true, reason: 'lease_lost_or_duplicate' });
+      triggerNext(db, jobId).catch(() => {});
+      return json({ jobId, executed: step, status: 'queued', documentStatus: result.status });
+    }
+    if (step === 'finalize') {
+      // Aucune consolidation à cette étape : contrats indépendants par document.
+      const results = documents.map((_, i) => stepResults[`doc:${i}`]);
+      const ok = await db.rpc('commit_analysis_step', {
+        _job_id: jobId, _owner: owner, _step: 'final',
+        _result: { kind: 'project_document_contracts', data: { documents: results } },
+        _progress: 100, _current_step: 'completed', _status: 'completed',
+        _final_report: 'Extraction factuelle par document terminée',
+      });
+      if (ok.error) throw new Error(ok.error.message);
+      return json({ jobId, executed: 'finalize', status: 'completed' });
+    }
+    return json({ jobId, executed: 'none', status: 'completed' });
+  } catch (e) {
+    if (heartbeat !== undefined) clearInterval(heartbeat);
+    const message = e instanceof Error ? e.message : 'Erreur inconnue';
+    const { data: newStatus } = await db.rpc('fail_analysis_step', {
+      _job_id: jobId, _owner: owner, _message: message, _terminal: e instanceof TerminalStepError,
     });
     if (newStatus === 'queued') triggerNext(db, jobId).catch(() => {});
     return json({ jobId, executed: step, status: newStatus ?? 'unchanged', error: true }, 500);

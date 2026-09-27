@@ -2791,6 +2791,32 @@ const AIAssistantPage = () => {
             </button>
           </div>
 
+          {/* Entrée : Analyser mon projet (nouveau parcours) */}
+          <div
+            className={cn("mx-4 mb-4 shrink-0 rounded-2xl border border-primary/30 bg-card p-4 shadow-sm", isRTL ? "text-right font-cairo" : "text-left")}
+            dir={isRTL ? 'rtl' : 'ltr'}
+          >
+            <div className="flex items-start gap-3">
+              <div className="text-2xl leading-none shrink-0">📐</div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-[16px] font-bold text-foreground">{isRTL ? 'حلّل مشروعك' : 'Analyser mon projet'}</h3>
+                <p className="text-[14px] text-muted-foreground mt-1 leading-snug">
+                  {isRTL
+                    ? 'ارفع المخططات، دفتر الشروط، الصور والمستندات للحصول على تحليل منظم لمشروعك.'
+                    : 'Importez vos plans, cahier des charges, photos et documents pour obtenir une analyse structurée de votre projet.'}
+                </p>
+                <button
+                  onClick={() => navigate('/analyser-mon-projet')}
+                  className="mt-3 rounded-xl bg-primary px-4 py-2.5 text-[15px] font-bold text-primary-foreground active:scale-[0.99] transition-transform"
+                >
+                  {isRTL ? 'ابدأ تحليل المشروع' : 'Analyser mon projet'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+
+
           {isRTL && (
             /* Entry point: anafypro ترجمة */
             <button

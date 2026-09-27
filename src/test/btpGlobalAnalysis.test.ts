@@ -93,3 +93,61 @@ describe("Analyse globale (Prompt n°2)", () => {
     expect(buildGlobalAnalysisMessages).toBeTypeOf("function");
   });
 });
+
+import { checkGlobalAnalysisFits } from "../../supabase/functions/_shared/btpGlobalAnalysisPrompt";
+import {
+  inputTokenBudget, DocumentTooLargeError, isApiSizeLimitError, estimateTokensConservative, REQUEST_OVERHEAD_TOKENS,
+} from "../../supabase/functions/_shared/btpDocumentSequence";
+
+const bigDossier = (n: number, descLen: number) => {
+  const facts = Array.from({ length: n }, (_, i) => base("gros.pdf", {
+    id: `F${i}`, descriptionExact: `Prestation ${i} ` + "x".repeat(descLen), quantity: i + 1, unit: "u", role: "main",
+  }));
+  return buildProjectFactsDossier([{ docId: "g", fileName: "gros.pdf", status: "completed", attempts: 1, contract: validateBtpFacts(facts), error: null }]);
+};
+
+describe("Analyse globale — contrôle de taille", () => {
+  it("compte Prompt n°2 + métadonnées + contrat + surcoût, même calcul que l'étape 1", () => {
+    const d = dossierIncomplete();
+    const m = buildGlobalAnalysisMessages(d);
+    const expected = estimateTokensConservative(m[0].content) + estimateTokensConservative(m[1].content) + REQUEST_OVERHEAD_TOKENS;
+    expect(checkGlobalAnalysisFits(m)).toEqual({ ok: true, estimatedInputTokens: expected });
+    expect(inputTokenBudget()).toBe(138_000);
+  });
+  it("dossier trop volumineux : aucun appel, statut needs_chunking, faits intacts", async () => {
+    const d = bigDossier(400, 1200);
+    const before = JSON.stringify(d);
+    let calls = 0;
+    const r = await runGlobalAnalysis(d, async () => { calls++; return "x"; });
+    expect(calls).toBe(0);
+    expect(r.status).toBe("needs_chunking");
+    expect(r.text).toBeNull();
+    expect(r.estimatedInputTokens!).toBeGreaterThan(inputTokenBudget());
+    expect(r.factsCount).toBe(400);
+    expect(JSON.stringify(d)).toBe(before);
+  });
+  it("dossier sous le budget : appel effectué", async () => {
+    const d = bigDossier(20, 200);
+    let calls = 0;
+    const r = await runGlobalAnalysis(d, async () => { calls++; return "ok"; });
+    expect(calls).toBe(1);
+    expect(r.status).toBe("completed");
+  });
+  it("dépassement signalé par l'API : needs_chunking, un seul appel, pas de relance", async () => {
+    let calls = 0;
+    const r = await runGlobalAnalysis(dossierIncomplete(), async () => { calls++; throw new DocumentTooLargeError("HTTP 413"); });
+    expect(calls).toBe(1);
+    expect(r.status).toBe("needs_chunking");
+  });
+  it("autre erreur (400 ordinaire) : propagée comme erreur normale, pas needs_chunking", async () => {
+    await expect(runGlobalAnalysis(dossierIncomplete(), async () => { throw new Error("IA erreur 400: invalid field"); })).rejects.toThrow("400");
+    expect(isApiSizeLimitError(400, '{"error":{"message":"temperature: invalid value"}}')).toBe(false);
+    expect(isApiSizeLimitError(400, "prompt is too long: 250000 tokens > 200000 maximum")).toBe(true);
+    expect(isApiSizeLimitError(413, "")).toBe(true);
+  });
+  it("le serveur convertit les dépassements API en DocumentTooLargeError pour l'analyse globale", () => {
+    const src = readFileSync("supabase/functions/btp-analysis-job/index.ts", "utf8");
+    const fn = src.slice(src.indexOf("async function callGlobalAnalysis"), src.indexOf("/** Un seul document"));
+    expect(fn).toContain("isApiSizeLimitError(resp.status, full)) throw new DocumentTooLargeError");
+  });
+});

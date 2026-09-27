@@ -9,7 +9,8 @@ import {
   RESPONSE_MAX_TOKENS,
   type ProjectDocument,
 } from '../_shared/btpDocumentSequence.ts';
-import { buildProjectFactsDossier } from '../_shared/btpProjectDossier.ts';
+import { buildProjectFactsDossier, type ProjectFactsDossier } from '../_shared/btpProjectDossier.ts';
+import { runGlobalAnalysis, type GlobalAnalysisMessages } from '../_shared/btpGlobalAnalysisPrompt.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -791,8 +792,28 @@ async function workDocx(
 export function nextStepProjectDocs(stepResults: Record<string, unknown> | null, docCount: number): string {
   const sr = stepResults ?? {};
   for (let i = 0; i < docCount; i++) if (!(`doc:${i}` in sr)) return `doc:${i}`;
+  if (!('dossier' in sr)) return 'dossier';
+  if (!('global_analysis' in sr)) return 'global_analysis';
   if (!('final' in sr)) return 'finalize';
   return 'completed';
+}
+
+/** Prompt n°2 : UN appel, uniquement le dossier consolidé (aucun document original). */
+async function callGlobalAnalysis(messages: GlobalAnalysisMessages): Promise<string> {
+  const resp = await anthropicCompatFetch({
+    body: JSON.stringify({ max_tokens: RESPONSE_MAX_TOKENS, temperature: 0, messages }),
+  });
+  if (!resp.ok) {
+    const t = (await resp.text()).slice(0, 300);
+    if (resp.status === 401 || resp.status === 402 || resp.status === 403) {
+      throw new TerminalStepError(`IA refus permanent ${resp.status}: ${t}`);
+    }
+    throw new Error(`IA erreur ${resp.status}: ${t}`);
+  }
+  const data = await resp.json();
+  const choice = data?.choices?.[0];
+  if (choice?.finish_reason === 'length' || choice?.finish_reason === 'max_tokens') throw new Error('Analyse globale tronquée (longueur maximale).');
+  return typeof choice?.message?.content === 'string' ? choice.message.content : '';
 }
 
 /** Un seul document par appel IA : Prompt n°1 + la seule pièce concernée. */
@@ -861,28 +882,60 @@ async function workProjectDocs(
       if (terminal) throw terminal;
       if (leaseLost) throw new Error(`Lease perdu pendant le document ${i}.`);
       console.log('[projectDocs] document', JSON.stringify({ jobId, i, status: result.status, attempts: result.attempts, facts: result.contract?.facts.length ?? 0 }));
-      const progress = Math.round((95 * (i + 1)) / documents.length);
+      const progress = Math.round((85 * (i + 1)) / documents.length);
       const ok = await db.rpc('commit_analysis_step', {
         _job_id: jobId, _owner: owner, _step: step, _result: result, _progress: progress,
-        _current_step: i + 1 < documents.length ? `doc:${i + 1}` : 'finalize', _status: 'queued',
+        _current_step: i + 1 < documents.length ? `doc:${i + 1}` : 'dossier', _status: 'queued',
       });
       if (ok.error) throw new Error(ok.error.message);
       if (ok.data !== true) return json({ skipped: true, reason: 'lease_lost_or_duplicate' });
       triggerNext(db, jobId).catch(() => {});
       return json({ jobId, executed: step, status: 'queued', documentStatus: result.status });
     }
-    if (step === 'finalize') {
+    if (step === 'dossier') {
       // Consolidation déterministe (aucun appel IA) des contrats indépendants.
       const results = documents.map((_, i) => stepResults[`doc:${i}`]);
-      const dossier = buildProjectFactsDossier(results);
+      const dossier = buildProjectFactsDossier(results as any);
       console.log('[projectDocs] dossier', JSON.stringify({ jobId, complete: dossier.complete, facts: dossier.contract.counts.total, missing: dossier.missingDocuments.length }));
       const ok = await db.rpc('commit_analysis_step', {
-        _job_id: jobId, _owner: owner, _step: 'final',
+        _job_id: jobId, _owner: owner, _step: 'dossier',
         _result: { kind: 'project_facts_dossier', data: { documents: results, dossier } },
+        _progress: 90, _current_step: 'global_analysis', _status: 'queued',
+      });
+      if (ok.error) throw new Error(ok.error.message);
+      if (ok.data !== true) return json({ skipped: true, reason: 'lease_lost_or_duplicate' });
+      triggerNext(db, jobId).catch(() => {});
+      return json({ jobId, executed: 'dossier', status: 'queued' });
+    }
+    if (step === 'global_analysis') {
+      const dossier = (stepResults.dossier as any)?.data?.dossier as ProjectFactsDossier;
+      if (!dossier?.contract) throw new TerminalStepError('Dossier factuel consolidé absent.');
+      heartbeat = setInterval(async () => {
+        const hb = await db.rpc('heartbeat_analysis_job', { _job_id: jobId, _owner: owner });
+        if (hb.data !== true) leaseLost = true;
+      }, HEARTBEAT_MS) as unknown as number;
+      const analysis = await runGlobalAnalysis(dossier, callGlobalAnalysis);
+      clearInterval(heartbeat);
+      heartbeat = undefined;
+      if (leaseLost) throw new Error("Lease perdu pendant l'analyse globale.");
+      const ok = await db.rpc('commit_analysis_step', {
+        _job_id: jobId, _owner: owner, _step: 'global_analysis',
+        _result: { kind: 'project_global_analysis', data: analysis },
+        _progress: 97, _current_step: 'finalize', _status: 'queued',
+      });
+      if (ok.error) throw new Error(ok.error.message);
+      if (ok.data !== true) return json({ skipped: true, reason: 'lease_lost_or_duplicate' });
+      triggerNext(db, jobId).catch(() => {});
+      return json({ jobId, executed: 'global_analysis', status: 'queued' });
+    }
+    if (step === 'finalize') {
+      // Références seulement : dossier et analyse restent dans deux clés distinctes.
+      const dossier = (stepResults.dossier as any)?.data?.dossier as ProjectFactsDossier;
+      const ok = await db.rpc('commit_analysis_step', {
+        _job_id: jobId, _owner: owner, _step: 'final',
+        _result: { kind: 'project_global_analysis_ready', data: { dossierStep: 'dossier', analysisStep: 'global_analysis', complete: dossier?.complete ?? false } },
         _progress: 100, _current_step: 'completed', _status: 'completed',
-        _final_report: dossier.complete
-          ? 'Dossier factuel consolidé complet'
-          : 'Dossier factuel consolidé incomplet',
+        _final_report: dossier?.complete ? 'Analyse globale terminée (dossier complet)' : 'Analyse globale terminée (dossier incomplet)',
       });
       if (ok.error) throw new Error(ok.error.message);
       return json({ jobId, executed: 'finalize', status: 'completed' });

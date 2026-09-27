@@ -63,6 +63,7 @@ const InvitePage = lazy(() => import("./pages/InvitePage"));
 const ComptablePage = lazy(() => import("./pages/ComptablePage"));
 const CreerMaSocietePage = lazy(() => import("./pages/CreerMaSocietePage"));
 const AnafyTranslatePage = lazy(() => import("./pages/AnafyTranslatePage"));
+const ProjectAnalysisPage = lazy(() => import("./pages/ProjectAnalysisPage"));
 const PaiementCreationPage = lazy(() => import("./pages/PaiementCreationPage"));
 const MaCreationPage = lazy(() => import("./pages/MaCreationPage"));
 const SupplierInvoicesPage = lazy(() => import("./pages/accounting/SupplierInvoicesPage"));
@@ -139,6 +140,7 @@ const AppRoutes = () => {
           <Route path="/creer-ma-societe" element={<CreerMaSocietePage />} />
           {/* Public: translated French admin sites index */}
           <Route path="/anafy-translate" element={<AnafyTranslatePage />} />
+          <Route path="/analyser-mon-projet" element={<ProjectAnalysisPage />} />
           {/* Public: devis from architect (placeholder) */}
           {/* Public invoice portal — token-based, no auth */}
           <Route path="/invoice/:token" element={<PublicInvoicePage />} />

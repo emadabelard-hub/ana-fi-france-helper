@@ -7,6 +7,13 @@ import {
   serializeConsolidatedContract,
 } from "./btpFactsConsolidation.ts";
 import type { ProjectFactsDossier } from "./btpProjectDossier.ts";
+import {
+  estimateTokensConservative,
+  inputTokenBudget,
+  REQUEST_OVERHEAD_TOKENS,
+  DocumentTooLargeError,
+  type SizeCheck,
+} from "./btpDocumentSequence.ts";
 
 export const BTP_GLOBAL_ANALYSIS_PROMPT = `RÔLE
 
@@ -492,24 +499,55 @@ export const buildGlobalAnalysisMessages = (d: ProjectFactsDossier): GlobalAnaly
 
 export type GlobalAnalysisResult = {
   version: 1;
-  status: "completed" | "failed";
+  status: "completed" | "needs_chunking";
   complete: boolean;
   missingDocuments: ProjectFactsDossier["missingDocuments"];
   factsCount: number;
   text: string | null;
   error: string | null;
+  estimatedInputTokens?: number;
 };
 
-/** UN seul appel IA. Aucune relance ici (la reprise est gérée par le job). */
+/**
+ * Même calcul conservateur que l'étape 1 : Prompt n°2 + message complet
+ * (complete, missingDocuments, contrat consolidé) + surcoût fixe, comparé au
+ * budget d'entrée (fenêtre − 15 % − réserve de réponse).
+ */
+export const checkGlobalAnalysisFits = (messages: GlobalAnalysisMessages): SizeCheck => {
+  const tokens = estimateTokensConservative(messages[0].content)
+    + estimateTokensConservative(messages[1].content)
+    + REQUEST_OVERHEAD_TOKENS;
+  const budget = inputTokenBudget();
+  if (tokens > budget) {
+    return { ok: false, estimatedInputTokens: tokens, reason: `Dossier consolidé trop volumineux pour une analyse globale en un appel : ~${tokens} tokens estimés > budget ${budget}. Traitement par portions requis.` };
+  }
+  return { ok: true, estimatedInputTokens: tokens };
+};
+
+/** UN seul appel IA, jamais lancé si le dossier dépasse le budget. Aucun fait tronqué ni supprimé. */
 export const runGlobalAnalysis = async (
   dossier: ProjectFactsDossier,
   call: (messages: GlobalAnalysisMessages) => Promise<string>,
 ): Promise<GlobalAnalysisResult> => {
-  const text = (await call(buildGlobalAnalysisMessages(dossier))).trim();
-  if (!text) throw new Error("Analyse globale vide.");
-  return {
-    version: 1, status: "completed", complete: dossier.complete,
-    missingDocuments: dossier.missingDocuments,
-    factsCount: dossier.contract.counts.total, text, error: null,
+  const messages = buildGlobalAnalysisMessages(dossier);
+  const meta = {
+    version: 1 as const, complete: dossier.complete,
+    missingDocuments: dossier.missingDocuments, factsCount: dossier.contract.counts.total,
   };
+  const size = checkGlobalAnalysisFits(messages);
+  if (!size.ok) {
+    return { ...meta, status: "needs_chunking", text: null, error: size.reason ?? "Trop volumineux", estimatedInputTokens: size.estimatedInputTokens };
+  }
+  let text: string;
+  try {
+    text = (await call(messages)).trim();
+  } catch (e) {
+    // Dépassement réel signalé par l'API : même statut, pas de relance.
+    if (e instanceof DocumentTooLargeError) {
+      return { ...meta, status: "needs_chunking", text: null, error: e.message, estimatedInputTokens: size.estimatedInputTokens };
+    }
+    throw e;
+  }
+  if (!text) throw new Error("Analyse globale vide.");
+  return { ...meta, status: "completed", text, error: null, estimatedInputTokens: size.estimatedInputTokens };
 };

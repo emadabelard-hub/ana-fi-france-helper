@@ -804,7 +804,10 @@ async function callGlobalAnalysis(messages: GlobalAnalysisMessages): Promise<str
     body: JSON.stringify({ max_tokens: RESPONSE_MAX_TOKENS, temperature: 0, messages }),
   });
   if (!resp.ok) {
-    const t = (await resp.text()).slice(0, 300);
+    const full = await resp.text();
+    const t = full.slice(0, 300);
+    // 413, ou 400 avec message explicite de taille/contexte uniquement.
+    if (isApiSizeLimitError(resp.status, full)) throw new DocumentTooLargeError(`HTTP ${resp.status}: ${t}`);
     if (resp.status === 401 || resp.status === 402 || resp.status === 403) {
       throw new TerminalStepError(`IA refus permanent ${resp.status}: ${t}`);
     }
@@ -931,11 +934,14 @@ async function workProjectDocs(
     if (step === 'finalize') {
       // Références seulement : dossier et analyse restent dans deux clés distinctes.
       const dossier = (stepResults.dossier as any)?.data?.dossier as ProjectFactsDossier;
+      const analysisStatus = (stepResults.global_analysis as any)?.data?.status ?? null;
       const ok = await db.rpc('commit_analysis_step', {
         _job_id: jobId, _owner: owner, _step: 'final',
-        _result: { kind: 'project_global_analysis_ready', data: { dossierStep: 'dossier', analysisStep: 'global_analysis', complete: dossier?.complete ?? false } },
+        _result: { kind: 'project_global_analysis_ready', data: { dossierStep: 'dossier', analysisStep: 'global_analysis', complete: dossier?.complete ?? false, analysisStatus } },
         _progress: 100, _current_step: 'completed', _status: 'completed',
-        _final_report: dossier?.complete ? 'Analyse globale terminée (dossier complet)' : 'Analyse globale terminée (dossier incomplet)',
+        _final_report: analysisStatus === 'needs_chunking'
+          ? 'Analyse globale non réalisée : dossier consolidé trop volumineux, traitement par portions requis'
+          : dossier?.complete ? 'Analyse globale terminée (dossier complet)' : 'Analyse globale terminée (dossier incomplet)',
       });
       if (ok.error) throw new Error(ok.error.message);
       return json({ jobId, executed: 'finalize', status: 'completed' });

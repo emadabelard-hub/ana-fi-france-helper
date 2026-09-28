@@ -6,7 +6,8 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { extractTextFromDocx } from '@/lib/docxExtractor';
 import { ingestPdf, ingestImage } from '@/lib/pdfIngest';
-import MarkdownRenderer from '@/components/assistant/MarkdownRenderer';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 // Parcours « Analyser mon projet » — étape 5 : branché sur btp-analysis-job
 // (kind = project_docs_facts). Source de vérité : la ligne btp_analysis_jobs.
@@ -277,9 +278,25 @@ const ProjectAnalysisPage = () => {
               <p className="text-[15px] text-foreground">{T.tooBig}</p>
             </div>
           ) : (
-            <article className="rounded-2xl border border-border bg-card p-4 overflow-x-auto [&_table]:min-w-full [&_table]:text-[14px] [&_td]:align-top [&_p]:text-[15px] [&_li]:text-[15px] break-words">
+            <article className="rounded-2xl border border-border bg-card p-4 break-words">
               <h2 className="text-[18px] font-bold text-foreground mb-3">{T.resultTitle}</h2>
-              <MarkdownRenderer content={analysis.text} isRTL={isRTL} />
+              <div dir={isRTL ? 'rtl' : 'ltr'} lang={isRTL ? 'ar' : 'fr'} className={cn('text-foreground', isRTL ? 'text-right' : 'text-left')}>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    h1: (p) => <h3 className="text-[18px] font-bold mt-5 mb-2" {...p} />,
+                    h2: (p) => <h3 className="text-[17px] font-bold mt-5 mb-2 border-b border-border pb-1" {...p} />,
+                    h3: (p) => <h4 className="text-[16px] font-bold mt-4 mb-1.5" {...p} />,
+                    p: (p) => <p className="text-[15px] leading-relaxed my-2" {...p} />,
+                    ul: (p) => <ul className={cn('list-disc my-2 space-y-1', isRTL ? 'pr-5' : 'pl-5')} {...p} />,
+                    ol: (p) => <ol className={cn('list-decimal my-2 space-y-1', isRTL ? 'pr-5' : 'pl-5')} {...p} />,
+                    li: (p) => <li className="text-[15px] leading-relaxed" {...p} />,
+                    table: (p) => <div className="my-3 overflow-x-auto rounded-lg border border-border"><table className="w-full border-collapse text-[14px]" {...p} /></div>,
+                    th: (p) => <th className={cn('bg-muted px-2.5 py-2 font-bold border-b border-border align-top', isRTL ? 'text-right' : 'text-left')} {...p} />,
+                    td: (p) => <td className="px-2.5 py-2 border-b border-border align-top min-w-[6rem]" {...p} />,
+                  }}
+                >{analysis.text}</ReactMarkdown>
+              </div>
             </article>
           )}
           <button onClick={reset} className="w-full rounded-xl border border-primary/40 bg-background py-3.5 text-[16px] font-bold text-primary">{T.newAnalysis}</button>

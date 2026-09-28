@@ -103,7 +103,7 @@ const ProjectAnalysisPage = () => {
         limit: 'تم بلوغ الحد الأقصى: 20 مستندًا',
         remove: 'إزالة',
         stages: ['جارٍ قراءة المستندات…', 'جارٍ التحقق من المعلومات…', 'جارٍ تنظيم المشروع…', 'جارٍ إعداد التحليل…', 'اكتمل التحليل'],
-        docsProgress: (d: number, n: number) => `${d} / ${n} مستند`,
+        docsProgress: (d: number, n: number) => `المستندات: \u2066${d} / ${n}\u2069`,
         keepOpen: 'يمكنك مغادرة هذه الصفحة، وسيستمر التحليل.',
         incomplete: 'تعذّر استخدام بعض المستندات بالكامل. يستند التحليل أدناه إلى المستندات الأخرى فقط:',
         tooBig: 'ملف المشروع كبير جدًا بالنسبة للتحليل الشامل حاليًا. تم حفظ معلومات كل مستند، لكن تعذّر إجراء التحليل الشامل.',
@@ -320,7 +320,7 @@ const ProjectAnalysisPage = () => {
             <div className="h-full bg-primary transition-all duration-700" style={{ width: `${pct}%` }} />
           </div>
           {stage <= 2 && docCount ? (
-            <p className="text-[14px] text-muted-foreground" dir="ltr" lang="fr">{T.docsProgress(docEntries.length, docCount)}</p>
+            <p className="text-[14px] text-muted-foreground" dir={isRTL ? 'rtl' : 'ltr'}>{T.docsProgress(docEntries.length, docCount)}</p>
           ) : null}
           <ol className="space-y-1.5">
             {T.stages.slice(0, 4).map((label, i) => (

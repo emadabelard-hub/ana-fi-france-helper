@@ -211,7 +211,7 @@ const ProjectAnalysisPage = () => {
       const body = await resp.json().catch(() => null);
       if (!resp.ok || !body?.jobId) { console.error('[ProjectAnalysis] create', resp.status, body); setStartError(true); return; }
       setSkipped(unreadable);
-      sessionStorage.setItem(JOB_STORAGE_KEY, JSON.stringify({ id: body.jobId, skipped: unreadable }));
+      sessionStorage.setItem(JOB_STORAGE_KEY, JSON.stringify({ id: body.jobId, skipped: unreadable, count: prepared.length }));
       setJob({ id: body.jobId, status: body.status ?? 'queued', current_step: 'doc:0', progress: 0, step_results: {} });
     } finally {
       setStarting(false);

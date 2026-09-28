@@ -94,22 +94,22 @@ const ProjectAnalysisPage = () => {
         intro: 'ارفع المخططات، دفتر الشروط، الصور والمستندات للحصول على تحليل منظم لمشروعك.',
         formats: 'الصيغ المقبولة: PDF، DOCX، JPEG، PNG — بحد أقصى 20 مستند',
         add: 'إضافة مستندات',
-        addMore: 'ضيف مستندات تانية',
+        addMore: 'إضافة مستندات أخرى',
         count: (n: number) => `${n} / ${MAX_DOCS} مستند`,
         empty: 'لم يتم اختيار أي مستند بعد',
         run: 'تحليل مشروعي',
-        preparing: 'بنجهّز مستنداتك…',
-        rejected: (n: number) => `${n} ملف مش مقبول واتشال`,
-        limit: 'وصلت للحد الأقصى: 20 مستند',
-        remove: 'شيل',
-        stages: ['بنقرا مستنداتك…', 'بنراجع المعلومات…', 'بننظّم مشروعك…', 'بنجهّز التحليل بتاعك…', 'التحليل خلص'],
-        docsProgress: (d: number, n: number) => `${d} / ${n} مستند`,
-        keepOpen: 'تقدر تقفل الصفحة، التحليل هيكمل لوحده.',
-        incomplete: 'في مستندات ما قدرناش نقراها بالكامل. التحليل ده مبني على باقي المستندات بس:',
-        tooBig: 'ملف مشروعك كبير جدًا على التحليل الشامل حاليًا. معلومات كل مستند اتحفظت، بس التحليل الشامل ما اتعملش.',
-        failed: 'حصلت مشكلة وما قدرناش نكمل التحليل. جرّب تاني بعد شوية.',
-        startFailed: 'ما قدرناش نبدأ التحليل. جرّب تاني.',
-        nothing: 'ما قدرناش نقرا أي مستند من اللي اخترتهم.',
+        preparing: 'جارٍ تجهيز المستندات…',
+        rejected: (n: number) => `تم تجاهل ${n} ملف غير مدعوم`,
+        limit: 'تم بلوغ الحد الأقصى: 20 مستندًا',
+        remove: 'إزالة',
+        stages: ['جارٍ قراءة المستندات…', 'جارٍ التحقق من المعلومات…', 'جارٍ تنظيم المشروع…', 'جارٍ إعداد التحليل…', 'اكتمل التحليل'],
+        docsProgress: (d: number, n: number) => `المستندات: \u2066${d} / ${n}\u2069`,
+        keepOpen: 'يمكنك مغادرة هذه الصفحة، وسيستمر التحليل.',
+        incomplete: 'تعذّر استخدام بعض المستندات بالكامل. يستند التحليل أدناه إلى المستندات الأخرى فقط:',
+        tooBig: 'ملف المشروع كبير جدًا بالنسبة للتحليل الشامل حاليًا. تم حفظ معلومات كل مستند، لكن تعذّر إجراء التحليل الشامل.',
+        failed: 'حدثت مشكلة وتعذّر إكمال التحليل. يُرجى المحاولة مرة أخرى بعد قليل.',
+        startFailed: 'تعذّر بدء التحليل. يُرجى المحاولة مرة أخرى.',
+        nothing: 'تعذّرت قراءة أي من المستندات المختارة.',
         newAnalysis: 'تحليل جديد',
         resultTitle: 'تحليل مشروعك',
       }
@@ -320,7 +320,7 @@ const ProjectAnalysisPage = () => {
             <div className="h-full bg-primary transition-all duration-700" style={{ width: `${pct}%` }} />
           </div>
           {stage <= 2 && docCount ? (
-            <p className="text-[14px] text-muted-foreground" dir="ltr" lang="fr">{T.docsProgress(docEntries.length, docCount)}</p>
+            <p className="text-[14px] text-muted-foreground" dir={isRTL ? 'rtl' : 'ltr'}>{T.docsProgress(docEntries.length, docCount)}</p>
           ) : null}
           <ol className="space-y-1.5">
             {T.stages.slice(0, 4).map((label, i) => (

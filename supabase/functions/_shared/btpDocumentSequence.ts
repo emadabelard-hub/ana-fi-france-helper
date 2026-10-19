@@ -10,6 +10,7 @@ import {
   validateBtpFacts,
   type BtpFactsContract,
 } from "./btpFactsContract.ts";
+import { validateProjectExtraction, type ExtractionIntegrity } from "./btpProjectFactsIntegrity.ts";
 
 export type ProjectDocument = {
   docId: string;
@@ -53,6 +54,8 @@ export type DocumentFactsResult = {
   error: string | null;
   /** Couverture du document (absente = document entièrement transmis). */
   coverage?: DocumentCoverage | null;
+  /** Bilan de validation des faits (absent sur les résultats antérieurs). */
+  integrity?: ExtractionIntegrity | null;
 };
 
 /** Appel IA pour UN seul document. Retourne le texte brut de la réponse. */
@@ -210,8 +213,8 @@ export const processSingleDocument = async (
   for (let attempt = 1; attempt <= MAX_DOCUMENT_ATTEMPTS; attempt++) {
     try {
       const text = await callAi(doc);
-      const contract = parseStrictFactsContract(typeof text === "string" ? text : "", doc.fileName);
-      return { ...base, status: "completed", attempts: attempt, contract, error: null };
+      const { contract, integrity } = validateProjectExtraction(typeof text === "string" ? text : "", doc);
+      return { ...base, status: "completed", attempts: attempt, contract, integrity, error: null };
     } catch (e) {
       if (e instanceof DocumentTooLargeError) {
         // Refus de taille confirmé par l'API : aucune relance.

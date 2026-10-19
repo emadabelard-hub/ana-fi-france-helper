@@ -197,7 +197,6 @@ export const validateProjectExtraction = (text: string, doc: DocumentRef): Proje
       const v = meta.raw[key];
       if (typeof v === "string" && v.trim() && v.trim() !== f.unit) preserved[key] = v;
     }
-    for (const key of ["quantity", "quantite", "qty", "unit", "unite"]) if (!(key in preserved)) delete preserved[key];
     if (scalar(meta.raw.quantity ?? meta.raw.quantite ?? meta.raw.qty) && f.quantity === null) flags.push("quantity_unparsed_original_kept");
 
     const declared = scalar(meta.raw.sourceFile ?? meta.raw.fichier ?? meta.raw.file) ?? "";

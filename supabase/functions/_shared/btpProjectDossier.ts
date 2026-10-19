@@ -26,13 +26,21 @@ export type DossierDocumentState = {
   partial: boolean;
   unreadPages: number[];
   error: string | null;
+  /** Bilan de validation des faits (null pour les résultats antérieurs sans bilan). */
+  validation: { received: number; accepted: number; rejected: number; withAnomalies: number; partial: boolean;
+    sourceChecks: Record<string, number> } | null;
 };
 
 export type ProjectFactsDossier = {
   version: 1;
   complete: boolean;
   documents: DossierDocumentState[];
-  missingDocuments: { index: number; fileName: string | null; status: DossierDocumentStatus; partial?: boolean; unreadPages?: number[] }[];
+  missingDocuments: { index: number; fileName: string | null; status: DossierDocumentStatus; partial?: boolean; unreadPages?: number[]; rejectedEntries?: number }[];
+  /** Niveaux de complétude distincts (aucune exhaustivité IA n'est revendiquée). */
+  completeness: {
+    transmitted: number; technicallyRead: number; extractionCompleted: number;
+    factsFullyValidated: number; dossierBuilt: true; exhaustivenessProven: false;
+  };
   contract: ConsolidatedBtpContract;
 };
 
@@ -42,7 +50,7 @@ export const buildProjectFactsDossier = (
   const documents: DossierDocumentState[] = results.map((r, index) => {
     if (!r) {
       return { index, docId: null, fileName: null, status: "missing", attempts: 0,
-        factsCount: 0, contributesFacts: false, partial: false, unreadPages: [], error: "Résultat du document absent." };
+        factsCount: 0, contributesFacts: false, partial: false, unreadPages: [], error: "Résultat du document absent.", validation: null };
     }
     const contributes = r.status === "completed" && !!r.contract && r.contract.facts.length > 0;
     return {
@@ -52,6 +60,10 @@ export const buildProjectFactsDossier = (
       partial: isPartiallyCovered(r.coverage),
       unreadPages: isPartiallyCovered(r.coverage) ? [...r.coverage!.unreadPages!] : [],
       error: r.error,
+      validation: r.integrity ? {
+        received: r.integrity.received, accepted: r.integrity.accepted, rejected: r.integrity.rejected,
+        withAnomalies: r.integrity.withAnomalies, partial: r.integrity.partial, sourceChecks: r.integrity.sourceChecks,
+      } : null,
     };
   });
 
@@ -60,14 +72,29 @@ export const buildProjectFactsDossier = (
     results.map((r, index) => ({
       docId: r?.docId ? `d${index}_${r.docId}` : `d${index}`,
       contract: r && r.status === "completed" ? r.contract : null,
+      fileName: r?.fileName ?? null,
+      auxiliary: r && r.status === "completed" ? r.integrity?.auxiliary : undefined,
+      rejectedEntries: r && r.status === "completed" ? r.integrity?.rejectedEntries : undefined,
     })),
   );
 
   const missingDocuments = documents
-    .filter((d) => !d.contributesFacts || d.partial)
-    .map((d) => (d.partial
-      ? { index: d.index, fileName: d.fileName, status: d.status, partial: true, unreadPages: d.unreadPages }
-      : { index: d.index, fileName: d.fileName, status: d.status }));
+    .filter((d) => !d.contributesFacts || d.partial || !!d.validation?.partial)
+    .map((d) => ({
+      index: d.index, fileName: d.fileName, status: d.status,
+      ...(d.partial ? { partial: true, unreadPages: d.unreadPages } : {}),
+      ...(d.contributesFacts && d.validation?.partial ? { rejectedEntries: d.validation.rejected } : {}),
+    }));
 
-  return { version: 1, complete: missingDocuments.length === 0, documents, missingDocuments, contract };
+  const completeness = {
+    transmitted: documents.filter((d) => d.status !== "missing").length,
+    technicallyRead: documents.filter((d) => d.status !== "missing" && !d.partial && d.status !== "needs_chunking"
+      && !(d.status === "failed" && d.attempts === 0)).length,
+    extractionCompleted: documents.filter((d) => d.status === "completed").length,
+    factsFullyValidated: documents.filter((d) => d.contributesFacts && !d.validation?.partial).length,
+    dossierBuilt: true as const,
+    exhaustivenessProven: false as const,
+  };
+
+  return { version: 1, complete: missingDocuments.length === 0, documents, missingDocuments, completeness, contract };
 };

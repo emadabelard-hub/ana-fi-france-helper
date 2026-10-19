@@ -4,6 +4,8 @@ import { validateBtpFacts } from "../../supabase/functions/_shared/btpFactsContr
 import { buildProjectFactsDossier } from "../../supabase/functions/_shared/btpProjectDossier";
 import { runGlobalAnalysis, buildGlobalAnalysisMessages } from "../../supabase/functions/_shared/btpGlobalAnalysisPrompt";
 import type { DocumentFactsResult } from "../../supabase/functions/_shared/btpDocumentSequence";
+import { processDocumentsSequentially, DocumentTooLargeError } from "../../supabase/functions/_shared/btpDocumentSequence";
+import { BTP_PROJECT_FACTUAL_EXTRACTION_PROMPT } from "../../supabase/functions/_shared/btpFactualPrompt";
 
 const doc = (name: string, descriptions: string[], quantities = descriptions.map(() => null as number | null)): DocumentFactsResult => ({
   docId: name, fileName: `${name}.docx`, status: "completed", attempts: 1, error: null,
@@ -59,6 +61,40 @@ describe("Contrôle déterministe du rapport", () => {
     expect(result.text).toBe(text);
     expect(result.audit?.unreferencedFactIds).toEqual([d.contract.facts[1].factId]);
     expect(JSON.stringify(d)).toBe(before);
+  });
+  it("needs_chunking : aucun audit d'un rapport inexistant ni second appel IA", async () => {
+    let calls = 0;
+    const result = await runGlobalAnalysis(dossier(), async () => { calls++; throw new DocumentTooLargeError("413"); });
+    expect(result.status).toBe("needs_chunking");
+    expect(result.audit).toBeUndefined();
+    expect(calls).toBe(1);
+  });
+  it("document → extraction séquentielle → consolidation → analyse → audit, sans appels supplémentaires", async () => {
+    const docs = [
+      { docId: "a", fileName: "a.docx", kind: "docx" as const, text: "Cloison séjour : 25 m²" },
+      { docId: "b", fileName: "b.docx", kind: "docx" as const, text: "Accès par la cour ; peinture exclue" },
+    ];
+    const calls: string[] = [];
+    let active = 0;
+    let maxActive = 0;
+    const results = await processDocumentsSequentially(docs, async d => {
+      active++; maxActive = Math.max(maxActive, active); calls.push(d.docId);
+      await Promise.resolve();
+      active--;
+      return `<ANAFYPRO_BTP_FACTS>${JSON.stringify({ facts: [{ id: "source", descriptionExact: d.text, quantity: d.docId === "a" ? 25 : null, unit: d.docId === "a" ? "m²" : null, sourceFile: d.fileName, evidenceText: d.text, role: d.docId === "a" ? "main" : "descriptive" }] })}</ANAFYPRO_BTP_FACTS>`;
+    }, {}, undefined, BTP_PROJECT_FACTUAL_EXTRACTION_PROMPT);
+    expect(calls).toEqual(["a", "b"]);
+    expect(maxActive).toBe(1);
+    const d = buildProjectFactsDossier(results);
+    expect(d.contract.facts.map(f => f.quantity)).toEqual([25, null]);
+    let globalCalls = 0;
+    const result = await runGlobalAnalysis(d, async () => {
+      globalCalls++;
+      return d.contract.facts.map(f => `${f.descriptionExact} [${f.factId}]`).join("\n");
+    });
+    expect(globalCalls).toBe(1);
+    expect(result.audit?.unreferencedFactIds).toEqual([]);
+    expect(result.audit?.unknownFactIds).toEqual([]);
   });
 });
 

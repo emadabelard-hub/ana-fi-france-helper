@@ -1,12 +1,13 @@
 /**
  * Prompt n°2 — analyse globale du projet à partir du dossier factuel consolidé.
- * Texte fourni par l'utilisateur (Étape 3), reproduit à l'identique.
+ * Texte fourni par l'utilisateur (Étape 3), renforcé pour la couverture documentaire.
  * Ne pas modifier sans validation explicite.
  */
 import {
   serializeConsolidatedContract,
 } from "./btpFactsConsolidation.ts";
 import type { ProjectFactsDossier } from "./btpProjectDossier.ts";
+import { auditGlobalAnalysis, type GlobalAnalysisAudit } from "./btpGlobalAnalysisAudit.ts";
 import {
   estimateTokensConservative,
   inputTokenBudget,
@@ -65,6 +66,9 @@ Toute affirmation factuelle significative de ton analyse doit pouvoir être ratt
 N'invente jamais un \`factId\`.
 
 Ne reconstruis jamais une référence documentaire absente.
+
+Examine TOUS les faits du dossier, y compris ceux dont transferStatus vaut pending ou excluded : ces statuts de préparation du devis ne sont pas un motif d'omission documentaire. Conserve les conditions générales, délais, échéances, contraintes d'accès et horaires, fournitures, exclusions, réserves, prescriptions et faits sans quantité. Intègre-les dans les huit sections existantes, sans ajouter une neuvième section.
+Utilise la forme [factId] avec l'identifiant COMPLET reçu, préfixes de document compris. Les exemples F12/F47 ci-dessous sont illustratifs : ils ne sont jamais des références à réutiliser. Chaque fait doit être référencé dans au moins une section pertinente, sans le recopier inutilement dans toutes les sections.
 
 
 3. RESPECT DES VALEURS SOURCES
@@ -198,12 +202,16 @@ POINT À VÉRIFIER
 
 Ne décide jamais quelle version est correcte.
 
+DISTINGUER CONTRADICTION, MODIFICATION ET PRÉCISION : une demande de modification explicitement écrite reste une demande, pas une décision validée ni automatiquement une contradiction. Une précision complémentaire compatible ne remplace pas le fait initial. Ne qualifie de contradiction que des valeurs incompatibles portant avec suffisamment de certitude sur le même ouvrage, le même périmètre et la même caractéristique. Si ce rattachement est incertain, classe le rapprochement dans POINTS À CONFIRMER. Conserve toutes les versions et leurs sources, même lorsqu'une validation explicite est documentée ; ne choisis jamais la dernière source uniquement parce qu'elle est plus récente.
+
 
 11. INFORMATIONS MANQUANTES
 
 Tu peux signaler une information comme manquante uniquement lorsqu'elle est rattachée à un élément réellement présent dans les faits.
 
 Tu ne dois pas établir une liste générique de tout ce qu'un chantier pourrait normalement nécessiter.
+
+Avant de déclarer une quantité ou caractéristique manquante, vérifie tous les faits se rapportant explicitement au même ouvrage, même dans un document complémentaire. Si la valeur y figure sans ambiguïté, présente-la avec sa source, sans l'inventer dans le fait initial. Si le lien est incertain, signale À CONFIRMER ; si les valeurs sont incompatibles, signale la contradiction sans choisir. Une longueur et une surface de finition d'un même ouvrage décrivent des caractéristiques différentes, pas automatiquement une incohérence. Une condition, exclusion ou demande sans quantité n'exige pas automatiquement une quantité : quantity = null ou transferStatus = pending ne suffisent jamais à conclure qu'une information utile manque.
 
 Exemple autorisé :
 
@@ -430,6 +438,8 @@ C — CONTRADICTOIRE
 
 Aucun prix.
 
+Évite les répétitions inutiles : donne le détail dans la section pertinente et une synthèse courte avec références ailleurs. Ne supprime aucun fait pour raccourcir le rapport. Conserve exactement les huit sections et toutes les valeurs sources.
+
 
 ==================================================
 CONTRÔLE FINAL SILENCIEUX
@@ -506,6 +516,7 @@ export type GlobalAnalysisResult = {
   text: string | null;
   error: string | null;
   estimatedInputTokens?: number;
+  audit?: GlobalAnalysisAudit;
 };
 
 /**
@@ -549,5 +560,5 @@ export const runGlobalAnalysis = async (
     throw e;
   }
   if (!text) throw new Error("Analyse globale vide.");
-  return { ...meta, status: "completed", text, error: null, estimatedInputTokens: size.estimatedInputTokens };
+  return { ...meta, status: "completed", text, error: null, estimatedInputTokens: size.estimatedInputTokens, audit: auditGlobalAnalysis(text, dossier.contract) };
 };

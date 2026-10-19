@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ProfileProvider } from "@/hooks/useProfile";
 import MainLayout from "@/components/layout/MainLayout";
 import GlobalErrorHandler from "@/components/app/GlobalErrorHandler";
+import PageLoadBoundary from "@/components/app/PageLoadBoundary";
 import AuthSplashScreen from "@/components/auth/AuthSplashScreen";
 import RequireAuth from "@/components/auth/RequireAuth";
 import CookieConsentBanner from "@/components/shared/CookieConsentBanner";
@@ -238,7 +239,7 @@ const App = () => {
                 <GlobalErrorHandler />
                 <Toaster />
                 <Sonner />
-                <AppRoutes />
+                <PageLoadBoundary><AppRoutes /></PageLoadBoundary>
               </TooltipProvider>
             </ThemeProvider>
           </LanguageProvider>

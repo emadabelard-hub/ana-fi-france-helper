@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { recoverStaleChunk } from "../lib/staleChunkRecovery";
+import { createElement } from "react";
+import { cleanup, render, screen } from "@testing-library/react";
+import PageLoadBoundary from "../components/app/PageLoadBoundary";
+
+vi.mock("@/contexts/LanguageContext", () => ({ useLanguage: () => ({ isRTL: false }) }));
 
 const error = new TypeError("Failed to fetch dynamically imported module: /assets/Index-old.js");
 const storage = () => {
@@ -8,6 +13,14 @@ const storage = () => {
 };
 
 describe("Stale page recovery", () => {
+  it("keeps a retry action visible when a page import still fails", () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const BrokenPage = () => { throw error; };
+    try {
+      render(createElement(PageLoadBoundary, { children: createElement(BrokenPage) }));
+      expect(screen.getByRole("button", { name: "Réessayer" })).toBeInTheDocument();
+    } finally { cleanup(); log.mockRestore(); }
+  });
   it("reloads once for a stale chunk and never repeats for the same missing asset", () => {
     const s = storage();
     const reload = vi.fn();

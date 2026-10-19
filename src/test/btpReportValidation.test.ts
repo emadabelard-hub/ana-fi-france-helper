@@ -39,4 +39,19 @@ describe('Correction n°3 — contrôles génériques sans IA', () => {
   it('préserve le texte original et un seul appel simulé', async () => { const d = make(); const text = `  ${report(table(d.contract.facts[0].factId))}\n`; let calls = 0; const before = JSON.stringify(d); const r = await runGlobalAnalysis(d, async () => { calls++; return text; }); expect(r.text).toBe(text); expect(calls).toBe(1); expect(JSON.stringify(d)).toBe(before); expect(r.audit?.version).toBe(2); });
   it('nombres libres et paraphrases : vérification impossible plutôt que faux positif', () => { const a = check(id => `42 personnes consultent la cloison [${id}]`); expect(anomalies(a)).toEqual([]); });
   it('source incohérente jamais validée par une citation', () => { const d = make(); Object.assign(d.contract.facts[0], { sourceCheck: 'inconsistent' }); const a = auditGlobalAnalysis(report(table(d.contract.facts[0].factId)), d.contract, d); expect(a.provenance?.inconsistentSources).toBe(1); expect(a.valueChecks).toContainEqual(expect.objectContaining({ field: 'source', status: 'unverifiable' })); });
+  it('aucune conversion de quantité pour prouver une erreur', () => { const a = check(id => table(id, '2400 cm')); expect(anomalies(a)).toEqual([]); expect(a.valueChecks).toContainEqual(expect.objectContaining({ reason: 'different_units_no_conversion' })); });
+  it('localisation reformulée : ne démontre pas une erreur', () => { expect(anomalies(check(id => table(id, '24 m²', 'pièce chambre')))).toEqual([]); });
+  it('dimensions, caractéristique et condition explicites contrôlées sans conversion', () => {
+    const d = make(); Object.assign(d.contract.facts[0], { preserved: { dimensions: '2 m', characteristics: 'BA13', condition: 'Accès par la cour' } });
+    const id = d.contract.facts[0].factId;
+    const a = auditGlobalAnalysis(`Cloison prévue. Dimensions : 3 m ; Caractéristique : BA13 ; Condition : Accès par la cour ; [${id}]`, d.contract, d);
+    expect(anomalies(a)).toContainEqual(expect.objectContaining({ field: 'dimensions' }));
+    expect(a.valueChecks).toContainEqual(expect.objectContaining({ field: 'characteristic', status: 'conform' }));
+    expect(a.valueChecks).toContainEqual(expect.objectContaining({ field: 'condition', status: 'conform' }));
+  });
+  it('référence en code ou sans crochets : ambiguë, jamais exploitation démontrée', () => {
+    const a = check(id => `\`\`\`\nPose de cloison [${id}]\n\`\`\``);
+    expect(a.associatedFactIds).toEqual([]); expect(a.ambiguousFactIds).toHaveLength(1);
+    const b = check(id => `Pose de cloison ${id}`); expect(b.associatedFactIds).toEqual([]); expect(b.ambiguousFactIds).toHaveLength(1);
+  });
 });

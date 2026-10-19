@@ -40,7 +40,8 @@ export function auditReportStructure(text: string): ReportStructure {
     if (count > 1) repeatedSections.push(i + 1);
     // A header-only table does not constitute a section body.
     const lines = bodies[i].filter(l => normalizeReportText(l));
-    const meaningful = lines.filter(l => !(l.includes('|') && /^\s*\|?[\s:|-]+\|?\s*$/.test(bodies[i][bodies[i].indexOf(l) + 1] ?? '')));
+    const meaningful = bodies[i].filter((l, index) => normalizeReportText(l)
+      && !(l.includes('|') && /^\s*\|?[\s:|-]+\|?\s*$/.test(bodies[i][index + 1] ?? '')));
     if (count && meaningful.length === 0) emptySections.push(i + 1);
   });
   return { missingSections, emptySections, repeatedSections,

@@ -42,7 +42,7 @@ export default function ProjectReportDiagnostics({ text, audit: saved, dossier, 
     <p className="text-foreground font-medium">{T.generated}</p>
     {audit?.structure?.verified && <p className="text-muted-foreground">{T.verified}</p>}
     {audit?.structure && ([['missingSections', T.missing], ['emptySections', T.empty], ['repeatedSections', T.repeated]] as const).map(([key, label]) =>
-      audit.structure?.[key].length ? <p key={key} className="text-foreground">{label} : {audit.structure[key].join(', ')}</p> : null)}
+      audit.structure?.[key].length ? <p key={key} className="text-foreground">{label} : <bdi dir="ltr">{audit.structure[key].join(', ')}</bdi></p> : null)}
     <p className="text-muted-foreground">{audit?.version === 2 ? T.checks : T.old}</p>
     {anomalies.length > 0 && <p className="text-foreground font-semibold">{T.anomalies} : {anomalies.length}</p>}
     <details className="text-muted-foreground">
@@ -56,7 +56,7 @@ export default function ProjectReportDiagnostics({ text, audit: saved, dossier, 
           {anomalies.map((c, i) => <li key={i} className="border-s-2 border-primary ps-3 text-foreground break-words">
             {T.line} {c.line} — {T.fields[c.field] ?? c.field}<br />
             <span dir="ltr" className="break-all">{c.factId}</span><br />
-            <span dir="auto">{c.source ?? '—'} → {c.reported ?? '—'}</span>
+            <bdi dir="ltr">{c.source ?? '—'} → {c.reported ?? '—'}</bdi>
           </li>)}
         </ul>}
         {unverifiable > 0 && <p>{T.unverifiable} : {unverifiable}</p>}

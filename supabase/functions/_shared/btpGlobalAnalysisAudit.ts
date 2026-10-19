@@ -100,7 +100,7 @@ export function auditGlobalAnalysis(text: string, contract: ConsolidatedBtpContr
       const m = measures[0];
       const equal = m.value === f.quantity && unitsEqual(f.unit, m.unit);
       valueChecks.push({ factId: f.factId, line: index + 1, field: 'quantity', source: `${f.quantity} ${f.unit}`, reported: m.raw,
-        status: equal ? 'conform' : reserved ? 'unverifiable' : 'demonstrated_anomaly', reason: reserved ? 'explicit_reservation' : 'explicit_quantity_field' });
+        status: equal ? 'conform' : reserved || !unitsEqual(f.unit, m.unit) ? 'unverifiable' : 'demonstrated_anomaly', reason: reserved ? 'explicit_reservation' : !unitsEqual(f.unit, m.unit) ? 'different_units_no_conversion' : 'explicit_quantity_field' });
     } else valueChecks.push({ factId: f.factId, line: index + 1, field: 'quantity', status: 'unverifiable', reason: 'no_single_explicit_quantity' });
     const meta = metaOf(f), p = meta.preserved ?? {};
     const fields: [string, string | undefined, string[]][] = [
@@ -116,12 +116,18 @@ export function auditGlobalAnalysis(text: string, contract: ConsolidatedBtpContr
       // are comparable; reformulated conditions/characteristics remain unverifiable.
       if (!source && !reported) continue;
       const exact = !!source && !!reported && norm(source) === norm(reported);
-      const comparable = field === 'location' || (field === 'dimensions' && source && reported && measurements(source).length === 1 && measurements(reported).length === 1);
+      const rooms = new Set(['chambre', 'salon', 'cuisine', 'garage', 'couloir', 'غرفة نوم', 'صالون', 'مطبخ']);
+      const sourceMeasures = source ? measurements(source) : [], reportedMeasures = reported ? measurements(reported) : [];
+      const comparable = (field === 'location' && source && reported && rooms.has(norm(source)) && rooms.has(norm(reported)))
+        || (field === 'dimensions' && sourceMeasures.length === 1 && reportedMeasures.length === 1 && unitsEqual(sourceMeasures[0].unit, reportedMeasures[0].unit));
       addCheck(f, index + 1, field, source, reported, reserved || (!comparable && !exact));
     }
     const reportedStatus = fieldText(['Statut', 'Status', 'الحالة']);
     const sourceStatus = scalar(p.status);
-    if (reportedStatus && sourceStatus) addCheck(f, index + 1, 'status', sourceStatus, reportedStatus, false);
+    if (reportedStatus && sourceStatus) {
+      const statuses = new Set(['demande', 'non valide', 'a confirmer', 'valide', 'validee', 'approuve', 'approuvee', 'exclu', 'exclue']);
+      addCheck(f, index + 1, 'status', sourceStatus, reportedStatus, !statuses.has(norm(sourceStatus)) || !statuses.has(norm(reportedStatus)));
+    }
     if (meta.sourceCheck === 'inconsistent' && !reserved) valueChecks.push({ factId: f.factId, line: index + 1, field: 'source', status: 'unverifiable', reason: 'inconsistent_source_without_local_reservation' });
     const sourceContext = norm(`${f.descriptionExact} ${f.evidenceText} ${sourceStatus ?? ''}`);
     const disposition = fieldText(['Décision', 'Prestation', 'Decision', 'القرار']);
@@ -143,7 +149,7 @@ export function auditGlobalAnalysis(text: string, contract: ConsolidatedBtpContr
       const description = scalar(raw.descriptionExact ?? raw.description ?? raw.text);
       if (!description) continue;
       lines.forEach((line, index) => {
-        if (/^(?:\s*[-*]\s*)?(?:fait etabli|حقيقة مثبتة)\s*:/i.test(norm(line).replace(/^(fait etabli|حقيقة مثبتة) /, '$1: '))
+        if (/^(?:fait etabli|حقيقة مثبتة) /.test(norm(line))
           && norm(line).includes(norm(description)) && !isReserved(line)) {
           valueChecks.push({ factId: `supplementary:${s.docId}`, line: index + 1, field: 'category', status: 'demonstrated_anomaly', source: description, reported: line, reason: s.rejectedEntries?.includes(record) ? 'rejected_entry_as_established_fact' : 'supplementary_as_verified_fact' });
         }

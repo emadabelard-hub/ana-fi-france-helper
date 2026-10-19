@@ -8,6 +8,9 @@ import { ingestImage } from '@/lib/pdfIngest';
 import { extractProjectDocx, ingestProjectPdf } from '@/lib/projectDocumentIngest';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import ProjectReportDiagnostics from '@/components/assistant/ProjectReportDiagnostics';
+import type { GlobalAnalysisAudit } from '../../supabase/functions/_shared/btpGlobalAnalysisAudit';
+import type { ProjectFactsDossier } from '../../supabase/functions/_shared/btpProjectDossier';
 
 // Parcours « Analyser mon projet » — étape 5 : branché sur btp-analysis-job
 // (kind = project_docs_facts). Source de vérité : la ligne btp_analysis_jobs.
@@ -246,7 +249,8 @@ const ProjectAnalysisPage = () => {
     const sr = job.step_results || {};
     const total = Array.isArray(sr.dossier?.data?.documents) ? sr.dossier.data.documents.length : undefined;
     const docEntries = Object.keys(sr).filter(k => k.startsWith('doc:')).map(k => sr[k]);
-    const analysis = sr.global_analysis?.data as { status?: string; text?: string | null; complete?: boolean; missingDocuments?: { fileName?: string }[]; audit?: { unknownFactIds: string[]; unreferencedFactIds: string[] } } | undefined;
+    const analysis = sr.global_analysis?.data as { status?: string; text?: string | null; complete?: boolean; missingDocuments?: { fileName?: string }[]; audit?: GlobalAnalysisAudit } | undefined;
+    const dossier = sr.dossier?.data?.dossier as ProjectFactsDossier | undefined;
     const serverMissing = docEntries
       .filter((d: any) => (d?.status && d.status !== 'completed') || (Array.isArray(d?.coverage?.unreadPages) && d.coverage.unreadPages.length > 0) || (d?.integrity?.rejected > 0))
       .map((d: any) => {
@@ -287,11 +291,7 @@ const ProjectAnalysisPage = () => {
               </ul>
             </div>
           )}
-          {analysis?.audit && (analysis.audit.unknownFactIds.length > 0 || analysis.audit.unreferencedFactIds.length > 0) && (
-            <p role="status" className="text-[16px] text-muted-foreground">
-              {T.auditNotice(analysis.audit.unknownFactIds.length, analysis.audit.unreferencedFactIds.length)}
-            </p>
-          )}
+          {analysis?.text && <ProjectReportDiagnostics text={analysis.text} audit={analysis.audit} dossier={dossier} isRTL={isRTL} />}
           {analysis?.status === 'needs_chunking' || !analysis?.text ? (
             <div className="rounded-xl border border-border bg-card p-4 flex gap-3 items-start">
               <AlertTriangle size={20} className="text-muted-foreground shrink-0 mt-0.5" />

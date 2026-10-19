@@ -1,6 +1,13 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { recoverStaleChunk } from "./lib/staleChunkRecovery";
+
+// Vite emits this BEFORE a rejected lazy import reaches React and unmounts the app.
+window.addEventListener("vite:preloadError", (event) => {
+  const error = (event as Event & { payload?: unknown }).payload;
+  if (recoverStaleChunk(error)) event.preventDefault();
+});
 
 const clearLegacyServiceWorkerCaches = async () => {
   if (typeof window === "undefined") return;
@@ -29,4 +36,5 @@ const clearLegacyServiceWorkerCaches = async () => {
 
 void clearLegacyServiceWorkerCaches();
 
-createRoot(document.getElementById("root")!).render(<App />);
+const root = document.getElementById("root");
+if (root) createRoot(root).render(<App />);

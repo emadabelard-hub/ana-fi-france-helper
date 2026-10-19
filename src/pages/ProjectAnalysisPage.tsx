@@ -112,6 +112,7 @@ const ProjectAnalysisPage = () => {
         nothing: 'تعذّرت قراءة أي من المستندات المختارة.',
         newAnalysis: 'تحليل جديد',
         resultTitle: 'تحليل مشروعك',
+        auditNotice: (unknown: number, unreferenced: number) => `فحص المراجع: ${unknown} مرجعًا غير معروف، و${unreferenced} معلومةً دون مرجع في التقرير. لم يتم تعديل التقرير. غياب المرجع لا يعني بالضرورة غياب المعلومة من التحليل.`,
       }
     : {
         title: 'Analyser mon projet',
@@ -136,6 +137,7 @@ const ProjectAnalysisPage = () => {
         nothing: "Aucun des documents sélectionnés n'a pu être lu.",
         newAnalysis: 'Nouvelle analyse',
         resultTitle: 'Analyse de votre projet',
+        auditNotice: (unknown: number, unreferenced: number) => `Contrôle des références : ${unknown} référence(s) inconnue(s), ${unreferenced} fait(s) sans citation dans le rapport. Le rapport n’a pas été modifié. Une citation absente ne prouve pas qu’une information a été omise de l’analyse.`,
       };
 
   // Reprise d'un job en cours (la page peut être quittée sans l'interrompre).
@@ -239,7 +241,7 @@ const ProjectAnalysisPage = () => {
     const sr = job.step_results || {};
     const total = Array.isArray(sr.dossier?.data?.documents) ? sr.dossier.data.documents.length : undefined;
     const docEntries = Object.keys(sr).filter(k => k.startsWith('doc:')).map(k => sr[k]);
-    const analysis = sr.global_analysis?.data as { status?: string; text?: string | null; complete?: boolean; missingDocuments?: { fileName?: string }[] } | undefined;
+    const analysis = sr.global_analysis?.data as { status?: string; text?: string | null; complete?: boolean; missingDocuments?: { fileName?: string }[]; audit?: { unknownFactIds: string[]; unreferencedFactIds: string[] } } | undefined;
     const serverMissing = docEntries.filter((d: any) => d?.status && d.status !== 'completed').map((d: any) => d.fileName as string);
     const missing = [...new Set([...serverMissing, ...skipped])];
 
@@ -271,6 +273,11 @@ const ProjectAnalysisPage = () => {
                 {missing.map(n => <li key={n} className={cn('text-[14px] text-muted-foreground break-all', isRTL && 'text-right')}>• {n}</li>)}
               </ul>
             </div>
+          )}
+          {analysis?.audit && (analysis.audit.unknownFactIds.length > 0 || analysis.audit.unreferencedFactIds.length > 0) && (
+            <p role="status" className="text-[16px] text-muted-foreground">
+              {T.auditNotice(analysis.audit.unknownFactIds.length, analysis.audit.unreferencedFactIds.length)}
+            </p>
           )}
           {analysis?.status === 'needs_chunking' || !analysis?.text ? (
             <div className="rounded-xl border border-border bg-card p-4 flex gap-3 items-start">

@@ -140,3 +140,17 @@ SORTIE — uniquement un bloc <ANAFYPRO_BTP_FACTS> contenant du JSON strict, san
 </ANAFYPRO_BTP_FACTS>
 
 Tous les fichiers réellement reçus doivent apparaître dans "documents[]". Toute information absente ou illisible doit apparaître dans "missingInformation[]". Ne produis aucun autre bloc, aucun bloc <ANAFYPRO_DOCUMENT_DATA>, aucun texte hors du bloc <ANAFYPRO_BTP_FACTS>.`;
+
+/** Consignes réservées à project_docs_facts ; le prompt utilisé par l'assistant reste inchangé. */
+export const BTP_PROJECT_FACTUAL_EXTRACTION_PROMPT = BTP_FACTUAL_EXTRACTION_PROMPT.replace(
+  "- indiquer un prix, un coût, un taux de TVA, une rentabilité, un effectif ou une durée ;",
+  "- produire un prix, un coût, un taux de TVA, une rentabilité, un effectif ou une durée estimée ; relever seulement les délais, échéances et horaires explicitement écrits, sans les calculer ;",
+) + `
+
+COUVERTURE EXHAUSTIVE DU DOCUMENT — ANALYSER MON PROJET
+Examine chaque partie lisible du document, tableaux, notes et conditions générales compris. Relève toutes les informations explicitement écrites : prestations et ouvrages ; quantités et unités ; localisations complètes ; matériaux et caractéristiques techniques ; conditions d'exécution ; contraintes d'accès et horaires ; délais et échéances ; fournitures à la charge du client ou de l'entreprise ; exclusions, réserves et prescriptions ; modifications demandées ; informations explicitement non précisées.
+Chaque information autonome doit figurer dans facts[] avec sa source et son extrait exact, même sans quantité : quantity et unit restent null lorsque non écrites. N'enferme pas une contrainte uniquement dans constraints[], ni une absence explicitement écrite uniquement dans missingInformation[] : conserve aussi son fait sourcé afin qu'il soit transmis à la consolidation existante.
+Pour une condition, exclusion, réserve, échéance ou demande sans prestation autonome, utilise role = "descriptive" ; ne transforme pas cette information en travail facturable. Conserve le libellé intégral et sa modalité (« demandé », « à confirmer », « sous réserve », « exclu »). Une demande de modification n'est jamais une approbation. Une mention de validation n'est retenue que si elle est explicitement écrite.
+Conserve des faits séparés pour les informations distinctes, y compris sans quantité. Rattache une localisation, un matériau ou une caractéristique à son ouvrage uniquement lorsque le document l'indique explicitement. Aucun rapprochement inventé. N'ajoute aucun champ hors du contrat existant.
+Ne synthétise pas les clauses au prix d'une perte d'information. Aucune invention, estimation, addition, conversion, interprétation ou sélection d'une version supposée correcte. Relever un délai écrit n'autorise jamais à calculer un planning ou une durée. Avant de répondre, vérifie silencieusement la couverture de chaque partie lisible ; ne crée pas de faits pour des informations absentes.
+`;

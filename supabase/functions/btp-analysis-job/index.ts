@@ -1,7 +1,7 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { anthropicCompatFetch } from '../_shared/anthropic-compat.ts';
-import { BTP_FACTUAL_EXTRACTION_PROMPT } from '../_shared/btpFactualPrompt.ts';
+import { BTP_PROJECT_FACTUAL_EXTRACTION_PROMPT } from '../_shared/btpFactualPrompt.ts';
 import {
   processSingleDocument,
   isApiSizeLimitError,
@@ -832,7 +832,7 @@ async function callFactualForOneDocument(doc: ProjectDocument): Promise<string> 
       max_tokens: RESPONSE_MAX_TOKENS,
       temperature: 0,
       messages: [
-        { role: 'system', content: BTP_FACTUAL_EXTRACTION_PROMPT },
+        { role: 'system', content: BTP_PROJECT_FACTUAL_EXTRACTION_PROMPT },
         { role: 'user', content: parts },
       ],
     }),
@@ -879,7 +879,7 @@ async function workProjectDocs(
         if (terminal) throw terminal;
         try { return await callFactualForOneDocument(d); }
         catch (e) { if (e instanceof TerminalStepError) terminal = e; throw e; }
-      }, BTP_FACTUAL_EXTRACTION_PROMPT);
+      }, BTP_PROJECT_FACTUAL_EXTRACTION_PROMPT);
       clearInterval(heartbeat);
       heartbeat = undefined;
       if (terminal) throw terminal;

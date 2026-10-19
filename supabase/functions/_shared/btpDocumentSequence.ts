@@ -19,7 +19,28 @@ export type ProjectDocument = {
   text?: string;
   /** Image encodée (data URL). */
   dataUrl?: string;
+  /** Images de pages (PDF) à lire visuellement, dans l'ordre de `coverage.imagePages`. */
+  pageImages?: string[];
+  /** Couverture réelle de la lecture locale (ce qui a été transmis ou non). */
+  coverage?: DocumentCoverage;
+  /** Document illisible localement : conservé dans la liste, jamais envoyé à l'IA. */
+  unreadable?: boolean;
+  unreadableReason?: string;
 };
+
+export type DocumentCoverage = {
+  totalPages?: number;
+  /** Pages dont la couche texte est transmise. */
+  textPages?: number[];
+  /** Pages transmises en image. */
+  imagePages?: number[];
+  /** Pages non exploitables ou non transmises (signalées, jamais ignorées). */
+  unreadPages?: number[];
+};
+
+/** Vrai si une partie du document n'a pas pu être transmise. */
+export const isPartiallyCovered = (c?: DocumentCoverage | null): boolean =>
+  !!c && Array.isArray(c.unreadPages) && c.unreadPages.length > 0;
 
 export type DocumentFactsStatus = "completed" | "failed" | "needs_chunking";
 
@@ -30,6 +51,8 @@ export type DocumentFactsResult = {
   attempts: number;
   contract: BtpFactsContract | null;
   error: string | null;
+  /** Couverture du document (absente = document entièrement transmis). */
+  coverage?: DocumentCoverage | null;
 };
 
 /** Appel IA pour UN seul document. Retourne le texte brut de la réponse. */
@@ -85,9 +108,13 @@ export const imageBase64Length = (dataUrl: string): number => {
 export type SizeCheck = { ok: boolean; estimatedInputTokens?: number; reason?: string };
 
 export const checkDocumentFits = (doc: ProjectDocument, systemPrompt: string): SizeCheck => {
-  if (typeof doc.dataUrl === "string") {
-    const b64 = imageBase64Length(doc.dataUrl);
-    const max = Math.floor(API_IMAGE_BASE64_LIMIT_BYTES * (1 - IMAGE_SAFETY_RATIO));
+  const images = [
+    ...(typeof doc.dataUrl === "string" ? [doc.dataUrl] : []),
+    ...(Array.isArray(doc.pageImages) ? doc.pageImages.filter((x) => typeof x === "string") : []),
+  ];
+  const max = Math.floor(API_IMAGE_BASE64_LIMIT_BYTES * (1 - IMAGE_SAFETY_RATIO));
+  for (const img of images) {
+    const b64 = imageBase64Length(img);
     if (b64 > max) {
       return { ok: false, reason: `Image trop volumineuse : ${b64} octets base64 envoyés > ${max} autorisés (limite API ${API_IMAGE_BASE64_LIMIT_BYTES} − 10 %).` };
     }
@@ -95,7 +122,7 @@ export const checkDocumentFits = (doc: ProjectDocument, systemPrompt: string): S
   const tokens = estimateTokensConservative(systemPrompt)
     + REQUEST_OVERHEAD_TOKENS
     + (typeof doc.text === "string" ? estimateTokensConservative(doc.text) : 0)
-    + (typeof doc.dataUrl === "string" ? IMAGE_TOKENS_MAX : 0);
+    + images.length * IMAGE_TOKENS_MAX;
   const budget = inputTokenBudget();
   if (tokens > budget) {
     return { ok: false, reason: `Document trop volumineux : ~${tokens} tokens estimés > budget ${budget} (fenêtre ${MODEL_CONTEXT_TOKENS} − 15 % − réponse ${RESPONSE_MAX_TOKENS}).` };
@@ -167,7 +194,11 @@ export const processSingleDocument = async (
   callAi: SingleDocumentAiCall,
   systemPrompt = "",
 ): Promise<DocumentFactsResult> => {
-  const base = { docId: doc.docId, fileName: doc.fileName };
+  const base = { docId: doc.docId, fileName: doc.fileName, coverage: doc.coverage ?? null };
+  if (doc.unreadable) {
+    return { ...base, status: "failed", attempts: 0, contract: null,
+      error: doc.unreadableReason || "Document illisible localement : aucun contenu transmis." };
+  }
   const fit = checkDocumentFits(doc, systemPrompt);
   if (!fit.ok) {
     return {

@@ -10,7 +10,7 @@ import {
   consolidateBtpContracts,
   type ConsolidatedBtpContract,
 } from "./btpFactsConsolidation.ts";
-import type { DocumentFactsResult, DocumentFactsStatus } from "./btpDocumentSequence.ts";
+import { isPartiallyCovered, type DocumentFactsResult, type DocumentFactsStatus } from "./btpDocumentSequence.ts";
 
 export type DossierDocumentStatus = DocumentFactsStatus | "missing";
 
@@ -22,6 +22,9 @@ export type DossierDocumentState = {
   attempts: number;
   factsCount: number;
   contributesFacts: boolean;
+  /** Traitement réussi mais une partie du document n'a pas été transmise. */
+  partial: boolean;
+  unreadPages: number[];
   error: string | null;
 };
 
@@ -29,7 +32,7 @@ export type ProjectFactsDossier = {
   version: 1;
   complete: boolean;
   documents: DossierDocumentState[];
-  missingDocuments: { index: number; fileName: string | null; status: DossierDocumentStatus }[];
+  missingDocuments: { index: number; fileName: string | null; status: DossierDocumentStatus; partial?: boolean; unreadPages?: number[] }[];
   contract: ConsolidatedBtpContract;
 };
 
@@ -39,13 +42,16 @@ export const buildProjectFactsDossier = (
   const documents: DossierDocumentState[] = results.map((r, index) => {
     if (!r) {
       return { index, docId: null, fileName: null, status: "missing", attempts: 0,
-        factsCount: 0, contributesFacts: false, error: "Résultat du document absent." };
+        factsCount: 0, contributesFacts: false, partial: false, unreadPages: [], error: "Résultat du document absent." };
     }
     const contributes = r.status === "completed" && !!r.contract && r.contract.facts.length > 0;
     return {
       index, docId: r.docId, fileName: r.fileName, status: r.status, attempts: r.attempts,
       factsCount: contributes ? r.contract!.facts.length : 0,
-      contributesFacts: contributes, error: r.error,
+      contributesFacts: contributes,
+      partial: isPartiallyCovered(r.coverage),
+      unreadPages: isPartiallyCovered(r.coverage) ? [...r.coverage!.unreadPages!] : [],
+      error: r.error,
     };
   });
 
@@ -58,8 +64,10 @@ export const buildProjectFactsDossier = (
   );
 
   const missingDocuments = documents
-    .filter((d) => !d.contributesFacts)
-    .map((d) => ({ index: d.index, fileName: d.fileName, status: d.status }));
+    .filter((d) => !d.contributesFacts || d.partial)
+    .map((d) => (d.partial
+      ? { index: d.index, fileName: d.fileName, status: d.status, partial: true, unreadPages: d.unreadPages }
+      : { index: d.index, fileName: d.fileName, status: d.status }));
 
   return { version: 1, complete: missingDocuments.length === 0, documents, missingDocuments, contract };
 };

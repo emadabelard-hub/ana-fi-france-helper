@@ -213,8 +213,24 @@ async function handleCreate(req: Request): Promise<Response> {
       const fileName = typeof d.fileName === 'string' ? d.fileName.trim().slice(0, 300) : '';
       const text = typeof d.text === 'string' ? d.text : undefined;
       const dataUrl = typeof d.dataUrl === 'string' && d.dataUrl.startsWith('data:image/') ? d.dataUrl : undefined;
-      if (!fileName || (!text && !dataUrl)) return json({ error: `Document ${i} : contenu manquant.` }, 400);
-      documents.push({ docId: `doc${i + 1}`, fileName, kind, text, dataUrl });
+      const pageImages = Array.isArray(d.pageImages)
+        ? (d.pageImages as unknown[]).filter((x): x is string => typeof x === 'string' && x.startsWith('data:image/'))
+        : [];
+      const nums = (v: unknown) => Array.isArray(v) ? (v as unknown[]).filter((n): n is number => Number.isInteger(n) && (n as number) > 0) : [];
+      const c = (d.coverage ?? null) as Record<string, unknown> | null;
+      const coverage = c && typeof c === 'object' ? {
+        totalPages: Number.isInteger(c.totalPages) ? c.totalPages as number : undefined,
+        textPages: nums(c.textPages), imagePages: nums(c.imagePages), unreadPages: nums(c.unreadPages),
+      } : undefined;
+      if (!fileName) return json({ error: `Document ${i} : nom manquant.` }, 400);
+      if (d.unreadable === true) {
+        // Conservé dans la liste (ordre et visibilité), jamais envoyé à l'IA.
+        const reason = typeof d.unreadableReason === 'string' ? d.unreadableReason.slice(0, 300) : undefined;
+        documents.push({ docId: `doc${i + 1}`, fileName, kind, unreadable: true, unreadableReason: reason, coverage });
+        continue;
+      }
+      if (!text && !dataUrl && pageImages.length === 0) return json({ error: `Document ${i} : contenu manquant.` }, 400);
+      documents.push({ docId: `doc${i + 1}`, fileName, kind, text, dataUrl, pageImages: pageImages.length ? pageImages : undefined, coverage });
     }
     const { data, error } = await admin()
       .from('btp_analysis_jobs')
@@ -826,6 +842,11 @@ async function callFactualForOneDocument(doc: ProjectDocument): Promise<string> 
     { type: 'text', text: `PIÈCE ORIGINALE (document unique) : ${doc.fileName} (${doc.kind})` },
   ];
   if (doc.dataUrl) parts.push({ type: 'image_url', image_url: { url: doc.dataUrl } });
+  (doc.pageImages ?? []).forEach((url, k) => {
+    const page = doc.coverage?.imagePages?.[k];
+    parts.push({ type: 'text', text: `IMAGE DE LA PAGE ${page ?? k + 1} de ${doc.fileName} :` });
+    parts.push({ type: 'image_url', image_url: { url } });
+  });
   if (doc.text) parts.push({ type: 'text', text: `CONTENU DU FICHIER ${doc.fileName} :\n${doc.text}` });
   const resp = await anthropicCompatFetch({
     body: JSON.stringify({

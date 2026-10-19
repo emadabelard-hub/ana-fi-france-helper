@@ -551,7 +551,7 @@ export const runGlobalAnalysis = async (
   }
   let text: string;
   try {
-    text = (await call(messages)).trim();
+    text = await call(messages);
   } catch (e) {
     // Dépassement réel signalé par l'API : même statut, pas de relance.
     if (e instanceof DocumentTooLargeError) {
@@ -559,6 +559,6 @@ export const runGlobalAnalysis = async (
     }
     throw e;
   }
-  if (!text) throw new Error("Analyse globale vide.");
-  return { ...meta, status: "completed", text, error: null, estimatedInputTokens: size.estimatedInputTokens, audit: auditGlobalAnalysis(text, dossier.contract) };
+  if (!text.trim()) throw new Error("Analyse globale vide.");
+  return { ...meta, status: "completed", text, error: null, estimatedInputTokens: size.estimatedInputTokens, audit: auditGlobalAnalysis(text, dossier.contract, dossier) };
 };

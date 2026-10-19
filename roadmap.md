@@ -5,6 +5,6 @@
 - [x] Tester plusieurs dossiers et vérifier les fichiers modifiés.
 
 # Correction technique n°3
-- [ ] Renforcer les contrôles déterministes des sections, références et valeurs contextualisées.
-- [ ] Afficher les anomalies et limites en français/arabe, avec compatibilité des anciens rapports.
-- [ ] Tester les 22 scénarios demandés et la reprise simulée ; vérifier l’isolation des prompts et autres parcours.
+- [x] Renforcer les contrôles déterministes des sections, références et valeurs contextualisées.
+- [x] Afficher les anomalies et limites en français/arabe, avec compatibilité des anciens rapports.
+- [x] Tester les 22 scénarios demandés et la reprise simulée ; vérifier l’isolation des prompts et autres parcours.

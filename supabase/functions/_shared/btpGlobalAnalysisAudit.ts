@@ -29,7 +29,7 @@ const isReserved = (text: string) => WARNING.test(norm(text));
 const tableCells = (line: string) => line.trim().replace(/^\|/, '').replace(/\|$/, '').split(/(?<!\\)\|/).map(c => c.trim());
 const scalar = (v: unknown): string | undefined => typeof v === 'string' || typeof v === 'number' ? String(v) : undefined;
 const metaOf = (f: ConsolidatedBtpFact) => f as ConsolidatedBtpFact & { preserved?: Record<string, unknown>; sourceCheck?: string };
-const MEASUREMENT = /(?:^|[^\p{L}\p{N}])([0-9]+(?:[.,][0-9]+)?)\s*(m²|m2|m³|m3|mm|cm|ml|m|u|h|jours?|forfait|ens)\b/giu;
+const MEASUREMENT = /(?:^|[^\p{L}\p{N}])([0-9]+(?:[.,][0-9]+)?)\s*(m²|m2|m³|m3|mm|cm|ml|m|u|h|jours?|forfait|ens)(?![\p{L}\p{N}²³])/giu;
 function measurements(text: string) {
   return [...text.matchAll(MEASUREMENT)].map(m => ({ value: Number(m[1].replace(',', '.')), unit: m[2].toLowerCase(), raw: `${m[1]} ${m[2]}` }));
 }
@@ -71,12 +71,13 @@ export function auditGlobalAnalysis(text: string, contract: ConsolidatedBtpContr
     if (/^\s*\|?[\s:|-]+\|?\s*$/.test(line)) continue;
     if (!line.includes('|')) headers = [];
     let content = line;
-    for (const token of tokens) if (token.includes('btp_') || known.has(token) || /^F\d+$/i.test(token)) content = content.replaceAll(token, '');
+    for (const token of tokens) if (token.includes('btp_') || known.has(token) || /^F\d+$/i.test(token)) content = content.split(token).join('');
     const words = norm(content).split(' ').filter(w => /\p{L}/u.test(w));
-    const isolated = words.length < 2 || /^(?:faits? sources?|references?|identifiants?|ids?|sources?|مراجع|المراجع|معرفات)\s*$/.test(norm(content));
+    const isolated = words.length < 2 || /^(?:(?:liste des?|liste de|controle des?|les) )?(?:faits? sources?|references?|identifiants?|ids?|sources?|مراجع|المراجع|معرفات)\s*$/.test(norm(content));
     if (!found.length || isolated) continue;
     // Multiple references remain row-associated, but cannot be mapped to individual cells reliably.
-    if (fenced || /^\s*#/.test(line)) { found.forEach(id => ambiguous.add(id)); continue; }
+    const bracketTokens = new Set([...line.matchAll(/\[([^\]\n]+)\]/g)].flatMap(m => [...m[1].matchAll(REFERENCE)].map(t => t[0])));
+    if (fenced || /^\s*#/.test(line) || found.some(id => !bracketTokens.has(id))) { found.forEach(id => ambiguous.add(id)); continue; }
     found.forEach(id => associated.add(id));
     if (found.length > 1 || found.some(id => duplicates.has(id))) {
       found.forEach(id => { ambiguous.add(id); valueChecks.push({ factId: id, line: index + 1, field: 'association', status: 'unverifiable', reason: 'multiple_source_or_duplicate_reference' }); });

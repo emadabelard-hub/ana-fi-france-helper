@@ -248,10 +248,14 @@ const ProjectAnalysisPage = () => {
     const docEntries = Object.keys(sr).filter(k => k.startsWith('doc:')).map(k => sr[k]);
     const analysis = sr.global_analysis?.data as { status?: string; text?: string | null; complete?: boolean; missingDocuments?: { fileName?: string }[]; audit?: { unknownFactIds: string[]; unreferencedFactIds: string[] } } | undefined;
     const serverMissing = docEntries
-      .filter((d: any) => (d?.status && d.status !== 'completed') || (Array.isArray(d?.coverage?.unreadPages) && d.coverage.unreadPages.length > 0))
-      .map((d: any) => Array.isArray(d?.coverage?.unreadPages) && d.coverage.unreadPages.length > 0 && d.status === 'completed'
-        ? `${d.fileName} — ${isRTL ? 'صفحات غير مقروءة' : 'pages non lues'} : ${d.coverage.unreadPages.join(', ')}`
-        : d.fileName as string);
+      .filter((d: any) => (d?.status && d.status !== 'completed') || (Array.isArray(d?.coverage?.unreadPages) && d.coverage.unreadPages.length > 0) || (d?.integrity?.rejected > 0))
+      .map((d: any) => {
+        if (d.status !== 'completed') return d.fileName as string;
+        const parts: string[] = [];
+        if (Array.isArray(d?.coverage?.unreadPages) && d.coverage.unreadPages.length > 0) parts.push(`${isRTL ? 'صفحات غير مقروءة' : 'pages non lues'} : ${d.coverage.unreadPages.join(', ')}`);
+        if (d?.integrity?.rejected > 0) parts.push(isRTL ? `معلومات غير مُعتمدة : ${d.integrity.rejected}` : `éléments non validés : ${d.integrity.rejected}`);
+        return `${d.fileName} — ${parts.join(' ; ')}`;
+      });
     const missing = [...new Set([...serverMissing, ...skipped])];
 
     if (job.status === 'failed') {

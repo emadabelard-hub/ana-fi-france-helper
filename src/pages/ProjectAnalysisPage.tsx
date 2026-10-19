@@ -4,8 +4,8 @@ import { ArrowLeft, ArrowRight, FileText, Image as ImageIcon, Plus, X, Loader2, 
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { extractTextFromDocx } from '@/lib/docxExtractor';
-import { ingestPdf, ingestImage } from '@/lib/pdfIngest';
+import { ingestImage } from '@/lib/pdfIngest';
+import { extractProjectDocx, ingestProjectPdf } from '@/lib/projectDocumentIngest';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -34,7 +34,12 @@ function detectKind(file: File): Kind | null {
 
 interface Selected { id: string; file: File; kind: Kind }
 type JobRow = { id: string; status: string; current_step: string | null; progress: number | null; step_results: Record<string, any> | null };
-type ServerDoc = { fileName: string; kind: 'pdf' | 'docx' | 'image' | 'text'; text?: string; dataUrl?: string };
+type ServerDoc = {
+  fileName: string; kind: 'pdf' | 'docx' | 'image' | 'text'; text?: string; dataUrl?: string;
+  pageImages?: string[];
+  coverage?: { totalPages: number; textPages: number[]; imagePages: number[]; unreadPages: number[] };
+  unreadable?: boolean; unreadableReason?: string;
+};
 
 const formatSize = (b: number) =>
   b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} Ko` : `${(b / 1024 / 1024).toFixed(1).replace('.', ',')} Mo`;
@@ -46,20 +51,18 @@ const readDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
   r.readAsDataURL(file);
 });
 
-/** Prépare un document pour le serveur ; null si aucun contenu exploitable. */
-async function toServerDoc(d: Selected): Promise<ServerDoc | null> {
+/** Prépare un document pour le serveur ; null si aucun contenu exploitable. Aucune troncature. */
+export async function toServerDoc(d: Selected): Promise<ServerDoc | null> {
   const fileName = d.file.name;
   if (d.kind === 'docx') {
-    const text = (await extractTextFromDocx(d.file)).trim();
+    const text = (await extractProjectDocx(d.file)).trim();
     return text ? { fileName, kind: 'docx', text } : null;
   }
   const dataUrl = await readDataUrl(d.file);
   if (d.kind === 'pdf') {
-    const r = await ingestPdf(dataUrl);
-    if (r.text.trim()) return { fileName, kind: 'pdf', text: r.text };
-    // PDF scanné d'une seule page : on envoie l'image de la page (contenu complet).
-    if (r.pageCount === 1 && r.pageImages[0]) return { fileName, kind: 'image', dataUrl: r.pageImages[0] };
-    return null;
+    const r = await ingestProjectPdf(dataUrl);
+    if (!r.text.trim() && r.pageImages.length === 0) return null;
+    return { fileName, kind: 'pdf', text: r.text || undefined, pageImages: r.pageImages.length ? r.pageImages : undefined, coverage: r.coverage };
   }
   const img = await ingestImage(dataUrl);
   return { fileName, kind: 'image', dataUrl: img.dataUrl };
@@ -196,13 +199,15 @@ const ProjectAnalysisPage = () => {
       for (const d of docs) {
         try {
           const s = await toServerDoc(d);
-          if (s) prepared.push(s); else unreadable.push(d.file.name);
+          if (s) prepared.push(s);
+          else { unreadable.push(d.file.name); prepared.push({ fileName: d.file.name, kind: d.kind === 'docx' ? 'docx' : d.kind === 'pdf' ? 'pdf' : 'image', unreadable: true, unreadableReason: 'Aucun contenu exploitable lu localement.' }); }
         } catch (err) {
           console.error('[ProjectAnalysis] lecture locale', d.file.name, err);
           unreadable.push(d.file.name);
+          prepared.push({ fileName: d.file.name, kind: d.kind === 'docx' ? 'docx' : d.kind === 'pdf' ? 'pdf' : 'image', unreadable: true, unreadableReason: 'Lecture locale impossible.' });
         }
       }
-      if (prepared.length === 0) { setNotice(T.nothing); return; }
+      if (prepared.every(p => p.unreadable)) { setNotice(T.nothing); return; }
       const { data: s } = await supabase.auth.getSession();
       const token = s.session?.access_token;
       if (!token) { console.error('[ProjectAnalysis] session absente'); setStartError(true); return; }
@@ -242,7 +247,11 @@ const ProjectAnalysisPage = () => {
     const total = Array.isArray(sr.dossier?.data?.documents) ? sr.dossier.data.documents.length : undefined;
     const docEntries = Object.keys(sr).filter(k => k.startsWith('doc:')).map(k => sr[k]);
     const analysis = sr.global_analysis?.data as { status?: string; text?: string | null; complete?: boolean; missingDocuments?: { fileName?: string }[]; audit?: { unknownFactIds: string[]; unreferencedFactIds: string[] } } | undefined;
-    const serverMissing = docEntries.filter((d: any) => d?.status && d.status !== 'completed').map((d: any) => d.fileName as string);
+    const serverMissing = docEntries
+      .filter((d: any) => (d?.status && d.status !== 'completed') || (Array.isArray(d?.coverage?.unreadPages) && d.coverage.unreadPages.length > 0))
+      .map((d: any) => Array.isArray(d?.coverage?.unreadPages) && d.coverage.unreadPages.length > 0 && d.status === 'completed'
+        ? `${d.fileName} — ${isRTL ? 'صفحات غير مقروءة' : 'pages non lues'} : ${d.coverage.unreadPages.join(', ')}`
+        : d.fileName as string);
     const missing = [...new Set([...serverMissing, ...skipped])];
 
     if (job.status === 'failed') {

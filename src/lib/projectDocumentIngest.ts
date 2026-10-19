@@ -56,8 +56,7 @@ export function assemblePdf(
     if (pl.needsImage) {
       const img = rendered.get(pl.page);
       if (img) { pageImages.push(img); imagePages.push(pl.page); }
-      else if (!pl.sendText || probe.text.replace(/\s+/g, '').length < PAGE_TEXT_MIN_CHARS) unreadPages.push(pl.page);
-      else unreadPages.push(pl.page); // page avec texte mais dessin/scan non transmis : couverture partielle
+      else unreadPages.push(pl.page); // contenu visuel non transmis : couverture partielle, signalée
     }
   });
   return {

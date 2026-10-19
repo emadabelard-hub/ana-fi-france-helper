@@ -31,6 +31,8 @@ export type ConsolidatedBtpContract = {
   counts: { ready: number; pending: number; excluded: number; total: number };
   /** Diagnostics déterministes (relations neutralisées, recoupements). */
   notes: string[];
+  /** Informations hors faits conservées par document (sections auxiliaires, entrées rejetées). */
+  supplementary?: { docId: string; fileName: string | null; auxiliary?: Record<string, unknown>; rejectedEntries?: unknown[] }[];
 };
 
 export type ContractEntry = {
@@ -39,6 +41,9 @@ export type ContractEntry = {
   contract: BtpFactsContract | null;
   /** Portion d'origine lorsque le document a été subdivisé. */
   part?: string | null;
+  fileName?: string | null;
+  auxiliary?: Record<string, unknown>;
+  rejectedEntries?: unknown[];
 };
 
 const prefixId = (docId: string, factId: string) => `${docId}_${factId}`;
@@ -53,8 +58,18 @@ export const consolidateBtpContracts = (
 ): ConsolidatedBtpContract => {
   const facts: ConsolidatedBtpFact[] = [];
   const notes: string[] = [];
+  const supplementary: NonNullable<ConsolidatedBtpContract["supplementary"]> = [];
 
   for (const entry of entries) {
+    const hasAux = entry.auxiliary && Object.keys(entry.auxiliary).length > 0;
+    const hasRej = Array.isArray(entry.rejectedEntries) && entry.rejectedEntries.length > 0;
+    if (hasAux || hasRej) {
+      supplementary.push({
+        docId: entry.docId, fileName: entry.fileName ?? null,
+        ...(hasAux ? { auxiliary: entry.auxiliary } : {}),
+        ...(hasRej ? { rejectedEntries: entry.rejectedEntries } : {}),
+      });
+    }
     const src = entry.contract;
     if (!src || !Array.isArray(src.facts) || src.facts.length === 0) continue;
 
@@ -84,6 +99,19 @@ export const consolidateBtpContracts = (
         sourceDocId: entry.docId,
         sourcePart: entry.part ?? null,
       });
+    }
+  }
+
+  // 2 bis. Unicité globale des identifiants d'occurrence (jamais de fusion).
+  const taken = new Map<string, number>();
+  for (const f of facts) {
+    const n = (taken.get(f.factId) ?? 0) + 1;
+    taken.set(f.factId, n);
+    if (n > 1) {
+      const renamed = `${f.factId}_o${n}`;
+      notes.push(`identifiant dupliqué renommé (occurrence distincte conservée) : ${f.factId} → ${renamed}`);
+      f.factId = renamed;
+      if ("occurrenceId" in f) (f as Record<string, unknown>).occurrenceId = renamed;
     }
   }
 
@@ -124,7 +152,7 @@ export const consolidateBtpContracts = (
     total: facts.length,
   };
 
-  return { version: 1, facts, counts, notes };
+  return { version: 1, facts, counts, notes, ...(supplementary.length ? { supplementary } : {}) };
 };
 
 /** Sérialise le contrat consolidé pour l'étape d'analyse approfondie. */

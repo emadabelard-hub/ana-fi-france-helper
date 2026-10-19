@@ -7,6 +7,7 @@ vi.mock("@/contexts/LanguageContext", () => ({ useLanguage: () => ({ isRTL: fals
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 vi.mock("@/lib/docxExtractor", () => ({ extractTextFromDocx: vi.fn() }));
 vi.mock("@/lib/pdfIngest", () => ({ ingestPdf: vi.fn(), ingestImage: vi.fn() }));
+vi.mock("@/lib/projectDocumentIngest", () => ({ extractProjectDocx: vi.fn(), ingestProjectPdf: vi.fn() }));
 
 afterEach(() => { cleanup(); sessionStorage.clear(); });
 const file = (name: string, type = "") => new File([name], name, { type });

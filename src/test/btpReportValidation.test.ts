@@ -54,4 +54,22 @@ describe('Correction n°3 — contrôles génériques sans IA', () => {
     expect(a.associatedFactIds).toEqual([]); expect(a.ambiguousFactIds).toHaveLength(1);
     const b = check(id => `Pose de cloison ${id}`); expect(b.associatedFactIds).toEqual([]); expect(b.ambiguousFactIds).toHaveLength(1);
   });
+  it('dimension reformulée identique : aucune fausse anomalie démontrée', () => {
+    const d = make(); Object.assign(d.contract.facts[0], { preserved: { dimensions: '2 m' } });
+    const a = auditGlobalAnalysis(`Cloison prévue. Dimensions : Longueur 2 m ; [${d.contract.facts[0].factId}]`, d.contract, d);
+    expect(a.valueChecks).toContainEqual(expect.objectContaining({ field: 'dimensions', status: 'unverifiable' }));
+    expect(anomalies(a)).toEqual([]);
+  });
+  it('dimensions avec contexte différent : ne compare pas des nombres seuls', () => {
+    const d = make(); Object.assign(d.contract.facts[0], { preserved: { dimensions: 'Longueur 2 m' } });
+    const a = auditGlobalAnalysis(`Cloison prévue. Dimensions : Hauteur 3 m ; [${d.contract.facts[0].factId}]`, d.contract, d);
+    expect(a.valueChecks).toContainEqual(expect.objectContaining({ field: 'dimensions', status: 'unverifiable' }));
+    expect(anomalies(a)).toEqual([]);
+  });
+  it('dimension simple équivalente avec décimale : conforme sans recalcul', () => {
+    const d = make(); Object.assign(d.contract.facts[0], { preserved: { dimensions: '2 m' } });
+    const a = auditGlobalAnalysis(`Cloison prévue. Dimensions : 2,0 m ; [${d.contract.facts[0].factId}]`, d.contract, d);
+    expect(a.valueChecks).toContainEqual(expect.objectContaining({ field: 'dimensions', status: 'conform', source: '2 m', reported: '2,0 m' }));
+    expect(anomalies(a)).toEqual([]);
+  });
 });

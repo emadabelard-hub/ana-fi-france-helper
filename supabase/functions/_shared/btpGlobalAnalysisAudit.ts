@@ -118,8 +118,16 @@ export function auditGlobalAnalysis(text: string, contract: ConsolidatedBtpContr
       const exact = !!source && !!reported && norm(source) === norm(reported);
       const rooms = new Set(['chambre', 'salon', 'cuisine', 'garage', 'couloir', 'غرفة نوم', 'صالون', 'مطبخ']);
       const sourceMeasures = source ? measurements(source) : [], reportedMeasures = reported ? measurements(reported) : [];
+       if (field === 'dimensions' && source && reported && sourceMeasures.length === 1 && reportedMeasures.length === 1
+         && norm(source) === norm(sourceMeasures[0].raw) && norm(reported) === norm(reportedMeasures[0].raw)
+         && unitsEqual(sourceMeasures[0].unit, reportedMeasures[0].unit)) {
+         valueChecks.push({ factId: f.factId, line: index + 1, field, source, reported,
+           status: sourceMeasures[0].value === reportedMeasures[0].value ? 'conform' : reserved ? 'unverifiable' : 'demonstrated_anomaly',
+           reason: reserved ? 'explicit_reservation' : 'explicit_dimension_field' });
+         continue;
+       }
       const comparable = (field === 'location' && source && reported && rooms.has(norm(source)) && rooms.has(norm(reported)))
-        || (field === 'dimensions' && sourceMeasures.length === 1 && reportedMeasures.length === 1 && unitsEqual(sourceMeasures[0].unit, reportedMeasures[0].unit));
+         ;
       addCheck(f, index + 1, field, source, reported, reserved || (!comparable && !exact));
     }
     const reportedStatus = fieldText(['Statut', 'Status', 'الحالة']);

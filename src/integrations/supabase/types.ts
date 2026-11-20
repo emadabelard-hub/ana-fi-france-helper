@@ -278,6 +278,149 @@ export type Database = {
         }
         Relationships: []
       }
+      btp_analysis_attempts: {
+        Row: {
+          attempt_number: number
+          detected_at: string | null
+          duration_ms: number | null
+          ended_at: string | null
+          error_message: string | null
+          error_type: string | null
+          id: string
+          job_id: string
+          started_at: string
+          status: string
+          step: string
+          worker_id: string
+        }
+        Insert: {
+          attempt_number: number
+          detected_at?: string | null
+          duration_ms?: number | null
+          ended_at?: string | null
+          error_message?: string | null
+          error_type?: string | null
+          id?: string
+          job_id: string
+          started_at?: string
+          status?: string
+          step: string
+          worker_id: string
+        }
+        Update: {
+          attempt_number?: number
+          detected_at?: string | null
+          duration_ms?: number | null
+          ended_at?: string | null
+          error_message?: string | null
+          error_type?: string | null
+          id?: string
+          job_id?: string
+          started_at?: string
+          status?: string
+          step?: string
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "btp_analysis_attempts_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "btp_analysis_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      btp_analysis_calls: {
+        Row: {
+          attempt_number: number
+          detected_at: string | null
+          duration_ms: number | null
+          ended_at: string | null
+          error_message: string | null
+          error_type: string | null
+          estimated_tokens: number
+          events: Json
+          http_status: number | null
+          id: string
+          input_chars: number
+          input_tokens: number | null
+          job_id: string
+          model: string
+          output_tokens: number | null
+          provider_request_id: string | null
+          request_bytes: number
+          saved_at: string | null
+          started_at: string
+          status: string
+          step: string
+          worker_id: string
+        }
+        Insert: {
+          attempt_number: number
+          detected_at?: string | null
+          duration_ms?: number | null
+          ended_at?: string | null
+          error_message?: string | null
+          error_type?: string | null
+          estimated_tokens: number
+          events?: Json
+          http_status?: number | null
+          id?: string
+          input_chars: number
+          input_tokens?: number | null
+          job_id: string
+          model: string
+          output_tokens?: number | null
+          provider_request_id?: string | null
+          request_bytes: number
+          saved_at?: string | null
+          started_at?: string
+          status?: string
+          step: string
+          worker_id: string
+        }
+        Update: {
+          attempt_number?: number
+          detected_at?: string | null
+          duration_ms?: number | null
+          ended_at?: string | null
+          error_message?: string | null
+          error_type?: string | null
+          estimated_tokens?: number
+          events?: Json
+          http_status?: number | null
+          id?: string
+          input_chars?: number
+          input_tokens?: number | null
+          job_id?: string
+          model?: string
+          output_tokens?: number | null
+          provider_request_id?: string | null
+          request_bytes?: number
+          saved_at?: string | null
+          started_at?: string
+          status?: string
+          step?: string
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "btp_analysis_calls_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "btp_analysis_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "btp_analysis_calls_job_id_worker_id_fkey"
+            columns: ["job_id", "worker_id"]
+            isOneToOne: false
+            referencedRelation: "btp_analysis_attempts"
+            referencedColumns: ["job_id", "worker_id"]
+          },
+        ]
+      }
       btp_analysis_jobs: {
         Row: {
           attempts: number
@@ -2211,6 +2354,35 @@ export type Database = {
     }
     Functions: {
       accept_chantier_invitation: { Args: { _token: string }; Returns: Json }
+      analysis_close_failed_document: {
+        Args: {
+          _attempts: number
+          _job_id: string
+          _reason: string
+          _step: string
+        }
+        Returns: boolean
+      }
+      analysis_next_step: {
+        Args: { _payload: Json; _results: Json }
+        Returns: string
+      }
+      analysis_step_limit: {
+        Args: { _kind: string; _step: string }
+        Returns: number
+      }
+      begin_analysis_call: {
+        Args: {
+          _bytes: number
+          _chars: number
+          _job_id: string
+          _model: string
+          _owner: string
+          _step: string
+          _tokens: number
+        }
+        Returns: string
+      }
       claim_analysis_job: {
         Args: { _job_id: string; _owner: string }
         Returns: {
@@ -2367,6 +2539,19 @@ export type Database = {
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_chantier_team_member: {
         Args: { _chantier_id: string; _user_id: string }
+        Returns: boolean
+      }
+      record_analysis_call: {
+        Args: {
+          _call_id: string
+          _duration_ms: number
+          _http_status?: number
+          _input_tokens?: number
+          _output_tokens?: number
+          _owner: string
+          _provider_id?: string
+          _status: string
+        }
         Returns: boolean
       }
       requeue_stale_analysis_jobs: { Args: never; Returns: number }

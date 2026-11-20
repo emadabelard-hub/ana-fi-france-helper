@@ -21,3 +21,10 @@
 - [x] Vérifier les confirmations RPC et uniformiser les erreurs sans contenu sensible.
 - [x] Neutraliser les journaux et tester les traitements projet/Word uniquement en local : 245 tests réussis.
 - [x] Vérifier le diff et remettre le rapport ; SQL non appliqué, activation non autorisée.
+
+# Préparation de l’activation contrôlée 4A bis
+- [x] Vérifier en lecture seule les jobs/leases, les signatures SQL, les tâches automatiques et l’interface publiée.
+- [x] Définir l’ordre d’activation, les contrôles sans IA et les autorisations séparées.
+- [ ] Confirmer la sauvegarde réelle : horodatage UTC attendu de l’utilisateur.
+- [ ] Valider le retour arrière et la portée de publication : version réellement déployée non identifiée, archives correspondantes à vérifier.
+- [ ] Garantir une fenêtre sans nouveaux départs : exclusion ciblée non encore préparée ni autorisée.

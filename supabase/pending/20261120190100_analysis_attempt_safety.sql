@@ -87,6 +87,44 @@ BEGIN
   RETURN 'completed';
 END; $$;
 
+-- Close only an exhausted factual source. The caller already holds the job lock.
+-- Never edit another source, a saved result or a terminal job.
+CREATE OR REPLACE FUNCTION public.analysis_close_failed_document(
+  _job_id uuid, _step text, _attempts integer, _reason text)
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE j public.btp_analysis_jobs; i integer; d jsonb; r jsonb; safe_reason text;
+BEGIN
+  SELECT * INTO j FROM public.btp_analysis_jobs WHERE id = _job_id
+    AND status IN ('queued', 'running') FOR UPDATE;
+  IF NOT FOUND OR j.payload->>'kind' IS DISTINCT FROM 'project_docs_facts'
+    OR _step !~ '^doc:[0-9]+$' OR COALESCE(j.step_results, '{}'::jsonb) ? _step THEN RETURN false; END IF;
+  i := substring(_step from 5)::integer;
+  d := j.payload->'documents'->i;
+  IF d IS NULL THEN RETURN false; END IF;
+  safe_reason := CASE WHEN _reason IN ('worker_interrupted', 'save_failed', 'lease_lost',
+    'response_empty', 'output_truncated', 'invalid_contract', 'step_failed') THEN _reason ELSE 'attempt_limit' END;
+  r := jsonb_build_object('docId', d->>'docId', 'fileName', d->>'fileName',
+    'status', 'failed', 'attempts', greatest(_attempts,
+      (SELECT count(*)::integer FROM public.btp_analysis_calls WHERE job_id = j.id AND step = _step)), 'contract', NULL,
+    'coverage', d->'coverage', 'failure_code', 'attempt_limit', 'failure_reason', safe_reason,
+    'error', 'ANALYSIS_ATTEMPT_LIMIT: Document non exploité après épuisement des tentatives.');
+  UPDATE public.btp_analysis_attempts SET status = 'failed', detected_at = now(),
+    error_type = 'attempt_limit', error_message = 'Limite documentaire atteinte.'
+    WHERE job_id = j.id AND step = _step AND status = 'running';
+  UPDATE public.btp_analysis_calls SET status = 'response_rejected', detected_at = now(),
+    error_type = 'attempt_limit', error_message = 'Limite documentaire atteinte.',
+    events = events || jsonb_build_array(jsonb_build_object('status', 'response_rejected', 'at', now()))
+    WHERE job_id = j.id AND step = _step AND status IN ('call_started', 'response_received');
+  UPDATE public.btp_analysis_jobs SET status = 'queued',
+    step_results = COALESCE(step_results, '{}'::jsonb) || jsonb_build_object(_step, r),
+    current_step = public.analysis_next_step(j.payload, COALESCE(j.step_results, '{}'::jsonb) || jsonb_build_object(_step, r)),
+    progress = round(85.0 * (i + 1) / jsonb_array_length(j.payload->'documents')),
+    attempts = COALESCE(attempts, 0) + 1, error_message = NULL, updated_at = now(),
+    payload = COALESCE(payload, '{}'::jsonb) - 'lease_owner' - 'lease_started_at' - 'next_retry_at'
+    WHERE id = j.id;
+  RETURN true;
+END; $$;
+
 CREATE OR REPLACE FUNCTION public.claim_analysis_job(_job_id uuid, _owner uuid)
 RETURNS public.btp_analysis_jobs LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE j public.btp_analysis_jobs; s text; n integer; lim integer;
@@ -95,12 +133,22 @@ BEGIN
   IF NOT FOUND THEN RETURN NULL; END IF;
   IF NULLIF(j.payload->>'next_retry_at', '')::timestamptz > now() THEN RETURN NULL; END IF;
   s := public.analysis_next_step(j.payload, COALESCE(j.step_results, '{}'::jsonb));
+  IF s = 'completed' THEN
+    -- A legacy queued job may already have all saved results. Close it without replaying work.
+    UPDATE public.btp_analysis_jobs SET status = 'completed', current_step = 'completed', progress = 100,
+      updated_at = now(), error_message = NULL,
+      payload = COALESCE(payload, '{}'::jsonb) - 'lease_owner' - 'lease_started_at' - 'next_retry_at'
+      WHERE id = j.id;
+    RETURN NULL;
+  END IF;
   lim := public.analysis_step_limit(j.payload->>'kind', s);
   SELECT COALESCE(max(attempt_number), 0) INTO n FROM public.btp_analysis_attempts WHERE job_id = j.id AND step = s;
   n := greatest(n, COALESCE((j.payload->'recovery_by_step'->>s)::integer, 0));
   -- The legacy cumulative counter cannot be attributed to an independent step.
   -- Bound retries from this migration onward, without inventing historical attribution.
-  IF n >= lim THEN
+  IF n >= lim OR (j.payload->>'kind' = 'project_docs_facts' AND s LIKE 'doc:%'
+    AND (SELECT count(*) FROM public.btp_analysis_calls WHERE job_id = j.id AND step = s) >= lim) THEN
+    IF public.analysis_close_failed_document(j.id, s, n, 'attempt_limit') THEN RETURN NULL; END IF;
     UPDATE public.btp_analysis_jobs SET status = 'failed',
       error_message = 'ANALYSIS_ATTEMPT_LIMIT: Limite de tentatives atteinte pour ' || s || '. Résultats conservés.',
       payload = (COALESCE(payload, '{}'::jsonb) - 'lease_owner' - 'lease_started_at' - 'next_retry_at')
@@ -130,7 +178,7 @@ BEGIN
   SELECT count(*) INTO n FROM public.btp_analysis_calls WHERE job_id = _job_id AND step = _step;
   IF n >= public.analysis_step_limit(j.payload->>'kind', _step) THEN RETURN NULL; END IF;
   -- A second call means the preceding response was rejected by validation, not saved.
-  UPDATE public.btp_analysis_calls SET status = 'response_rejected', error_type = 'validation_failed',
+  UPDATE public.btp_analysis_calls SET status = 'response_rejected', error_type = 'invalid_contract',
     error_message = 'Réponse non validée avant la tentative suivante.',
     events = events || jsonb_build_array(jsonb_build_object('status', 'response_rejected', 'at', now()))
     WHERE job_id = _job_id AND worker_id = _owner AND step = _step AND status = 'response_received';
@@ -178,6 +226,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE document_failed boolean; failure_kind text;
 BEGIN
   UPDATE public.btp_analysis_jobs
      SET step_results = COALESCE(step_results, '{}'::jsonb) || jsonb_build_object(_step, _result),
@@ -193,11 +242,22 @@ BEGIN
      AND payload->>'lease_owner' = _owner::text
      AND NOT (COALESCE(step_results, '{}'::jsonb) ? _step);
   IF NOT FOUND THEN RETURN false; END IF;
+  document_failed := _step LIKE 'doc:%' AND _result->>'status' = 'failed';
+  failure_kind := CASE WHEN _result->>'failure_code' IN ('save_failed', 'attempt_limit', 'lease_lost',
+    'response_empty', 'output_truncated', 'invalid_contract') THEN _result->>'failure_code' ELSE 'step_failed' END;
+  IF document_failed THEN
+    UPDATE public.btp_analysis_calls SET status = 'response_rejected', error_type = failure_kind,
+      error_message = 'Extraction documentaire non validée.',
+      events = events || jsonb_build_array(jsonb_build_object('status', 'response_rejected', 'at', now()))
+      WHERE job_id = _job_id AND worker_id = _owner AND status = 'response_received';
+  END IF;
   UPDATE public.btp_analysis_calls SET status = 'response_saved', saved_at = now(),
     events = events || jsonb_build_array(jsonb_build_object('status', 'response_saved', 'at', now()))
     WHERE job_id = _job_id AND worker_id = _owner AND status = 'response_received';
   UPDATE public.btp_analysis_attempts SET status = 'saved', ended_at = now(),
-    duration_ms = extract(epoch from (now() - started_at)) * 1000
+    duration_ms = extract(epoch from (now() - started_at)) * 1000,
+    error_type = CASE WHEN document_failed THEN failure_kind ELSE NULL END,
+    error_message = CASE WHEN document_failed THEN 'Résultat documentaire en échec enregistré.' ELSE NULL END
     WHERE job_id = _job_id AND worker_id = _owner AND status = 'running';
   RETURN true;
 END;
@@ -219,12 +279,12 @@ BEGIN
   exhausted := a.attempt_number >= public.analysis_step_limit(j.payload->>'kind', a.step)
     OR _message LIKE 'ANALYSIS_ATTEMPT_LIMIT:%';
   st := CASE WHEN _terminal OR exhausted THEN 'failed' ELSE 'queued' END;
-  error_kind := CASE WHEN exhausted THEN 'attempt_limit'
+  error_kind := CASE WHEN _message LIKE 'ANALYSIS_ATTEMPT_LIMIT:%' THEN 'attempt_limit'
     WHEN _message LIKE 'ANALYSIS_SAVE_FAILED:%' THEN 'save_failed'
-    WHEN _message LIKE 'Lease perdu%' THEN 'lease_lost'
-    WHEN _message LIKE '%tronquée (longueur maximale)%' THEN 'output_truncated'
-    WHEN _message = 'Analyse globale vide.' THEN 'response_empty'
-    WHEN _message LIKE 'Bloc factuel absent%' OR _message LIKE 'Aucune entrée exploitable%' THEN 'invalid_contract'
+    WHEN _message LIKE 'lease_lost:%' OR _message LIKE 'Lease perdu%' THEN 'lease_lost'
+    WHEN _message LIKE 'output_truncated:%' OR _message LIKE '%tronquée (longueur maximale)%' THEN 'output_truncated'
+    WHEN _message LIKE 'response_empty:%' OR _message = 'Analyse globale vide.' THEN 'response_empty'
+    WHEN _message LIKE 'invalid_contract:%' OR _message LIKE 'Bloc %' OR _message LIKE 'Aucune entrée exploitable%' THEN 'invalid_contract'
     ELSE 'step_failed' END;
   safe_message := CASE error_kind
     WHEN 'attempt_limit' THEN 'Limite de tentatives atteinte. Résultats conservés.'
@@ -244,8 +304,13 @@ BEGIN
     error_message = safe_message, detected_at = now(),
     events = events || jsonb_build_array(jsonb_build_object('status', CASE WHEN status = 'response_received' THEN call_failure ELSE 'worker_failed' END, 'at', now()))
     WHERE job_id = _job_id AND worker_id = _owner AND status IN ('call_started', 'response_received');
+  IF exhausted AND public.analysis_close_failed_document(j.id, a.step, a.attempt_number, error_kind) THEN
+    RETURN 'queued';
+  END IF;
   UPDATE public.btp_analysis_jobs SET status = st, attempts = COALESCE(attempts, 0) + 1,
-    error_message = CASE WHEN exhausted THEN 'ANALYSIS_ATTEMPT_LIMIT: Limite de tentatives atteinte pour ' || a.step || '. Résultats conservés.' ELSE left(COALESCE(_message, 'Erreur inconnue'), 500) END,
+    error_message = CASE WHEN exhausted THEN 'ANALYSIS_ATTEMPT_LIMIT: Limite de tentatives atteinte. Résultats conservés.'
+      WHEN error_kind = 'save_failed' THEN 'ANALYSIS_SAVE_FAILED: La sauvegarde de la réponse a échoué.'
+      ELSE error_kind || ': ' || safe_message END,
     updated_at = now(), payload = (COALESCE(payload, '{}'::jsonb) - 'lease_owner' - 'lease_started_at' - 'next_retry_at')
       || CASE WHEN a.id IS NULL THEN jsonb_build_object('recovery_by_step',
            COALESCE(payload->'recovery_by_step', '{}'::jsonb) || jsonb_build_object(a.step, a.attempt_number)) ELSE '{}'::jsonb END
@@ -276,6 +341,10 @@ BEGIN
       error_type = 'worker_interrupted', error_message = 'Interruption détectée après absence de battement de cœur.',
       events = events || jsonb_build_array(jsonb_build_object('status', 'worker_interrupted', 'at', now()))
       WHERE job_id = j.id AND worker_id::text = j.payload->>'lease_owner' AND status IN ('call_started', 'response_received');
+    IF exhausted AND public.analysis_close_failed_document(j.id, s, n, 'worker_interrupted') THEN
+      total := total + 1;
+      CONTINUE;
+    END IF;
     UPDATE public.btp_analysis_jobs SET status = CASE WHEN exhausted THEN 'failed' ELSE 'queued' END,
       attempts = COALESCE(attempts, 0) + 1,
       error_message = CASE WHEN exhausted THEN 'ANALYSIS_ATTEMPT_LIMIT: Limite de tentatives atteinte pour ' || s || '. Résultats conservés.' ELSE 'Worker interrompu : reprise différée, résultats conservés.' END,
@@ -304,3 +373,6 @@ REVOKE ALL ON FUNCTION public.fail_analysis_step(uuid, uuid, text, boolean) FROM
 GRANT EXECUTE ON FUNCTION public.fail_analysis_step(uuid, uuid, text, boolean) TO service_role;
 REVOKE ALL ON FUNCTION public.requeue_stale_analysis_jobs() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.requeue_stale_analysis_jobs() TO service_role;
+
+REVOKE ALL ON FUNCTION public.analysis_close_failed_document(uuid, text, integer, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.analysis_close_failed_document(uuid, text, integer, text) TO service_role;

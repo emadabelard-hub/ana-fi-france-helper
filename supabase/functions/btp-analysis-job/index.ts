@@ -12,6 +12,7 @@ import {
 import { buildProjectFactsDossier, type ProjectFactsDossier } from '../_shared/btpProjectDossier.ts';
 import { runGlobalAnalysis, type GlobalAnalysisMessages } from '../_shared/btpGlobalAnalysisPrompt.ts';
 import { tracedAnalysisFetch, AttemptJournalError } from '../_shared/btpAnalysisTelemetry.ts';
+import { requireStepCommit, confirmedFailureStatus, safeAnalysisError } from '../_shared/btpAnalysisStepSafety.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -191,7 +192,7 @@ async function handleCreate(req: Request): Promise<Response> {
       .single();
 
     if (error || !data) {
-      console.error('create docx failed', error?.message);
+      console.error('ANALYSIS_CREATE_FAILED', 'docx_quote_batch');
       return json({ error: "Création du job impossible." }, 500);
     }
 
@@ -276,7 +277,7 @@ async function handleCreate(req: Request): Promise<Response> {
     .single();
 
   if (error || !data) {
-    console.error('create failed', error?.message);
+    console.error('ANALYSIS_CREATE_FAILED', 'persistent_ui_test');
     return json({ error: "Création du job impossible." }, 500);
   }
 
@@ -287,7 +288,7 @@ async function handleCreate(req: Request): Promise<Response> {
 async function getWorkerToken(db: Db): Promise<string | null> {
   const { data, error } = await db.rpc('get_analysis_worker_token');
   if (error || typeof data !== 'string' || data.length < 16) {
-    console.error('worker token unavailable', error?.message);
+    console.error('ANALYSIS_WORKER_TOKEN_UNAVAILABLE');
     return null;
   }
   return data;
@@ -324,7 +325,7 @@ async function triggerNext(db: Db, jobId: string): Promise<void> {
       body: JSON.stringify({ jobId }),
     });
   } catch (e) {
-    console.log('trigger_next_failed_ignored', jobId, e instanceof Error ? e.message : String(e));
+    console.log('ANALYSIS_TRIGGER_FAILED', jobId);
   }
 }
 
@@ -348,6 +349,24 @@ async function tracedProviderCall(db: Db, jobId: string, owner: string, step: st
   }, anthropicCompatFetch);
 }
 
+/** Failure is reported as persisted only after the database explicitly confirms it. */
+async function reportFailedStep(db: Db, jobId: string, owner: string, step: string, error: unknown): Promise<Response> {
+  const safe = safeAnalysisError(error);
+  console.error('analysis_step_failed', JSON.stringify({ jobId, step, code: safe.code }));
+  try {
+    const outcome = await db.rpc('fail_analysis_step', {
+      _job_id: jobId, _owner: owner, _message: safe.message,
+      _terminal: error instanceof TerminalStepError || error instanceof AttemptJournalError,
+    });
+    const status = confirmedFailureStatus(outcome);
+    if (status === 'queued') triggerNext(db, jobId).catch(() => {});
+    return json({ jobId, executed: step, status, failureRecorded: true, error: true }, 500);
+  } catch (failure) {
+    console.error('analysis_failure_unconfirmed', JSON.stringify({ jobId, step, code: safeAnalysisError(failure).code }));
+    return json({ jobId, executed: step, status: 'unconfirmed', failureRecorded: false, error: true }, 503);
+  }
+}
+
 /** Un seul petit appel IA déterministe, via le fournisseur déjà utilisé dans le projet. */
 async function runAiTest(jobId: string, owner: string): Promise<{ persistentJobTest: true }> {
   console.log('ai_test:provider_call', JSON.stringify({ jobId, owner, at: new Date().toISOString() }));
@@ -367,27 +386,27 @@ async function runAiTest(jobId: string, owner: string): Promise<{ persistentJobT
   });
 
   if (!resp.ok) {
-    const text = (await resp.text()).slice(0, 300);
+    await resp.text();
     if (resp.status === 401 || resp.status === 402 || resp.status === 403) {
-      throw new TerminalStepError(`IA refus permanent ${resp.status}: ${text}`);
+      throw new TerminalStepError(`IA refus permanent ${resp.status}.`);
     }
-    throw new Error(`IA erreur ${resp.status}: ${text}`);
+    throw new Error(`IA erreur ${resp.status}.`);
   }
 
   const data = await resp.json();
   const raw = data?.choices?.[0]?.message?.content;
   const text = typeof raw === 'string' ? raw.trim() : '';
   const match = text.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error(`Réponse IA non exploitable: ${text.slice(0, 200)}`);
+  if (!match) throw new Error('invalid_contract: Réponse IA non exploitable.');
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(match[0]);
   } catch {
-    throw new Error(`JSON IA invalide: ${match[0].slice(0, 200)}`);
+    throw new Error('invalid_contract: JSON IA invalide.');
   }
   if (!parsed || typeof parsed !== 'object' || (parsed as Record<string, unknown>).persistentJobTest !== true) {
-    throw new Error(`Contrat ai_test non respecté: ${match[0].slice(0, 200)}`);
+    throw new Error('invalid_contract: Contrat ai_test non respecté.');
   }
   return { persistentJobTest: true };
 }
@@ -513,11 +532,11 @@ Réponds uniquement par { "items": [...] } avec exactement un item par sourceLin
   });
 
   if (!resp.ok) {
-    const text = (await resp.text()).slice(0, 300);
+    await resp.text();
     if (resp.status === 401 || resp.status === 402 || resp.status === 403) {
-      throw new TerminalStepError(`IA refus permanent ${resp.status}: ${text}`);
+      throw new TerminalStepError(`IA refus permanent ${resp.status}.`);
     }
-    throw new Error(`IA erreur ${resp.status}: ${text}`);
+    throw new Error(`IA erreur ${resp.status}.`);
   }
 
   const data = await resp.json();
@@ -650,7 +669,7 @@ async function handleWork(req: Request): Promise<Response> {
   });
 
   if (lockError) {
-    console.error('lock error', lockError.message);
+    console.error('ANALYSIS_CLAIM_RPC_FAILED', jobId);
     return json({ error: 'Verrouillage impossible.' }, 500);
   }
   // PostgREST peut renvoyer un enregistrement composite entièrement nul lorsque la
@@ -718,8 +737,7 @@ async function workDocx(
         _current_step: 'extract:0',
         _status: 'queued',
       });
-      if (ok.error) throw new Error(ok.error.message);
-      if (ok.data !== true) return json({ skipped: true, reason: 'lease_lost_or_duplicate' });
+      requireStepCommit(ok);
       return await finish('prepare', 'queued', 5);
     }
 
@@ -753,8 +771,7 @@ async function workDocx(
         _current_step: nextName,
         _status: 'queued',
       });
-      if (ok.error) throw new Error(ok.error.message);
-      if (ok.data !== true) return json({ skipped: true, reason: 'lease_lost_or_duplicate' });
+      requireStepCommit(ok);
       return await finish(step, 'queued', progress, { items: result.items.length });
     }
 
@@ -769,8 +786,7 @@ async function workDocx(
         _current_step: 'finalize',
         _status: 'queued',
       });
-      if (ok.error) throw new Error(ok.error.message);
-      if (ok.data !== true) return json({ skipped: true, reason: 'lease_lost_or_duplicate' });
+      requireStepCommit(ok);
       return await finish('merge', 'queued', 95);
     }
 
@@ -789,36 +805,14 @@ async function workDocx(
         _status: 'completed',
         _final_report: 'Extraction du devis terminée',
       });
-      if (ok.error) throw new Error(ok.error.message);
-      if (ok.data !== true) return json({ skipped: true, reason: 'lease_lost_or_duplicate' });
+      requireStepCommit(ok);
       return json({ jobId, executed: 'finalize', status: 'completed', progress: 100 });
     }
 
-    const { error } = await db
-      .from('btp_analysis_jobs')
-      .update({
-        progress: 100,
-        current_step: 'completed',
-        status: 'completed',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', jobId)
-      .eq('status', 'running');
-    if (error) throw new Error(error.message);
-    return json({ jobId, executed: 'none', status: 'completed', progress: 100 });
+    return json({ jobId, skipped: true, reason: 'already_saved' });
   } catch (e) {
     if (heartbeat !== undefined) clearInterval(heartbeat);
-    const terminal = e instanceof TerminalStepError || e instanceof AttemptJournalError;
-    const message = e instanceof Error ? e.message : 'Erreur inconnue';
-    console.error('docx step failed', step, terminal ? '(terminal)' : '(retryable)', message);
-    const { data: newStatus } = await db.rpc('fail_analysis_step', {
-      _job_id: jobId,
-      _owner: owner,
-      _message: message,
-      _terminal: terminal,
-    });
-    if (newStatus === 'queued') triggerNext(db, jobId).catch(() => {});
-    return json({ jobId, executed: step, status: newStatus ?? 'unchanged', error: true }, 500);
+    return await reportFailedStep(db, jobId, owner, step, e);
   }
 }
 
@@ -840,13 +834,13 @@ async function callGlobalAnalysis(db: Db, jobId: string, owner: string, messages
   });
   if (!resp.ok) {
     const full = await resp.text();
-    const t = full.slice(0, 300);
+
     // 413, ou 400 avec message explicite de taille/contexte uniquement.
-    if (isApiSizeLimitError(resp.status, full)) throw new DocumentTooLargeError(`HTTP ${resp.status}: ${t}`);
+    if (isApiSizeLimitError(resp.status, full)) throw new DocumentTooLargeError(`HTTP ${resp.status}: limite de taille fournisseur.`);
     if (resp.status === 401 || resp.status === 402 || resp.status === 403) {
-      throw new TerminalStepError(`IA refus permanent ${resp.status}: ${t}`);
+      throw new TerminalStepError(`IA refus permanent ${resp.status}.`);
     }
-    throw new Error(`IA erreur ${resp.status}: ${t}`);
+    throw new Error(`IA erreur ${resp.status}.`);
   }
   const data = await resp.json();
   const choice = data?.choices?.[0];
@@ -879,14 +873,14 @@ async function callFactualForOneDocument(db: Db, jobId: string, owner: string, s
   });
   if (!resp.ok) {
     const full = await resp.text();
-    const t = full.slice(0, 300);
+
     if (isApiSizeLimitError(resp.status, full)) {
-      throw new DocumentTooLargeError(`HTTP ${resp.status}: ${t}`);
+      throw new DocumentTooLargeError(`HTTP ${resp.status}: limite de taille fournisseur.`);
     }
     if (resp.status === 401 || resp.status === 402 || resp.status === 403) {
-      throw new TerminalStepError(`IA refus permanent ${resp.status}: ${t}`);
+      throw new TerminalStepError(`IA refus permanent ${resp.status}.`);
     }
-    throw new Error(`IA erreur ${resp.status}: ${t}`);
+    throw new Error(`IA erreur ${resp.status}.`);
   }
   const data = await resp.json();
   const choice = data?.choices?.[0];
@@ -928,14 +922,15 @@ async function workProjectDocs(
       heartbeat = undefined;
       if (terminal) throw terminal;
       if (leaseLost) throw new Error(`Lease perdu pendant le document ${i}.`);
+      const failure = result.status === 'failed' ? safeAnalysisError(new Error(result.error ?? '')) : null;
+      const persistedResult = failure ? { ...result, error: failure.message, failure_code: failure.code } : result;
       console.log('[projectDocs] document', JSON.stringify({ jobId, i, status: result.status, attempts: result.attempts, facts: result.contract?.facts.length ?? 0 }));
       const progress = Math.round((85 * (i + 1)) / documents.length);
       const ok = await db.rpc('commit_analysis_step', {
-        _job_id: jobId, _owner: owner, _step: step, _result: result, _progress: progress,
+        _job_id: jobId, _owner: owner, _step: step, _result: persistedResult, _progress: progress,
         _current_step: i + 1 < documents.length ? `doc:${i + 1}` : 'dossier', _status: 'queued',
       });
-      if (ok.error) throw new Error(ok.error.message);
-      if (ok.data !== true) return json({ skipped: true, reason: 'lease_lost_or_duplicate' });
+      requireStepCommit(ok);
       triggerNext(db, jobId).catch(() => {});
       return json({ jobId, executed: step, status: 'queued', documentStatus: result.status });
     }
@@ -949,8 +944,7 @@ async function workProjectDocs(
         _result: { kind: 'project_facts_dossier', data: { documents: results, dossier } },
         _progress: 90, _current_step: 'global_analysis', _status: 'queued',
       });
-      if (ok.error) throw new Error(ok.error.message);
-      if (ok.data !== true) return json({ skipped: true, reason: 'lease_lost_or_duplicate' });
+      requireStepCommit(ok);
       triggerNext(db, jobId).catch(() => {});
       return json({ jobId, executed: 'dossier', status: 'queued' });
     }
@@ -970,8 +964,7 @@ async function workProjectDocs(
         _result: { kind: 'project_global_analysis', data: analysis },
         _progress: 97, _current_step: 'finalize', _status: 'queued',
       });
-      if (ok.error) throw new Error(ok.error.message);
-      if (ok.data !== true) return json({ skipped: true, reason: 'lease_lost_or_duplicate' });
+      requireStepCommit(ok);
       triggerNext(db, jobId).catch(() => {});
       return json({ jobId, executed: 'global_analysis', status: 'queued' });
     }
@@ -987,18 +980,13 @@ async function workProjectDocs(
           ? 'Analyse globale non réalisée : dossier consolidé trop volumineux, traitement par portions requis'
           : dossier?.complete ? 'Analyse globale terminée (dossier complet)' : 'Analyse globale terminée (dossier incomplet)',
       });
-      if (ok.error) throw new Error(ok.error.message);
+      requireStepCommit(ok);
       return json({ jobId, executed: 'finalize', status: 'completed' });
     }
-    return json({ jobId, executed: 'none', status: 'completed' });
+    return json({ jobId, skipped: true, reason: 'already_saved' });
   } catch (e) {
     if (heartbeat !== undefined) clearInterval(heartbeat);
-    const message = e instanceof Error ? e.message : 'Erreur inconnue';
-    const { data: newStatus } = await db.rpc('fail_analysis_step', {
-      _job_id: jobId, _owner: owner, _message: message, _terminal: e instanceof TerminalStepError || e instanceof AttemptJournalError,
-    });
-    // Deferred retry is picked up by the existing dispatcher; claim enforces next_retry_at.
-    return json({ jobId, executed: step, status: newStatus ?? 'unchanged', error: true }, 500);
+    return await reportFailedStep(db, jobId, owner, step, e);
   }
 }
 
@@ -1026,8 +1014,7 @@ async function workTest(
         _current_step: 'ai_test',
         _status: 'queued',
       });
-      if (ok.error) throw new Error(ok.error.message);
-      if (ok.data !== true) return json({ skipped: true, reason: 'lease_lost_or_duplicate' });
+      requireStepCommit(ok);
       return json({ jobId, executed: 'prepare', status: 'queued', progress: 30 });
     }
 
@@ -1057,8 +1044,7 @@ async function workTest(
         _current_step: 'finalize',
         _status: 'queued',
       });
-      if (ok.error) throw new Error(ok.error.message);
-      if (ok.data !== true) return json({ skipped: true, reason: 'lease_lost_or_duplicate' });
+      requireStepCommit(ok);
       return json({ jobId, executed: 'ai_test', status: 'queued', progress: 70 });
     }
 
@@ -1074,36 +1060,15 @@ async function workTest(
         _status: 'completed',
         _final_report: 'Test IA persistant terminé',
       });
-      if (ok.error) throw new Error(ok.error.message);
-      if (ok.data !== true) return json({ skipped: true, reason: 'lease_lost_or_duplicate' });
+      requireStepCommit(ok);
       return json({ jobId, executed: 'finalize', status: 'completed', progress: 100 });
     }
 
     // Toutes les étapes sont déjà présentes : clôture sans rien rejouer.
-    const { error } = await db
-      .from('btp_analysis_jobs')
-      .update({
-        progress: 100,
-        current_step: 'completed',
-        status: 'completed',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', jobId)
-      .eq('status', 'running');
-    if (error) throw new Error(error.message);
-    return json({ jobId, executed: 'none', status: 'completed', progress: 100 });
+    return json({ jobId, skipped: true, reason: 'already_saved' });
   } catch (e) {
     if (heartbeat !== undefined) clearInterval(heartbeat);
-    const terminal = e instanceof TerminalStepError || e instanceof AttemptJournalError;
-    const message = e instanceof Error ? e.message : 'Erreur inconnue';
-    console.error('step failed', step, terminal ? '(terminal)' : '(retryable)', message);
-    const { data: newStatus } = await db.rpc('fail_analysis_step', {
-      _job_id: jobId,
-      _owner: owner,
-      _message: message,
-      _terminal: terminal,
-    });
-    return json({ jobId, executed: step, status: newStatus ?? 'unchanged', error: true }, 500);
+    return await reportFailedStep(db, jobId, owner, step, e);
   }
 }
 

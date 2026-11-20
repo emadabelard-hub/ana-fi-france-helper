@@ -15,3 +15,9 @@
 - [x] Instrumenter les appels du parcours projet et afficher l’échec avec conservation des documents.
 - [x] Tester plafonds, concurrence, interruptions, traces et isolation des autres parcours : 208 tests réussis ; états mobiles FR/AR simulés vérifiés.
 - [ ] Exécuter la migration : en attente d’autorisation spécifique ; aucun déploiement prévu.
+
+# Correction n°4A BIS
+- [x] Préserver la poursuite du dossier après plafond documentaire et interruption.
+- [x] Vérifier les confirmations RPC et uniformiser les erreurs sans contenu sensible.
+- [x] Neutraliser les journaux et tester les traitements projet/Word uniquement en local : 245 tests réussis.
+- [x] Vérifier le diff et remettre le rapport ; SQL non appliqué, activation non autorisée.

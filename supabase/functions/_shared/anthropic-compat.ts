@@ -199,7 +199,7 @@ function translateStream(upstream: ReadableStream<Uint8Array>): ReadableStream<U
           }
         }
       } catch (e) {
-        console.error("stream translate error", e);
+        console.error("ANTHROPIC_STREAM_ERROR");
       } finally {
         controller.close();
       }
@@ -233,7 +233,7 @@ export async function anthropicCompatFetch(init: RequestInit): Promise<Response>
 
   if (!resp.ok) {
     const text = await resp.text();
-    console.error("Anthropic error", resp.status, text);
+    console.error("ANTHROPIC_PROVIDER_ERROR", JSON.stringify({ http_status: resp.status, model: ANTHROPIC_MODEL }));
     return new Response(JSON.stringify({ error: { message: text } }), { status: resp.status, headers: { "Content-Type": "application/json" } });
   }
 

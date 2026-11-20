@@ -136,14 +136,16 @@ describe.skipIf(process.env.RUN_ANALYSIS4A_SQL_TESTS !== '1')('correction 4A —
     expect(scalar(`SELECT status FROM public.btp_analysis_calls WHERE id='${c1}';`)).toBe('response_rejected');
     expect(scalar(`SELECT status FROM public.btp_analysis_calls WHERE id='${c2}';`)).toBe('response_saved');
   });
-  it('un worker actif avant installation, sans trace, ne peut pas contourner le plafond', () => {
+  it('un worker actif avant installation, sans trace, clôture le document au plafond puis poursuit le suivant', () => {
     const id=createJob('project_docs_facts','doc:0');
     for (let i=0; i<2; i++) {
       const o=randomUUID();
       sql(`UPDATE public.btp_analysis_jobs SET status='running', payload=payload||'{"lease_owner":"${o}"}' WHERE id='${id}';`);
-      expect(fail(id,o)).toBe(i===0?'queued':'failed');
+      expect(fail(id,o)).toBe('queued');
     }
-    expect(claim(id,randomUUID())).toBe('');
+    expect(scalar(`SELECT step_results->'doc:0'->>'status' FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('failed');
+    expect(claim(id,randomUUID())).toBe(id);
+    expect(scalar(`SELECT current_step FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('doc:1');
   });
   it('une réponse tronquée se distingue dun échec de sauvegarde sans persister la réponse', () => {
     const id=createJob(), o=randomUUID(); claim(id,o); const c=startCall(id,o,'global_analysis');
@@ -151,5 +153,81 @@ describe.skipIf(process.env.RUN_ANALYSIS4A_SQL_TESTS !== '1')('correction 4A —
     fail(id,o,'Analyse globale tronquée (longueur maximale).');
     expect(scalar(`SELECT status||':'||error_type FROM public.btp_analysis_calls WHERE id='${c}';`)).toBe('response_rejected:output_truncated');
     expect(scalar(`SELECT error_type FROM public.btp_analysis_attempts WHERE job_id='${id}';`)).toBe('output_truncated');
+  });
+  it('deux interruptions documentaires clôturent seulement la source échouée et préservent les autres résultats', () => {
+    const id=createJob('project_docs_facts','doc:0');
+    sql(`UPDATE public.btp_analysis_jobs SET step_results='{"doc:1":{"status":"completed","contract":{"facts":[{"factId":"kept"}]}},"doc:2":{"status":"needs_chunking"}}' WHERE id='${id}';`);
+    const before=scalar(`SELECT step_results->'doc:1' FROM public.btp_analysis_jobs WHERE id='${id}';`);
+    for(let i=0;i<2;i++) { const o=randomUUID(); expect(claim(id,o)).toBe(id); startCall(id,o,'doc:0'); makeStale(id); releaseCooldown(id); }
+    expect(scalar(`SELECT status||':'||current_step FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('queued:doc:3');
+    expect(scalar(`SELECT step_results->'doc:0'->>'status'||':'||(step_results->'doc:0'->>'failure_reason') FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('failed:worker_interrupted');
+    expect(scalar(`SELECT step_results->'doc:0'->>'contract' IS NULL FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('t');
+    expect(scalar(`SELECT step_results->'doc:1' FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe(before);
+    expect(scalar(`SELECT step_results->'doc:2'->>'status' FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('needs_chunking');
+    expect(scalar(`SELECT public.requeue_stale_analysis_jobs();`)).toBe('0');
+    expect(claim(id,randomUUID())).toBe(id);
+  });
+  it('un plafond de réservations ferme le document sans autoriser un troisième appel, puis passe au suivant', () => {
+    const id=createJob('project_docs_facts','doc:0'), o=randomUUID(); claim(id,o);
+    startCall(id,o,'doc:0'); startCall(id,o,'doc:0'); makeStale(id); releaseCooldown(id);
+    expect(claim(id,randomUUID())).toBe('');
+    expect(scalar(`SELECT status||':'||current_step FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('queued:doc:1');
+    expect(scalar(`SELECT count(*) FROM public.btp_analysis_calls WHERE job_id='${id}' AND step='doc:0';`)).toBe('2');
+    expect(scalar(`SELECT step_results->'doc:0'->>'attempts' FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('2');
+    expect(claim(id,randomUUID())).toBe(id);
+  });
+  it('un refus terminal pour limite documentaire conserve le dossier ouvert et son résultat failed explicite', () => {
+    const id=createJob('project_docs_facts','doc:0'), o=randomUUID(); claim(id,o);
+    expect(scalar(`SELECT public.fail_analysis_step('${id}','${o}','ANALYSIS_ATTEMPT_LIMIT: réservation refusée',true);`)).toBe('queued');
+    expect(scalar(`SELECT step_results->'doc:0'->>'status' FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('failed');
+    expect(claim(id,randomUUID())).toBe(id);
+  });
+  it('un échec de sauvegarde RPC porte le code save_failed dans les trois registres', () => {
+    const id=createJob(),o=randomUUID();claim(id,o); const c=startCall(id,o,'global_analysis');
+    sql(`SELECT public.record_analysis_call('${c}','${o}','response_received',100);`);
+    fail(id,o,'ANALYSIS_SAVE_FAILED: La sauvegarde de la réponse a échoué.');
+    expect(scalar(`SELECT error_type FROM public.btp_analysis_attempts WHERE job_id='${id}';`)).toBe('save_failed');
+    expect(scalar(`SELECT status FROM public.btp_analysis_calls WHERE id='${c}';`)).toBe('save_failed');
+    expect(scalar(`SELECT error_message LIKE 'ANALYSIS_SAVE_FAILED:%' FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('t');
+  });
+  it.each(['lease_lost','response_empty','output_truncated','invalid_contract'])('classe %s sans recopier le message libre', code => {
+    const id=createJob(),o=randomUUID();claim(id,o);startCall(id,o,'global_analysis');
+    fail(id,o,`${code}: CLIENT_CONFIDENTIEL api-key=secret`);
+    expect(scalar(`SELECT error_type FROM public.btp_analysis_attempts WHERE job_id='${id}';`)).toBe(code);
+    expect(scalar(`SELECT error_message LIKE '%CONFIDENTIEL%' OR error_message LIKE '%secret%' FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('f');
+    expect(scalar(`SELECT count(*) FROM public.btp_analysis_calls WHERE job_id='${id}' AND error_message LIKE '%secret%';`)).toBe('0');
+  });
+  it('un message inconnu est neutralisé et les retours faux/null ne confirment pas une écriture', () => {
+    const id=createJob(),o=randomUUID();claim(id,o);
+    expect(commit(id,randomUUID(),'global_analysis','finalize')).toBe('f');
+    expect(fail(id,randomUUID(),'CLIENT_CONFIDENTIEL')).toBe('');
+    fail(id,o,'CLIENT_CONFIDENTIEL api-key=secret');
+    expect(scalar(`SELECT error_message FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('step_failed: Échec du traitement de cette étape.');
+  });
+  it('le plafond ne masque pas la cause save_failed de la dernière tentative documentaire', () => {
+    const id=createJob('project_docs_facts','doc:0');let o=randomUUID();claim(id,o);fail(id,o);releaseCooldown(id);
+    o=randomUUID();claim(id,o); const c=startCall(id,o,'doc:0');
+    sql(`SELECT public.record_analysis_call('${c}','${o}','response_received',100);`);
+    expect(fail(id,o,'ANALYSIS_SAVE_FAILED: La sauvegarde de la réponse a échoué.')).toBe('queued');
+    expect(scalar(`SELECT error_type FROM public.btp_analysis_attempts WHERE job_id='${id}' AND worker_id='${o}';`)).toBe('save_failed');
+    expect(scalar(`SELECT step_results->'doc:0'->>'failure_reason' FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('save_failed');
+    expect(scalar(`SELECT status FROM public.btp_analysis_calls WHERE id='${c}';`)).toBe('save_failed');
+  });
+  it('enregistrer un document failed ne marque pas sa réponse invalide comme response_saved', () => {
+    const id=createJob('project_docs_facts','doc:0'),o=randomUUID();claim(id,o);const c=startCall(id,o,'doc:0');
+    sql(`SELECT public.record_analysis_call('${c}','${o}','response_received',100);`);
+    expect(scalar(`SELECT public.commit_analysis_step('${id}','${o}','doc:0','{"status":"failed","contract":null,"failure_code":"invalid_contract"}',21,'doc:1','queued',NULL);`)).toBe('t');
+    expect(scalar(`SELECT status||':'||error_type FROM public.btp_analysis_calls WHERE id='${c}';`)).toBe('response_rejected:invalid_contract');
+    expect(scalar(`SELECT saved_at IS NULL FROM public.btp_analysis_calls WHERE id='${c}';`)).toBe('t');
+    expect(scalar(`SELECT current_step FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('doc:1');
+  });
+  it('un ancien job queued dont toutes les étapes sont enregistrées se clôture sans nouvel appel ni tentative', () => {
+    const id=createJob();
+    sql(`UPDATE public.btp_analysis_jobs SET step_results=step_results||'{"global_analysis":{"kept":true},"final":{"kind":"project_global_analysis_ready"}}' WHERE id='${id}';`);
+    const before=scalar(`SELECT step_results FROM public.btp_analysis_jobs WHERE id='${id}';`);
+    expect(claim(id,randomUUID())).toBe('');
+    expect(scalar(`SELECT status||':'||current_step FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('completed:completed');
+    expect(scalar(`SELECT count(*) FROM public.btp_analysis_attempts WHERE job_id='${id}';`)).toBe('0');
+    expect(scalar(`SELECT step_results FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe(before);
   });
 });

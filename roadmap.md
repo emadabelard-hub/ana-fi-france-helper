@@ -11,7 +11,7 @@
 - [x] Éviter les faux écarts de dimensions reformulées et tester les valeurs décimales équivalentes.
 
 # Correction n°4A
-- [ ] Préparer la migration des plafonds par étape et de l’historique des tentatives, sans l’appliquer.
-- [ ] Instrumenter les appels du parcours projet et afficher l’échec avec conservation des documents.
-- [ ] Tester plafonds, concurrence, interruptions, traces et isolation des autres parcours.
+- [x] Préparer la migration des plafonds par étape et de l’historique des tentatives, sans l’appliquer au Cloud.
+- [x] Instrumenter les appels du parcours projet et afficher l’échec avec conservation des documents.
+- [x] Tester plafonds, concurrence, interruptions, traces et isolation des autres parcours : 208 tests réussis ; états mobiles FR/AR simulés vérifiés.
 - [ ] Exécuter la migration : en attente d’autorisation spécifique ; aucun déploiement prévu.

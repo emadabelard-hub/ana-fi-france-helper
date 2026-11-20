@@ -11,6 +11,7 @@ import {
 } from '../_shared/btpDocumentSequence.ts';
 import { buildProjectFactsDossier, type ProjectFactsDossier } from '../_shared/btpProjectDossier.ts';
 import { runGlobalAnalysis, type GlobalAnalysisMessages } from '../_shared/btpGlobalAnalysisPrompt.ts';
+import { tracedAnalysisFetch, AttemptJournalError } from '../_shared/btpAnalysisTelemetry.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -329,11 +330,29 @@ async function triggerNext(db: Db, jobId: string): Promise<void> {
 
 class TerminalStepError extends Error {}
 
+/** All persistent-job calls use metadata-only durable traces, including Word batches. */
+async function tracedProviderCall(db: Db, jobId: string, owner: string, step: string, init: RequestInit): Promise<Response> {
+  return tracedAnalysisFetch(init, {
+    async begin(m) {
+      const r = await db.rpc('begin_analysis_call', { _job_id: jobId, _owner: owner, _step: step,
+        _model: m.model, _chars: m.inputChars, _bytes: m.requestBytes, _tokens: m.estimatedTokens });
+      if (r.error) throw new AttemptJournalError('Journal de tentative indisponible.');
+      return typeof r.data === 'string' ? r.data : null;
+    },
+    async record(id, o) {
+      const r = await db.rpc('record_analysis_call', { _call_id: id, _owner: owner, _status: o.status,
+        _duration_ms: o.durationMs, _input_tokens: o.inputTokens ?? null,
+        _output_tokens: o.outputTokens ?? null, _provider_id: o.providerId ?? null, _http_status: o.httpStatus ?? null });
+      return !r.error && r.data === true;
+    },
+  }, anthropicCompatFetch);
+}
+
 /** Un seul petit appel IA déterministe, via le fournisseur déjà utilisé dans le projet. */
 async function runAiTest(jobId: string, owner: string): Promise<{ persistentJobTest: true }> {
   console.log('ai_test:provider_call', JSON.stringify({ jobId, owner, at: new Date().toISOString() }));
 
-  const resp = await anthropicCompatFetch({
+  const resp = await tracedProviderCall(admin(), jobId, owner, 'ai_test', {
     body: JSON.stringify({
       max_tokens: 64,
       temperature: 0,
@@ -482,7 +501,7 @@ ${JSON.stringify(
 
 Réponds uniquement par { "items": [...] } avec exactement un item par sourceLineIndex reçu.`;
 
-  const resp = await anthropicCompatFetch({
+  const resp = await tracedProviderCall(admin(), jobId, owner, `extract:${batchIndex}`, {
     body: JSON.stringify({
       max_tokens: 16000,
       temperature: 0,
@@ -789,7 +808,7 @@ async function workDocx(
     return json({ jobId, executed: 'none', status: 'completed', progress: 100 });
   } catch (e) {
     if (heartbeat !== undefined) clearInterval(heartbeat);
-    const terminal = e instanceof TerminalStepError;
+    const terminal = e instanceof TerminalStepError || e instanceof AttemptJournalError;
     const message = e instanceof Error ? e.message : 'Erreur inconnue';
     console.error('docx step failed', step, terminal ? '(terminal)' : '(retryable)', message);
     const { data: newStatus } = await db.rpc('fail_analysis_step', {
@@ -815,8 +834,8 @@ export function nextStepProjectDocs(stepResults: Record<string, unknown> | null,
 }
 
 /** Prompt n°2 : UN appel, uniquement le dossier consolidé (aucun document original). */
-async function callGlobalAnalysis(messages: GlobalAnalysisMessages): Promise<string> {
-  const resp = await anthropicCompatFetch({
+async function callGlobalAnalysis(db: Db, jobId: string, owner: string, messages: GlobalAnalysisMessages): Promise<string> {
+  const resp = await tracedProviderCall(db, jobId, owner, 'global_analysis', {
     body: JSON.stringify({ max_tokens: RESPONSE_MAX_TOKENS, temperature: 0, messages }),
   });
   if (!resp.ok) {
@@ -836,7 +855,7 @@ async function callGlobalAnalysis(messages: GlobalAnalysisMessages): Promise<str
 }
 
 /** Un seul document par appel IA : Prompt n°1 + la seule pièce concernée. */
-async function callFactualForOneDocument(doc: ProjectDocument): Promise<string> {
+async function callFactualForOneDocument(db: Db, jobId: string, owner: string, step: string, doc: ProjectDocument): Promise<string> {
   const parts: any[] = [
     { type: 'text', text: 'EXTRACTION FACTUELLE DEMANDÉE. Relève uniquement les informations explicitement écrites et parfaitement lisibles dans la pièce ci-dessous. Réponds uniquement par le bloc <ANAFYPRO_BTP_FACTS>.' },
     { type: 'text', text: `PIÈCE ORIGINALE (document unique) : ${doc.fileName} (${doc.kind})` },
@@ -848,7 +867,7 @@ async function callFactualForOneDocument(doc: ProjectDocument): Promise<string> 
     parts.push({ type: 'image_url', image_url: { url } });
   });
   if (doc.text) parts.push({ type: 'text', text: `CONTENU DU FICHIER ${doc.fileName} :\n${doc.text}` });
-  const resp = await anthropicCompatFetch({
+  const resp = await tracedProviderCall(db, jobId, owner, step, {
     body: JSON.stringify({
       max_tokens: RESPONSE_MAX_TOKENS,
       temperature: 0,
@@ -895,11 +914,15 @@ async function workProjectDocs(
         if (hb.data !== true) leaseLost = true;
       }, HEARTBEAT_MS) as unknown as number;
       // Refus permanent (401/402/403) : aucune relance, job en échec terminal.
-      let terminal: TerminalStepError | null = null;
+      let terminal: Error | null = null;
+      let called = false;
       const result = await processSingleDocument(documents[i], async (d) => {
         if (terminal) throw terminal;
-        try { return await callFactualForOneDocument(d); }
-        catch (e) { if (e instanceof TerminalStepError) terminal = e; throw e; }
+        // A retry is delayed, not an immediate replay. Its durable call budget survives worker loss.
+        if (called) await new Promise(resolve => setTimeout(resolve, HEARTBEAT_MS));
+        called = true;
+        try { return await callFactualForOneDocument(db, jobId, owner, step, d); }
+        catch (e) { if (e instanceof TerminalStepError || e instanceof AttemptJournalError) terminal = e; throw e; }
       }, BTP_PROJECT_FACTUAL_EXTRACTION_PROMPT);
       clearInterval(heartbeat);
       heartbeat = undefined;
@@ -938,7 +961,7 @@ async function workProjectDocs(
         const hb = await db.rpc('heartbeat_analysis_job', { _job_id: jobId, _owner: owner });
         if (hb.data !== true) leaseLost = true;
       }, HEARTBEAT_MS) as unknown as number;
-      const analysis = await runGlobalAnalysis(dossier, callGlobalAnalysis);
+      const analysis = await runGlobalAnalysis(dossier, messages => callGlobalAnalysis(db, jobId, owner, messages));
       clearInterval(heartbeat);
       heartbeat = undefined;
       if (leaseLost) throw new Error("Lease perdu pendant l'analyse globale.");
@@ -972,9 +995,9 @@ async function workProjectDocs(
     if (heartbeat !== undefined) clearInterval(heartbeat);
     const message = e instanceof Error ? e.message : 'Erreur inconnue';
     const { data: newStatus } = await db.rpc('fail_analysis_step', {
-      _job_id: jobId, _owner: owner, _message: message, _terminal: e instanceof TerminalStepError,
+      _job_id: jobId, _owner: owner, _message: message, _terminal: e instanceof TerminalStepError || e instanceof AttemptJournalError,
     });
-    if (newStatus === 'queued') triggerNext(db, jobId).catch(() => {});
+    // Deferred retry is picked up by the existing dispatcher; claim enforces next_retry_at.
     return json({ jobId, executed: step, status: newStatus ?? 'unchanged', error: true }, 500);
   }
 }
@@ -1071,7 +1094,7 @@ async function workTest(
     return json({ jobId, executed: 'none', status: 'completed', progress: 100 });
   } catch (e) {
     if (heartbeat !== undefined) clearInterval(heartbeat);
-    const terminal = e instanceof TerminalStepError;
+    const terminal = e instanceof TerminalStepError || e instanceof AttemptJournalError;
     const message = e instanceof Error ? e.message : 'Erreur inconnue';
     console.error('step failed', step, terminal ? '(terminal)' : '(retryable)', message);
     const { data: newStatus } = await db.rpc('fail_analysis_step', {

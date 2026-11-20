@@ -9,6 +9,7 @@ import { extractProjectDocx, ingestProjectPdf } from '@/lib/projectDocumentInges
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ProjectReportDiagnostics from '@/components/assistant/ProjectReportDiagnostics';
+import { Button } from '@/components/ui/button';
 import type { GlobalAnalysisAudit } from '../../supabase/functions/_shared/btpGlobalAnalysisAudit';
 import type { ProjectFactsDossier } from '../../supabase/functions/_shared/btpProjectDossier';
 
@@ -17,7 +18,7 @@ import type { ProjectFactsDossier } from '../../supabase/functions/_shared/btpPr
 
 const MAX_DOCS = 20;
 const JOB_STORAGE_KEY = 'anafypro_project_analysis_job';
-const JOB_FIELDS = 'id, status, current_step, progress, step_results';
+const JOB_FIELDS = 'id, status, current_step, progress, step_results, error_message';
 type Kind = 'pdf' | 'docx' | 'jpeg' | 'png';
 
 const EXT_KIND: Record<string, Kind> = { pdf: 'pdf', docx: 'docx', jpg: 'jpeg', jpeg: 'jpeg', png: 'png' };
@@ -36,7 +37,7 @@ function detectKind(file: File): Kind | null {
 }
 
 interface Selected { id: string; file: File; kind: Kind }
-type JobRow = { id: string; status: string; current_step: string | null; progress: number | null; step_results: Record<string, any> | null };
+type JobRow = { id: string; status: string; current_step: string | null; progress: number | null; step_results: Record<string, any> | null; error_message?: string | null };
 type ServerDoc = {
   fileName: string; kind: 'pdf' | 'docx' | 'image' | 'text'; text?: string; dataUrl?: string;
   pageImages?: string[];
@@ -114,6 +115,8 @@ const ProjectAnalysisPage = () => {
         incomplete: 'تعذّر استخدام بعض المستندات بالكامل. يستند التحليل أدناه إلى المستندات الأخرى فقط:',
         tooBig: 'ملف المشروع كبير جدًا بالنسبة للتحليل الشامل حاليًا. تم حفظ معلومات كل مستند، لكن تعذّر إجراء التحليل الشامل.',
         failed: 'حدثت مشكلة وتعذّر إكمال التحليل. يُرجى المحاولة مرة أخرى بعد قليل.',
+        attemptLimit: 'تعذّر إكمال التحليل بعد بلوغ الحد الأقصى للمحاولات. توقّفت المحاولات التلقائية.',
+        preserved: 'تظل نتائج المستندات التي سبق تحليلها محفوظة.',
         startFailed: 'تعذّر بدء التحليل. يُرجى المحاولة مرة أخرى.',
         nothing: 'تعذّرت قراءة أي من المستندات المختارة.',
         newAnalysis: 'تحليل جديد',
@@ -139,6 +142,8 @@ const ProjectAnalysisPage = () => {
         incomplete: "Certains documents n'ont pas pu être entièrement exploités. L'analyse ci-dessous repose uniquement sur les autres documents :",
         tooBig: "Votre dossier est trop volumineux pour l'analyse globale actuelle. Les informations de chaque document ont été enregistrées, mais l'analyse globale n'a pas pu être réalisée.",
         failed: "Un problème est survenu et l'analyse n'a pas pu aboutir. Réessayez dans quelques instants.",
+        attemptLimit: "L’analyse n’a pas pu aboutir après le nombre maximal de tentatives. Les reprises automatiques sont arrêtées.",
+        preserved: 'Les résultats des documents déjà analysés restent conservés.',
         startFailed: "L'analyse n'a pas pu démarrer. Réessayez.",
         nothing: "Aucun des documents sélectionnés n'a pu être lu.",
         newAnalysis: 'Nouvelle analyse',
@@ -268,9 +273,12 @@ const ProjectAnalysisPage = () => {
           {backBtn}
           <div className="rounded-xl border border-border bg-card p-4 flex gap-3 items-start">
             <AlertTriangle size={20} className="text-muted-foreground shrink-0 mt-0.5" />
-            <p className="text-[15px] text-foreground">{T.failed}</p>
+            <div className="space-y-2" role="status">
+              <p className="text-[16px] text-foreground">{job.error_message?.startsWith('ANALYSIS_ATTEMPT_LIMIT:') ? T.attemptLimit : T.failed}</p>
+              <p className="text-[16px] text-muted-foreground">{T.preserved}</p>
+            </div>
           </div>
-          <button onClick={reset} className="w-full rounded-xl bg-primary py-3.5 text-[16px] font-bold text-primary-foreground">{T.newAnalysis}</button>
+          <Button onClick={reset} className="w-full h-auto rounded-xl py-3.5 text-[16px] font-bold">{T.newAnalysis}</Button>
         </div>
       );
     }

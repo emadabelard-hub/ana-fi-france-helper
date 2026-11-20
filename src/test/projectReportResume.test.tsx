@@ -15,6 +15,22 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: { from: () => ({ se
 afterEach(() => { cleanup(); sessionStorage.clear(); state.rtl = false; state.read.mockClear(); });
 
 describe('22 reprise interrompue — résultats sauvegardés et aucune régénération', () => {
+  it.each([false, true])('un échec au plafond reste terminal après sortie/retour et ne poursuit pas le polling (RTL=%s)', async rtl => {
+    state.rtl = rtl;
+    state.row = { id: 'limited', status: 'failed', current_step: 'global_analysis', progress: 90,
+      error_message: 'ANALYSIS_ATTEMPT_LIMIT: global_analysis', step_results: { 'doc:0': { status: 'completed' }, dossier: { data: { documents: [{}] } } } };
+    sessionStorage.setItem('anafypro_project_analysis_job', JSON.stringify({ id: 'limited' }));
+    const first = render(<ProjectAnalysisPage />);
+    await screen.findByRole('status');
+    expect(state.read).toHaveBeenCalledTimes(1);
+    first.unmount();
+    render(<ProjectAnalysisPage />);
+    await screen.findByRole('status');
+    expect(state.read).toHaveBeenCalledTimes(2);
+    expect(state.row.status).toBe('failed');
+    expect(state.row.step_results['doc:0'].status).toBe('completed');
+    expect(sessionStorage.getItem('anafypro_project_analysis_job')).toContain('limited');
+  });
   it('le worker reprend exactement la première étape absente, même avec un current_step périmé', () => {
     // Execute the actual pure worker function, without importing Deno.serve or any provider.
     const src = readFileSync('supabase/functions/btp-analysis-job/index.ts', 'utf8');

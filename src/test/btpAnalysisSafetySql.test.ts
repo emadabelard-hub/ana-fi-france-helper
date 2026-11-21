@@ -29,6 +29,8 @@ const makeStale = (id: string) => sql(`UPDATE public.btp_analysis_jobs SET updat
 describe.skipIf(process.env.RUN_ANALYSIS4A_SQL_TESTS !== '1')('correction 4A — SQL exécuté uniquement en PostgreSQL local', () => {
   beforeAll(() => {
     expect(scalar('SELECT current_database();')).toBe('analysis4a_test');
+    expect(scalar('SELECT host(inet_server_addr());')).toBe('127.0.0.1');
+    expect(scalar('SELECT inet_server_port();')).toBe('55434');
     sql(`DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;
       CREATE SCHEMA IF NOT EXISTS auth;
       DO $$ BEGIN
@@ -40,7 +42,8 @@ describe.skipIf(process.env.RUN_ANALYSIS4A_SQL_TESTS !== '1')('correction 4A —
       CREATE TABLE public.btp_analysis_jobs(id uuid PRIMARY KEY, user_id uuid, status text, current_step text,
         progress integer DEFAULT 0, step_results jsonb DEFAULT '{}', payload jsonb DEFAULT '{}',
         final_report text, error_message text, attempts integer DEFAULT 0, updated_at timestamptz DEFAULT now());`);
-    sql(readFileSync('supabase/pending/20261120190100_analysis_attempt_safety.sql', 'utf8'));
+    sql(readFileSync('drizzle/migrations/0000_analysis_attempt_safety.sql', 'utf8'));
+    sql(readFileSync('supabase/pending/20261121025700_project_analysis_completed_guard.sql', 'utf8'));
   });
 
   it('plafonne trois tentatives globales, conserve tous les résultats et bloque une quatrième reprise', () => {
@@ -226,8 +229,66 @@ describe.skipIf(process.env.RUN_ANALYSIS4A_SQL_TESTS !== '1')('correction 4A —
     sql(`UPDATE public.btp_analysis_jobs SET step_results=step_results||'{"global_analysis":{"kept":true},"final":{"kind":"project_global_analysis_ready"}}' WHERE id='${id}';`);
     const before=scalar(`SELECT step_results FROM public.btp_analysis_jobs WHERE id='${id}';`);
     expect(claim(id,randomUUID())).toBe('');
-    expect(scalar(`SELECT status||':'||current_step FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('completed:completed');
+    expect(scalar(`SELECT status||':'||current_step||':'||progress||':'||error_message FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('completed_without_report:completed_without_report:97:GLOBAL_ANALYSIS_FAILED');
     expect(scalar(`SELECT count(*) FROM public.btp_analysis_attempts WHERE job_id='${id}';`)).toBe('0');
     expect(scalar(`SELECT step_results FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe(before);
+  });
+  it('toutes les clés avec un rapport global completed non vide donnent completed', () => {
+    const id = createJob();
+    sql(`UPDATE public.btp_analysis_jobs SET step_results=step_results||'{"global_analysis":{"data":{"status":"completed","text":" Rapport sauvegardé "}},"final":{}}' WHERE id='${id}';`);
+    const before = scalar(`SELECT step_results FROM public.btp_analysis_jobs WHERE id='${id}';`);
+    expect(claim(id, randomUUID())).toBe('');
+    expect(scalar(`SELECT status||':'||current_step||':'||progress FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('completed:completed:100');
+    expect(scalar(`SELECT error_message IS NULL FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('t');
+    expect(scalar(`SELECT step_results FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe(before);
+  });
+  it('toutes les clés avec needs_chunking et texte null donnent la raison de taille sans rapport', () => {
+    const id = createJob();
+    sql(`UPDATE public.btp_analysis_jobs SET step_results=step_results||'{"global_analysis":{"data":{"status":"needs_chunking","text":null}},"final":{}}' WHERE id='${id}';`);
+    const before = scalar(`SELECT step_results FROM public.btp_analysis_jobs WHERE id='${id}';`);
+    expect(claim(id, randomUUID())).toBe('');
+    expect(scalar(`SELECT status||':'||current_step||':'||progress||':'||error_message FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('completed_without_report:completed_without_report:97:GLOBAL_ANALYSIS_TOO_LARGE');
+    expect(scalar(`SELECT step_results FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe(before);
+    expect(scalar(`SELECT count(*) FROM public.btp_analysis_attempts WHERE job_id='${id}';`)).toBe('0');
+  });
+  it.each([false, true])('commit completed contrôle le rapport qui sera persisté : rapport présent=%s', hasReport => {
+    const id = createJob(), owner = randomUUID();
+    expect(claim(id, owner)).toBe(id);
+    const result = JSON.stringify({ data: { status: 'completed', text: hasReport ? 'Rapport sauvegardé' : '\t\n\u00a0\ufeff' } });
+    expect(scalar(`SELECT public.commit_analysis_step('${id}','${owner}','global_analysis','${result}',100,'completed','completed','Marqueur seul');`)).toBe('t');
+    expect(scalar(`SELECT status||':'||current_step||':'||progress FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe(hasReport ? 'completed:completed:100' : 'completed_without_report:completed_without_report:97');
+    expect(scalar(`SELECT error_message FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe(hasReport ? '' : 'GLOBAL_ANALYSIS_FAILED');
+    expect(scalar(`SELECT step_results->'global_analysis' FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe(scalar(`SELECT '${result}'::jsonb;`));
+    expect(scalar(`SELECT status FROM public.btp_analysis_attempts WHERE job_id='${id}';`)).toBe('saved');
+  });
+  it('le trigger corrige une mise à jour directe completed sans rapport', () => {
+    const id = createJob();
+    const before = scalar(`SELECT step_results FROM public.btp_analysis_jobs WHERE id='${id}';`);
+    sql(`UPDATE public.btp_analysis_jobs SET status='completed',current_step='completed',progress=100 WHERE id='${id}';`);
+    expect(scalar(`SELECT status||':'||current_step||':'||progress||':'||error_message FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('completed_without_report:completed_without_report:97:GLOBAL_ANALYSIS_FAILED');
+    expect(scalar(`SELECT step_results FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe(before);
+  });
+  it.each(['docx_quote_batch', 'persistent_ui_test'])('%s conserve completed sans rapport dans claim, commit et mise à jour directe', kind => {
+    const id = createJob(kind);
+    const results = kind === 'docx_quote_batch'
+      ? { prepare: {}, 'extract:0': {}, 'extract:1': {}, 'extract:2': {}, 'extract:3': {}, merge: {}, final: {} }
+      : { prepare: {}, ai_test: {}, final: {} };
+    sql(`UPDATE public.btp_analysis_jobs SET step_results='${JSON.stringify(results)}' WHERE id='${id}';`);
+    expect(claim(id, randomUUID())).toBe('');
+    expect(scalar(`SELECT status||':'||progress FROM public.btp_analysis_jobs WHERE id='${id}';`)).toBe('completed:100');
+    const commitId = createJob(kind), owner = randomUUID();
+    expect(claim(commitId, owner)).toBe(commitId);
+    expect(scalar(`SELECT public.commit_analysis_step('${commitId}','${owner}','final','{}',100,'completed','completed',NULL);`)).toBe('t');
+    expect(scalar(`SELECT status||':'||progress FROM public.btp_analysis_jobs WHERE id='${commitId}';`)).toBe('completed:100');
+    const directId = createJob(kind);
+    sql(`UPDATE public.btp_analysis_jobs SET status='completed',progress=100 WHERE id='${directId}';`);
+    expect(scalar(`SELECT status||':'||progress FROM public.btp_analysis_jobs WHERE id='${directId}';`)).toBe('completed:100');
+  });
+  it('le trigger ne change pas un ancien job déjà completed mis à jour sans rapport', () => {
+    const id = randomUUID();
+    sql(`INSERT INTO public.btp_analysis_jobs(id,user_id,status,current_step,progress,payload,error_message) VALUES ('${id}','${randomUUID()}','completed','completed',100,'{"kind":"project_docs_facts"}','ancien marqueur');`);
+    const before = scalar(`SELECT to_jsonb(j) FROM public.btp_analysis_jobs j WHERE id='${id}';`);
+    sql(`UPDATE public.btp_analysis_jobs SET status='completed',step_results='{}' WHERE id='${id}';`);
+    expect(scalar(`SELECT to_jsonb(j) FROM public.btp_analysis_jobs j WHERE id='${id}';`)).toBe(before);
   });
 });

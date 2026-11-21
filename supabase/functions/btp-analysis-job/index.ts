@@ -971,22 +971,41 @@ async function workProjectDocs(
     if (step === 'finalize') {
       // Références seulement : dossier et analyse restent dans deux clés distinctes.
       const dossier = (stepResults.dossier as any)?.data?.dossier as ProjectFactsDossier;
-      const analysisStatus = (stepResults.global_analysis as any)?.data?.status ?? null;
+      const savedAnalysis = (stepResults.global_analysis as any)?.data;
+      const analysisStatus = savedAnalysis?.status ?? null;
+      const hasReport = analysisStatus === 'completed' && typeof savedAnalysis?.text === 'string' && savedAnalysis.text.trim().length > 0;
+      const status = hasReport ? 'completed' : 'completed_without_report';
+      const reason = hasReport ? null : analysisStatus === 'needs_chunking' ? 'GLOBAL_ANALYSIS_TOO_LARGE' : 'GLOBAL_ANALYSIS_FAILED';
       const ok = await db.rpc('commit_analysis_step', {
         _job_id: jobId, _owner: owner, _step: 'final',
-        _result: { kind: 'project_global_analysis_ready', data: { dossierStep: 'dossier', analysisStep: 'global_analysis', complete: dossier?.complete ?? false, analysisStatus } },
-        _progress: 100, _current_step: 'completed', _status: 'completed',
-        _final_report: analysisStatus === 'needs_chunking'
-          ? 'Analyse globale non réalisée : dossier consolidé trop volumineux, traitement par portions requis'
-          : dossier?.complete ? 'Analyse globale terminée (dossier complet)' : 'Analyse globale terminée (dossier incomplet)',
+        _result: { kind: 'project_global_analysis_ready', data: { dossierStep: 'dossier', analysisStep: 'global_analysis', complete: dossier?.complete ?? false, analysisStatus, ...(reason ? { reason } : {}) } },
+        _progress: hasReport ? 100 : 97, _current_step: status, _status: status,
+        _final_report: hasReport ? dossier?.complete ? 'Analyse globale terminée (dossier complet)' : 'Analyse globale terminée (dossier incomplet)' : null,
       });
       requireStepCommit(ok);
-      return json({ jobId, executed: 'finalize', status: 'completed' });
+      return json({ jobId, executed: 'finalize', status, ...(reason ? { reason } : {}) });
     }
     return json({ jobId, skipped: true, reason: 'already_saved' });
   } catch (e) {
     if (heartbeat !== undefined) clearInterval(heartbeat);
-    return await reportFailedStep(db, jobId, owner, step, e);
+    const failure = await reportFailedStep(db, jobId, owner, step, e);
+    // Ne change ni les reprises ni la sauvegarde : qualifier uniquement l'arrêt confirmé.
+    const savedReport = (stepResults.global_analysis as any)?.data?.text;
+    if ((step === 'global_analysis' || step === 'finalize') && !(typeof savedReport === 'string' && savedReport.trim().length > 0)) {
+      const outcome = await failure.clone().json();
+      if (outcome.status === 'failed') {
+        const reason = (stepResults.global_analysis as any)?.data?.status === 'needs_chunking' ? 'GLOBAL_ANALYSIS_TOO_LARGE'
+          : step === 'global_analysis' && safeAnalysisError(e).code === 'save_failed' ? 'REPORT_SAVE_FAILED' : 'GLOBAL_ANALYSIS_FAILED';
+        const recorded = await db.from('btp_analysis_jobs')
+          .update({ status: 'completed_without_report', current_step: 'completed_without_report', error_message: reason })
+          .eq('id', jobId).eq('status', 'failed').select('id').maybeSingle();
+        if (recorded.error || recorded.data?.id !== jobId) {
+          return json({ jobId, executed: step, status: 'unconfirmed', failureRecorded: false, error: true }, 503);
+        }
+        return json({ jobId, executed: step, status: 'completed_without_report', reason, failureRecorded: true, error: true }, 500);
+      }
+    }
+    return failure;
   }
 }
 

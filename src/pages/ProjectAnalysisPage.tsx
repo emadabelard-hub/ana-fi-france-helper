@@ -8,6 +8,7 @@ import { ingestImage } from '@/lib/pdfIngest';
 import { extractProjectDocx, ingestProjectPdf } from '@/lib/projectDocumentIngest';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { toast } from 'sonner';
 import ProjectReportDiagnostics from '@/components/assistant/ProjectReportDiagnostics';
 import { Button } from '@/components/ui/button';
 import type { GlobalAnalysisAudit } from '../../supabase/functions/_shared/btpGlobalAnalysisAudit';
@@ -88,6 +89,7 @@ const ProjectAnalysisPage = () => {
   const { isRTL } = useLanguage();
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
+  const noReportToast = useRef<string | null>(null);
   const [docs, setDocs] = useState<Selected[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
@@ -117,6 +119,8 @@ const ProjectAnalysisPage = () => {
         failed: 'حدثت مشكلة وتعذّر إكمال التحليل. يُرجى المحاولة مرة أخرى بعد قليل.',
         attemptLimit: 'تعذّر إكمال التحليل بعد بلوغ الحد الأقصى للمحاولات. توقّفت المحاولات التلقائية.',
         preserved: 'تظل نتائج المستندات التي سبق تحليلها محفوظة.',
+        documentsProcessed: 'انتهت معالجة المستندات، لكن تعذّر إنتاج التقرير الشامل.',
+        reportTechnicalFailure: 'تعذّر إنتاج التقرير الشامل أو حفظه بسبب مشكلة تقنية.',
         startFailed: 'تعذّر بدء التحليل. يُرجى المحاولة مرة أخرى.',
         nothing: 'تعذّرت قراءة أي من المستندات المختارة.',
         newAnalysis: 'تحليل جديد',
@@ -144,6 +148,8 @@ const ProjectAnalysisPage = () => {
         failed: "Un problème est survenu et l'analyse n'a pas pu aboutir. Réessayez dans quelques instants.",
         attemptLimit: "L’analyse n’a pas pu aboutir après le nombre maximal de tentatives. Les reprises automatiques sont arrêtées.",
         preserved: 'Les résultats des documents déjà analysés restent conservés.',
+        documentsProcessed: 'Le traitement des documents est terminé, mais le rapport global n’a pas pu être produit.',
+        reportTechnicalFailure: 'Une erreur technique a empêché la production ou la sauvegarde du rapport global.',
         startFailed: "L'analyse n'a pas pu démarrer. Réessayez.",
         nothing: "Aucun des documents sélectionnés n'a pu être lu.",
         newAnalysis: 'Nouvelle analyse',
@@ -173,6 +179,16 @@ const ProjectAnalysisPage = () => {
     }, 3000);
     return () => clearInterval(timer);
   }, [job?.id, job?.status]);
+
+  const noReportReason = job?.error_message || job?.step_results?.final?.data?.reason;
+  const noReportMessage = `${T.documentsProcessed} ${noReportReason === 'GLOBAL_ANALYSIS_TOO_LARGE' ? T.tooBig : T.reportTechnicalFailure}`;
+  useEffect(() => {
+    if (job?.status !== 'completed_without_report') return;
+    const key = `${job.id}:${noReportReason}:${isRTL}`;
+    if (noReportToast.current === key) return;
+    noReportToast.current = key;
+    toast.error(<span dir={isRTL ? 'rtl' : 'ltr'} lang={isRTL ? 'ar' : 'fr'} className={cn('block', isRTL ? 'text-right' : 'text-left')}>{noReportMessage}</span>);
+  }, [job?.id, job?.status, noReportReason, noReportMessage, isRTL]);
 
   const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -267,14 +283,14 @@ const ProjectAnalysisPage = () => {
       });
     const missing = [...new Set([...serverMissing, ...skipped])];
 
-    if (job.status === 'failed') {
+    if (job.status === 'failed' || job.status === 'completed_without_report') {
       return (
         <div {...dirProps}>
           {backBtn}
           <div className="rounded-xl border border-border bg-card p-4 flex gap-3 items-start">
             <AlertTriangle size={20} className="text-muted-foreground shrink-0 mt-0.5" />
             <div className="space-y-2" role="status">
-              <p className="text-[16px] text-foreground">{job.error_message?.startsWith('ANALYSIS_ATTEMPT_LIMIT:') ? T.attemptLimit : T.failed}</p>
+              <p className="text-[16px] text-foreground">{job.status === 'completed_without_report' ? noReportMessage : job.error_message?.startsWith('ANALYSIS_ATTEMPT_LIMIT:') ? T.attemptLimit : T.failed}</p>
               <p className="text-[16px] text-muted-foreground">{T.preserved}</p>
             </div>
           </div>

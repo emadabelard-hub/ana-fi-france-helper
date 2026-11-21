@@ -6,3 +6,4 @@
 - Persistent analysis retries are bounded per independent step; durable call budgets include inner document retries and survive worker interruption, while metadata-only traces close atomically with saved step results.
 - Exhausted factual documents close atomically as failed sources and advance the dossier; worker RPC outcomes require explicit confirmation and errors use a fixed metadata-only vocabulary.
 - Unapproved database changes live under supabase/pending rather than supabase/migrations so code preparation cannot silently apply them.
+- Project finalization uses completed only for a nonempty global report already persisted in step_results; confirmed terminal stops without a report use completed_without_report and a machine-readable reason, without changing retry budgets.

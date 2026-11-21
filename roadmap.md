@@ -1,3 +1,8 @@
+# Statut terminal sans rapport global
+- [x] Vérifier le type de statut et les décisions serveur/interface : texte sans CHECK, aucune migration.
+- [x] Réserver completed aux rapports sauvegardés et afficher la raison sans rapport.
+- [x] Tester les décisions et simuler 800 faits, 1 600 faits et un document hors budget : 247 tests réussis, 26 SQL non exécutés, sans IA ni production.
+
 # Amélioration d’Analyser mon projet
 - [x] Vérifier la sélection multiple et la limite de 20 documents.
 - [x] Renforcer les prompts du parcours projet sans changer les autres parcours.

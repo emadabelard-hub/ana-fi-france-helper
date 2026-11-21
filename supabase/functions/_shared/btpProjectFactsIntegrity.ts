@@ -14,7 +14,7 @@
  *  - classement de la source : verified / unverifiable / inconsistent / absent.
  * Aucune quantité n'est inventée, convertie ou recalculée. Aucun appel IA.
  */
-import { validateBtpFacts, type BtpFactsContract, type ValidatedBtpFact } from "./btpFactsContract.ts";
+import { normalizeUnit, validateBtpFacts, type BtpFactsContract, type ValidatedBtpFact } from "./btpFactsContract.ts";
 
 export type SourceCheck = "verified" | "unverifiable" | "inconsistent" | "absent";
 
@@ -132,6 +132,62 @@ const checkSource = (f: ValidatedBtpFact, declared: string, doc: DocumentRef): {
   return { check: "unverifiable", flags };
 };
 
+/**
+ * Comparaison locale, sans correction : une seule mesure explicite, de même
+ * nature que la quantité du fait, dans une citation retrouvée textuellement.
+ * L'abstention ne prouve jamais l'exactitude du fait.
+ */
+const checkSingleQuotedMeasure = (f: ValidatedBtpFact): string[] => {
+  if (
+    f.factType !== "billable_work" || f.role !== "main" ||
+    f.transferStatus !== "ready" || f.technicalReservation ||
+    f.quantity === null || !Number.isFinite(f.quantity) || f.quantity <= 0 ||
+    !f.unit || !f.evidenceText
+  ) return [];
+
+  const expectedType = f.unit === "m²" ? "area" : f.unit === "ml" ? "length" : f.unit === "u" ? "count" : null;
+  if (!expectedType || f.quantityType !== expectedType) return [];
+
+  const normalize = (s: string) => s.toLowerCase().normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+  const quote = normalize(f.evidenceText);
+  const context = normalize(`${f.descriptionExact}\n${f.evidenceText}`);
+  // Qualificatifs, bornes, plages et dimensions : aucune comparaison certaine.
+  if (/\b(?:environ|approximati\w*|approchant\w*|estim\w*|indicati\w*|variable\w*|quelques|minimum|maximum|mini|maxi|entre|jusqu|hauteur|largeur|longueur|epaisseur|profondeur|diametre|rayon|portee|entraxe|dimension\w*|cote\w*)\b/.test(context)
+    || /\b(?:au moins|au plus|plus de|moins de|de l'ordre de|a peu pres|pres de|autour de|aux environs de|a confirmer)\b/.test(context)
+    || /[?~±]/.test(quote)
+    || /[+\-−±~<>≤≥]\s*\d|\d\s*[–—-]\s*\d/.test(quote)
+    || /\b(?:a|et)\s+\d/.test(quote)) return [];
+
+  // Une mesure écrite en lettres peut coexister avec une mesure numérique.
+  if (/\b(?:deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|treize|quatorze|quinze|seize|vingt|trente|quarante|cinquante|soixante|cent|mille|million)\b/.test(quote)
+    || /\b(?:un|une)\s+(?:metres?|centimetres?|millimetres?|cm|mm|m|ml|unites?|pieces?|heures?|jours?|forfaits?|ensembles?)\b/.test(quote)) return [];
+
+  const pattern = /(?<![\p{L}\p{N}.,+\-−])([0-9]+(?:[.,][0-9]+)?)\s*(metres?\s*carres?|metres?\s*lineaires?|m\^2|m²|m2|m\/l|ml|metres?|m|unites?|pieces?|pce|nb|u)(?![\p{L}\p{N}^/])/gu;
+  const matches = [...quote.matchAll(pattern)];
+  if (matches.length !== 1) return [];
+  const match = matches[0];
+  if (!match || match.index === undefined) return [];
+  const numberText = match[1];
+  const quotedUnit = match[2];
+  if (!numberText || !quotedUnit) return [];
+
+  // Un autre nombre (même sans unité reconnue) rend la citation ambiguë.
+  // Cela couvre notamment milliers espacés, mesures multiples et références BA13.
+  const rest = quote.slice(0, match.index) + quote.slice(match.index + match[0].length);
+  if (/\p{N}/u.test(rest) || /\d+[.,]\d{3}$/.test(numberText)) return [];
+
+  const canonical = (u: string) => {
+    if (/^metres?\s*carres?$/.test(u)) return "m²";
+    if (/^metres?(?:\s*lineaires?)?$/.test(u)) return "ml";
+    return normalizeUnit(u);
+  };
+  if (canonical(quotedUnit) !== f.unit) return [];
+  const quoted = Number(numberText.replace(",", "."));
+  if (!Number.isFinite(quoted) || quoted <= 0) return [];
+  return quoted !== f.quantity ? ["quantity_evidence_mismatch"] : [];
+};
+
 export type ProjectExtraction = { contract: BtpFactsContract; integrity: ExtractionIntegrity };
 
 /**
@@ -202,6 +258,7 @@ export const validateProjectExtraction = (text: string, doc: DocumentRef): Proje
     const declared = scalar(meta.raw.sourceFile ?? meta.raw.fichier ?? meta.raw.file) ?? "";
     const src = checkSource(f, declared, doc);
     flags.push(...src.flags);
+    if (src.check === "verified") flags.push(...checkSingleQuotedMeasure(f));
 
     // Le parent sera résolu plus bas, uniquement par identifiant explicite.
     const reasons = f.reasons.filter((r) => r !== "parent_ref_unresolved" && r !== "parent_ref_not_main");

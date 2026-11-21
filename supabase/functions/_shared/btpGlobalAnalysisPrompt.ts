@@ -487,6 +487,9 @@ export type GlobalAnalysisMessages = [
   { role: "user"; content: string },
 ];
 
+/** Réserve de fiabilité, sans modifier le Prompt n°2 système ni le contrat. */
+const DOCUMENTARY_RELIABILITY_INSTRUCTION = "FIABILITÉ DOCUMENTAIRE : sourceCheck=verified signifie uniquement que la citation normalisée a été retrouvée dans le texte disponible ; ni tous les champs, ni le rattachement exact à l'ouvrage ne sont ainsi prouvés. sourceCheck=unverifiable signifie que la fidélité documentaire n'a pas été établie ; inconsistent signale une incohérence de provenance ou de citation, et absent une citation vide. Un statut manquant dans un ancien fait ne vaut jamais verified. integrityFlags doit être interprété par motif : quantity_evidence_mismatch signale un écart entre quantité structurée et mesure textuelle comparable, sans désigner la valeur correcte ; un flag de relation, de description de repli ou d'identité ne prouve pas une erreur de quantité. Formule une réserve ciblée sur le champ ou le rattachement concerné, sans invalider les autres informations par défaut. Une divergence impliquant une provenance non établie, incohérente ou absente, ou un champ concerné par un flag, reste une divergence d'extraction ou un point à vérifier, jamais une contradiction documentaire certaine. L'absence de flag ne garantit pas l'exactitude. Conserve les contradictions effectivement étayées lorsque le même ouvrage, le même périmètre et la même caractéristique sont suffisamment établis ; ne masque aucune version ni aucune référence et n'arbitre aucune valeur. complete décrit la complétude technique du dossier selon les critères de sources contributrices et de lecture/validation partielle ; ce n'est ni le statut terminal du job, ni une garantie d'exhaustivité ou d'exactitude. Conserve tous les faits, quantités, unités, citations et sources, sans correction automatique, invention ou suppression ; garde les huit sections existantes du rapport.";
+
 export const buildGlobalAnalysisMessages = (d: ProjectFactsDossier): GlobalAnalysisMessages => {
   const input = buildGlobalAnalysisInput(d);
   const status = input.complete
@@ -501,6 +504,7 @@ export const buildGlobalAnalysisMessages = (d: ProjectFactsDossier): GlobalAnaly
         "ANALYSE GLOBALE DEMANDÉE à partir du seul dossier factuel consolidé ci-dessous.",
         status,
         missing,
+        DOCUMENTARY_RELIABILITY_INSTRUCTION,
         `DOSSIER FACTUEL CONSOLIDÉ :\n${serializeConsolidatedContract(input.contract)}`,
       ].join("\n\n"),
     },

@@ -9,6 +9,7 @@ import {
   type GlobalAnalysisMessages,
 } from "../../supabase/functions/_shared/btpGlobalAnalysisPrompt";
 import type { DocumentFactsResult } from "../../supabase/functions/_shared/btpDocumentSequence";
+import { validateProjectExtraction } from "../../supabase/functions/_shared/btpProjectFactsIntegrity";
 
 const base = (file: string, over: Record<string, unknown>) => ({
   sourceFile: file, sourcePage: 1, lot: "Lot 1", category: "travaux", evidenceText: "extrait", ...over,
@@ -149,5 +150,93 @@ describe("Analyse globale — contrôle de taille", () => {
     const src = readFileSync("supabase/functions/btp-analysis-job/index.ts", "utf8");
     const fn = src.slice(src.indexOf("async function callGlobalAnalysis"), src.indexOf("/** Un seul document"));
     expect(fn).toContain("isApiSizeLimitError(resp.status, full)) throw new DocumentTooLargeError");
+  });
+});
+
+describe("Phase 1B proposée — transmission, budget et absence de retraitement", () => {
+  const phase1bSource = (fileName: string, text: string) => ({
+    docId: fileName, fileName, kind: "docx" as const, text,
+  });
+  const phase1bResult = (fileName: string, quantity: number, text: string) => {
+    const extracted = validateProjectExtraction(
+      `<ANAFYPRO_BTP_FACTS>${JSON.stringify({ version: 1, facts: [{ id: "p", descriptionExact: "Dépose de carrelage", quantity, unit: "m²", evidenceText: text }] })}</ANAFYPRO_BTP_FACTS>`,
+      phase1bSource(fileName, text),
+    );
+    return { docId: fileName, fileName, status: "completed" as const, attempts: 1, error: null, ...extracted };
+  };
+  const transmittedContract = (messages: GlobalAnalysisMessages) => {
+    const open = "<ANAFYPRO_BTP_FACTS>", close = "</ANAFYPRO_BTP_FACTS>";
+    const start = messages[1].content.indexOf(open);
+    const end = messages[1].content.indexOf(close, start);
+    if (start < 0 || end < start) throw new Error("Contrat non transmis");
+    return JSON.parse(messages[1].content.slice(start + open.length, end));
+  };
+
+  it("transmet sourceCheck et le nouveau flag, avec valeurs et références intactes", () => {
+    const d = buildProjectFactsDossier([phase1bResult("source.docx", 1, "Dépose 4 m²")]);
+    const before = JSON.stringify(d);
+    const sent = transmittedContract(buildGlobalAnalysisMessages(d));
+    expect(sent).toEqual(d.contract);
+    expect(sent.facts[0]).toMatchObject({ quantity: 1, unit: "m²", sourceFile: "source.docx", evidenceText: "Dépose 4 m²", sourceCheck: "verified" });
+    expect(sent.facts[0].integrityFlags).toContain("quantity_evidence_mismatch");
+    expect(sent.facts[0].factId).toBe(d.contract.facts[0].factId);
+    expect(JSON.stringify(d)).toBe(before);
+    expect(d.complete).toBe(true);
+    expect(d.completeness.exhaustivenessProven).toBe(false);
+  });
+
+  it("conserve un ancien contrat sans inventer les métadonnées de fiabilité", () => {
+    const d = buildProjectFactsDossier([ok("legacy", "ancien.docx")]);
+    const sent = transmittedContract(buildGlobalAnalysisMessages(d));
+    expect(sent).toEqual(d.contract);
+    expect(sent.facts[0]).not.toHaveProperty("sourceCheck");
+    expect(sent.facts[0]).not.toHaveProperty("integrityFlags");
+  });
+
+  it("compte toute l'instruction additionnelle dans le budget inchangé", () => {
+    const d = buildProjectFactsDossier([phase1bResult("source.docx", 1, "Dépose 4 m²")]);
+    const messages = buildGlobalAnalysisMessages(d);
+    const oldContent = [
+      "ANALYSE GLOBALE DEMANDÉE à partir du seul dossier factuel consolidé ci-dessous.",
+      "ÉTAT DU DOSSIER : complete = true",
+      `DOCUMENTS NON EXPLOITÉS (missingDocuments) :\n${JSON.stringify(d.missingDocuments)}`,
+      `DOSSIER FACTUEL CONSOLIDÉ :\n<ANAFYPRO_BTP_FACTS>${JSON.stringify(d.contract)}</ANAFYPRO_BTP_FACTS>`,
+    ].join("\n\n");
+    const expected = estimateTokensConservative(messages[0].content) + estimateTokensConservative(messages[1].content) + REQUEST_OVERHEAD_TOKENS;
+    const oldEstimate = estimateTokensConservative(messages[0].content) + estimateTokensConservative(oldContent) + REQUEST_OVERHEAD_TOKENS;
+    expect(checkGlobalAnalysisFits(messages).estimatedInputTokens).toBe(expected);
+    expect(expected).toBeGreaterThan(oldEstimate);
+    expect(inputTokenBudget()).toBe(138_000);
+    const padding = "a".repeat(2 * (inputTokenBudget() - oldEstimate));
+    const oldAtLimit: GlobalAnalysisMessages = [messages[0], { role: "user", content: oldContent + padding }];
+    const newAboveLimit: GlobalAnalysisMessages = [messages[0], { role: "user", content: messages[1].content + padding }];
+    expect(checkGlobalAnalysisFits(oldAtLimit)).toEqual({ ok: true, estimatedInputTokens: 138_000 });
+    expect(checkGlobalAnalysisFits(newAboveLimit).ok).toBe(false);
+  });
+
+  it("un dossier hors budget n'appelle pas le fournisseur et conserve ses faits", async () => {
+    const d = bigDossier(800, 1200);
+    const before = JSON.stringify(d);
+    let calls = 0;
+    const result = await runGlobalAnalysis(d, async () => { calls++; return "résultat simulé"; });
+    expect(calls).toBe(0);
+    expect(result.status).toBe("needs_chunking");
+    expect(result.factsCount).toBe(800);
+    expect(JSON.stringify(d)).toBe(before);
+  });
+
+  it("une divergence réelle reste transmise sans arbitrage, avec un seul appel simulé", async () => {
+    const d = buildProjectFactsDossier([phase1bResult("a.docx", 4, "Dépose 4 m²"), phase1bResult("b.docx", 1, "Dépose 1 m²")]);
+    let calls = 0;
+    const before = JSON.stringify(d);
+    await runGlobalAnalysis(d, async messages => {
+      calls++;
+      const sent = transmittedContract(messages);
+      expect(sent.facts.map((f: { quantity: number }) => f.quantity)).toEqual([4, 1]);
+      expect(sent.facts.every((f: { sourceCheck: string; integrityFlags: string[] }) => f.sourceCheck === "verified" && !f.integrityFlags.includes("quantity_evidence_mismatch"))).toBe(true);
+      return "Rapport simulé : valeurs divergentes conservées.";
+    });
+    expect(calls).toBe(1);
+    expect(JSON.stringify(d)).toBe(before);
   });
 });

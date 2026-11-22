@@ -121,6 +121,7 @@ const ProjectAnalysisPage = () => {
         preserved: 'تظل نتائج المستندات التي سبق تحليلها محفوظة.',
         documentsProcessed: 'انتهت معالجة المستندات، لكن تعذّر إنتاج التقرير الشامل.',
         reportTechnicalFailure: 'تعذّر إنتاج التقرير الشامل أو حفظه بسبب مشكلة تقنية.',
+        emptyDossier: 'لم تُستخرج أي معلومات قابلة للاستخدام من المستندات. لم يبدأ إعداد التقرير الشامل.',
         startFailed: 'تعذّر بدء التحليل. يُرجى المحاولة مرة أخرى.',
         nothing: 'تعذّرت قراءة أي من المستندات المختارة.',
         newAnalysis: 'تحليل جديد',
@@ -150,6 +151,7 @@ const ProjectAnalysisPage = () => {
         preserved: 'Les résultats des documents déjà analysés restent conservés.',
         documentsProcessed: 'Le traitement des documents est terminé, mais le rapport global n’a pas pu être produit.',
         reportTechnicalFailure: 'Une erreur technique a empêché la production ou la sauvegarde du rapport global.',
+        emptyDossier: 'Aucun fait exploitable n’a été obtenu à partir des documents. Le rapport global n’a pas été lancé.',
         startFailed: "L'analyse n'a pas pu démarrer. Réessayez.",
         nothing: "Aucun des documents sélectionnés n'a pu être lu.",
         newAnalysis: 'Nouvelle analyse',
@@ -181,7 +183,8 @@ const ProjectAnalysisPage = () => {
   }, [job?.id, job?.status]);
 
   const noReportReason = job?.error_message || job?.step_results?.final?.data?.reason;
-  const noReportMessage = `${T.documentsProcessed} ${noReportReason === 'GLOBAL_ANALYSIS_TOO_LARGE' ? T.tooBig : T.reportTechnicalFailure}`;
+  const emptyDossier = job?.step_results?.global_analysis?.data?.failureCode === 'EMPTY_FACTUAL_DOSSIER';
+  const noReportMessage = emptyDossier ? T.emptyDossier : `${T.documentsProcessed} ${noReportReason === 'GLOBAL_ANALYSIS_TOO_LARGE' ? T.tooBig : T.reportTechnicalFailure}`;
   useEffect(() => {
     if (job?.status !== 'completed_without_report') return;
     const key = `${job.id}:${noReportReason}:${isRTL}`;

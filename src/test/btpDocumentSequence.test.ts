@@ -7,6 +7,7 @@ import {
   checkDocumentFits,
   isApiSizeLimitError,
   DocumentTooLargeError,
+  PermanentDocumentRequestError,
   API_IMAGE_BASE64_LIMIT_BYTES,
   type ProjectDocument,
 } from "../../supabase/functions/_shared/btpDocumentSequence";
@@ -18,6 +19,26 @@ const f = (o: Record<string, unknown>) => ({ lot: "Lot 1", category: "travaux", 
 const doc = (n: number, text = `contenu ${n}`): ProjectDocument => ({ docId: `doc${n}`, fileName: `d${n}.pdf`, kind: "pdf", text });
 
 describe("Analyser mon projet — étape 1 : document par document", () => {
+  it('un refus permanent explicite ferme seulement la source, sans deuxième appel', async () => {
+    const source = doc(1); const before = JSON.stringify(source); const seen: string[] = [];
+    const results = await processDocumentsSequentially([source, doc(2)], async d => {
+      seen.push(d.docId);
+      if (d.docId === source.docId) throw new PermanentDocumentRequestError('REQUEST_SCHEMA_INVALID');
+      return block([f({ id: 'A', descriptionExact: 'BA13', quantity: 25, unit: 'm²', evidenceText: 'BA13 25 m²' })]);
+    });
+    expect(seen).toEqual(['doc1', 'doc2']);
+    expect(results[0]).toMatchObject({ status: 'failed', attempts: 1, contract: null, docId: source.docId });
+    expect(results[1].contract?.facts[0]).toMatchObject({ quantity: 25, unit: 'm²', evidenceText: 'BA13 25 m²' });
+    expect(JSON.stringify(source)).toBe(before);
+  });
+  it('un refus permanent après un premier essai transitoire conserve le nombre réel de deux essais', async () => {
+    let calls = 0;
+    const r = await processSingleDocument(doc(1), async () => {
+      if (++calls === 1) throw new Error('IA erreur 500.');
+      throw new PermanentDocumentRequestError('IMAGE_SOURCE_INVALID');
+    });
+    expect(calls).toBe(2); expect(r).toMatchObject({ status: 'failed', attempts: 2, contract: null });
+  });
   it("2 documents = 2 contrats indépendants, séquentiels, un document par appel", async () => {
     const seen: string[] = [];
     let inFlight = 0, maxInFlight = 0;

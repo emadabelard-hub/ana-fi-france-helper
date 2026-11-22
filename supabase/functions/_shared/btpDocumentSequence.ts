@@ -63,6 +63,11 @@ export type SingleDocumentAiCall = (doc: ProjectDocument) => Promise<string>;
 
 export class InvalidFactsContractError extends Error {}
 
+export type PermanentRequestCategory = 'REQUEST_SCHEMA_INVALID' | 'MESSAGE_ROLE_INVALID' | 'IMAGE_SOURCE_INVALID';
+export class PermanentDocumentRequestError extends Error {
+  constructor(readonly category: PermanentRequestCategory) { super(`PROVIDER_PERMANENT:${category}`); }
+}
+
 /** Une relance maximum du même document. */
 export const MAX_DOCUMENT_ATTEMPTS = 2;
 
@@ -216,6 +221,9 @@ export const processSingleDocument = async (
       const { contract, integrity } = validateProjectExtraction(typeof text === "string" ? text : "", doc);
       return { ...base, status: "completed", attempts: attempt, contract, integrity, error: null };
     } catch (e) {
+      if (e instanceof PermanentDocumentRequestError) {
+        return { ...base, status: 'failed', attempts: attempt, contract: null, error: e.message };
+      }
       if (e instanceof DocumentTooLargeError) {
         // Refus de taille confirmé par l'API : aucune relance.
         return { ...base, status: "needs_chunking", attempts: attempt, contract: null,

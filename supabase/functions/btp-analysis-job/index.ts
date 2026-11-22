@@ -7,6 +7,8 @@ import {
   isApiSizeLimitError,
   DocumentTooLargeError,
   RESPONSE_MAX_TOKENS,
+  PermanentDocumentRequestError,
+  type PermanentRequestCategory,
   type ProjectDocument,
 } from '../_shared/btpDocumentSequence.ts';
 import { buildProjectFactsDossier, type ProjectFactsDossier } from '../_shared/btpProjectDossier.ts';
@@ -331,8 +333,80 @@ async function triggerNext(db: Db, jobId: string): Promise<void> {
 
 class TerminalStepError extends Error {}
 
+/** Closed, anchored schema errors only; never return/log a provider message. */
+export function classifyPermanentProviderError(status: number, full: string): PermanentRequestCategory | null {
+  if (status !== 400) return null;
+  let parsed: any;
+  try {
+    parsed = JSON.parse(full);
+    if (typeof parsed?.error?.message === 'string' && !parsed.error.type) parsed = JSON.parse(parsed.error.message);
+  } catch { return null; }
+  if (parsed?.error?.type !== 'invalid_request_error' || typeof parsed.error.message !== 'string') return null;
+  const message = parsed.error.message;
+  if (/^(?:max_tokens|messages|model): Field required$/.test(message)
+    || /^[a-z_][a-z0-9_]*: Extra inputs are not permitted$/.test(message)) return 'REQUEST_SCHEMA_INVALID';
+  if (/^messages\.\d+\.role: Input should be 'user' or 'assistant'$/.test(message)) return 'MESSAGE_ROLE_INVALID';
+  if (/^messages\.\d+\.content\.\d+\.image\.source(?:\.data)?: (?:Could not decode base64 image|Invalid base64 data)$/.test(message)
+    || /^messages\.\d+\.content\.\d+\.image\.source\.media_type: Unsupported media type$/.test(message)) return 'IMAGE_SOURCE_INVALID';
+  return null;
+}
+
+function sameSavedValue(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object' || Array.isArray(a) !== Array.isArray(b)) return false;
+  const left = a as Record<string, unknown>, right = b as Record<string, unknown>;
+  const keys = Object.keys(left);
+  return keys.length === Object.keys(right).length && keys.every(k => Object.prototype.hasOwnProperty.call(right, k) && sameSavedValue(left[k], right[k]));
+}
+
+/** Only recognized connection/availability/transaction failures are retried. */
+function temporarySaveError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const e = error as { code?: string; message?: string };
+  return ['PGRST000', 'PGRST001', 'PGRST002', '08000', '08003', '08006', '53300', '57P01', '57P02', '57P03', '40001', '40P01'].includes(e.code ?? '')
+    || /^TypeError: (?:fetch failed|Failed to fetch)$/.test(e.message ?? '');
+}
+
+/** Retry this write, not its producer. Reconciliation never trusts false/null. */
+async function recoverProjectSave(
+  write: () => PromiseLike<{ data: unknown; error: unknown }>,
+  reconcile: () => Promise<{ saved: boolean; owned: boolean }>,
+): Promise<{ data: unknown; error: unknown }> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    let result: { data: unknown; error: unknown };
+    try { result = await write(); } catch (error) { result = { data: null, error }; }
+    if (!result.error && result.data === true) return result;
+    let state: { saved: boolean; owned: boolean };
+    try { state = await reconcile(); } catch { return result; }
+    if (state.saved) return { data: true, error: null }; // Independent, exact read-back confirmation.
+    if (!state.owned || !temporarySaveError(result.error) || attempt === 2) return result;
+    await new Promise(resolve => setTimeout(resolve, attempt === 0 ? 250 : 750));
+  }
+  return { data: false, error: null };
+}
+
+async function readProjectOwner(db: Db, jobId: string, owner: string) {
+  const r = await db.from('btp_analysis_jobs').select('status, payload, step_results').eq('id', jobId).maybeSingle();
+  if (r.error || !r.data) throw new Error('Save reconciliation unavailable.');
+  return { job: r.data, owned: r.data.status === 'running' && r.data.payload?.lease_owner === owner };
+}
+
+async function commitProjectResponse(db: Db, jobId: string, owner: string, step: string, args: Record<string, unknown>): Promise<{ status: string; trigger: boolean }> {
+  let readBackStatus: string | undefined;
+  const result = await recoverProjectSave(() => db.rpc('commit_analysis_step', args), async () => {
+    const { job, owned } = await readProjectOwner(db, jobId, owner);
+    const attempt = await db.from('btp_analysis_attempts').select('status').eq('job_id', jobId).eq('worker_id', owner).eq('step', step).maybeSingle();
+    if (attempt.error) throw new Error('Save reconciliation unavailable.');
+    const saved = attempt.data?.status === 'saved' && sameSavedValue(job.step_results?.[step], args._result);
+    if (saved) readBackStatus = job.status;
+    return { owned: owned && attempt.data?.status === 'running' && !Object.prototype.hasOwnProperty.call(job.step_results ?? {}, step), saved };
+  });
+  requireStepCommit(result);
+  return { status: readBackStatus ?? String(args._status), trigger: readBackStatus === undefined };
+}
+
 /** All persistent-job calls use metadata-only durable traces, including Word batches. */
-async function tracedProviderCall(db: Db, jobId: string, owner: string, step: string, init: RequestInit): Promise<Response> {
+async function tracedProviderCall(db: Db, jobId: string, owner: string, step: string, init: RequestInit, recoverResponse = false): Promise<Response> {
   return tracedAnalysisFetch(init, {
     async begin(m) {
       const r = await db.rpc('begin_analysis_call', { _job_id: jobId, _owner: owner, _step: step,
@@ -341,9 +415,21 @@ async function tracedProviderCall(db: Db, jobId: string, owner: string, step: st
       return typeof r.data === 'string' ? r.data : null;
     },
     async record(id, o) {
-      const r = await db.rpc('record_analysis_call', { _call_id: id, _owner: owner, _status: o.status,
+      const args = { _call_id: id, _owner: owner, _status: o.status,
         _duration_ms: o.durationMs, _input_tokens: o.inputTokens ?? null,
-        _output_tokens: o.outputTokens ?? null, _provider_id: o.providerId ?? null, _http_status: o.httpStatus ?? null });
+        _output_tokens: o.outputTokens ?? null, _provider_id: o.providerId ?? null, _http_status: o.httpStatus ?? null };
+      const write = () => db.rpc('record_analysis_call', args);
+      const r = recoverResponse && o.status === 'response_received' ? await recoverProjectSave(write, async () => {
+        const { owned } = await readProjectOwner(db, jobId, owner);
+        const call = await db.from('btp_analysis_calls').select('status, duration_ms, input_tokens, output_tokens, provider_request_id, http_status')
+          .eq('id', id).eq('job_id', jobId).eq('worker_id', owner).eq('step', step).maybeSingle();
+        if (call.error || !call.data) throw new Error('Save reconciliation unavailable.');
+        const saved = ['response_received', 'response_saved'].includes(call.data.status)
+          && call.data.duration_ms === o.durationMs && (call.data.input_tokens ?? null) === args._input_tokens
+          && (call.data.output_tokens ?? null) === args._output_tokens && (call.data.provider_request_id ?? null) === args._provider_id
+          && (call.data.http_status ?? null) === args._http_status;
+        return { owned: owned && call.data.status === 'call_started', saved };
+      }) : await write();
       return !r.error && r.data === true;
     },
   }, anthropicCompatFetch);
@@ -831,7 +917,7 @@ export function nextStepProjectDocs(stepResults: Record<string, unknown> | null,
 async function callGlobalAnalysis(db: Db, jobId: string, owner: string, messages: GlobalAnalysisMessages): Promise<string> {
   const resp = await tracedProviderCall(db, jobId, owner, 'global_analysis', {
     body: JSON.stringify({ max_tokens: RESPONSE_MAX_TOKENS, temperature: 0, messages }),
-  });
+  }, true);
   if (!resp.ok) {
     const full = await resp.text();
 
@@ -839,6 +925,11 @@ async function callGlobalAnalysis(db: Db, jobId: string, owner: string, messages
     if (isApiSizeLimitError(resp.status, full)) throw new DocumentTooLargeError(`HTTP ${resp.status}: limite de taille fournisseur.`);
     if (resp.status === 401 || resp.status === 402 || resp.status === 403) {
       throw new TerminalStepError(`IA refus permanent ${resp.status}.`);
+    }
+    const category = classifyPermanentProviderError(resp.status, full);
+    if (category) {
+      console.log('analysis_provider_permanent', JSON.stringify({ jobId, step: 'global_analysis', http_status: resp.status, category }));
+      throw new TerminalStepError('IA requête permanente refusée.');
     }
     throw new Error(`IA erreur ${resp.status}.`);
   }
@@ -870,7 +961,7 @@ async function callFactualForOneDocument(db: Db, jobId: string, owner: string, s
         { role: 'user', content: parts },
       ],
     }),
-  });
+  }, true);
   if (!resp.ok) {
     const full = await resp.text();
 
@@ -879,6 +970,11 @@ async function callFactualForOneDocument(db: Db, jobId: string, owner: string, s
     }
     if (resp.status === 401 || resp.status === 402 || resp.status === 403) {
       throw new TerminalStepError(`IA refus permanent ${resp.status}.`);
+    }
+    const category = classifyPermanentProviderError(resp.status, full);
+    if (category) {
+      console.log('analysis_provider_permanent', JSON.stringify({ jobId, step, http_status: resp.status, category }));
+      throw new PermanentDocumentRequestError(category);
     }
     throw new Error(`IA erreur ${resp.status}.`);
   }
@@ -918,21 +1014,20 @@ async function workProjectDocs(
         try { return await callFactualForOneDocument(db, jobId, owner, step, d); }
         catch (e) { if (e instanceof TerminalStepError || e instanceof AttemptJournalError) terminal = e; throw e; }
       }, BTP_PROJECT_FACTUAL_EXTRACTION_PROMPT);
-      clearInterval(heartbeat);
-      heartbeat = undefined;
       if (terminal) throw terminal;
       if (leaseLost) throw new Error(`Lease perdu pendant le document ${i}.`);
       const failure = result.status === 'failed' ? safeAnalysisError(new Error(result.error ?? '')) : null;
       const persistedResult = failure ? { ...result, error: failure.message, failure_code: failure.code } : result;
       console.log('[projectDocs] document', JSON.stringify({ jobId, i, status: result.status, attempts: result.attempts, facts: result.contract?.facts.length ?? 0 }));
       const progress = Math.round((85 * (i + 1)) / documents.length);
-      const ok = await db.rpc('commit_analysis_step', {
+      const saved = await commitProjectResponse(db, jobId, owner, step, {
         _job_id: jobId, _owner: owner, _step: step, _result: persistedResult, _progress: progress,
         _current_step: i + 1 < documents.length ? `doc:${i + 1}` : 'dossier', _status: 'queued',
       });
-      requireStepCommit(ok);
-      triggerNext(db, jobId).catch(() => {});
-      return json({ jobId, executed: step, status: 'queued', documentStatus: result.status });
+      clearInterval(heartbeat);
+      heartbeat = undefined;
+      if (saved.trigger) triggerNext(db, jobId).catch(() => {});
+      return json({ jobId, executed: step, status: saved.status, documentStatus: result.status });
     }
     if (step === 'dossier') {
       // Consolidation déterministe (aucun appel IA) des contrats indépendants.
@@ -951,22 +1046,25 @@ async function workProjectDocs(
     if (step === 'global_analysis') {
       const dossier = (stepResults.dossier as any)?.data?.dossier as ProjectFactsDossier;
       if (!dossier?.contract) throw new TerminalStepError('Dossier factuel consolidé absent.');
+      if (!Array.isArray(dossier.contract.facts)) throw new TerminalStepError('Contrat factuel consolidé invalide.');
       heartbeat = setInterval(async () => {
         const hb = await db.rpc('heartbeat_analysis_job', { _job_id: jobId, _owner: owner });
         if (hb.data !== true) leaseLost = true;
       }, HEARTBEAT_MS) as unknown as number;
-      const analysis = await runGlobalAnalysis(dossier, messages => callGlobalAnalysis(db, jobId, owner, messages));
-      clearInterval(heartbeat);
-      heartbeat = undefined;
+      const analysis = dossier.contract.facts.length === 0
+        ? { version: 1, status: 'failed', text: null, factsCount: 0, complete: dossier.complete,
+            missingDocuments: dossier.missingDocuments, error: 'EMPTY_FACTUAL_DOSSIER', failureCode: 'EMPTY_FACTUAL_DOSSIER' }
+        : await runGlobalAnalysis(dossier, messages => callGlobalAnalysis(db, jobId, owner, messages));
       if (leaseLost) throw new Error("Lease perdu pendant l'analyse globale.");
-      const ok = await db.rpc('commit_analysis_step', {
+      const saved = await commitProjectResponse(db, jobId, owner, 'global_analysis', {
         _job_id: jobId, _owner: owner, _step: 'global_analysis',
         _result: { kind: 'project_global_analysis', data: analysis },
         _progress: 97, _current_step: 'finalize', _status: 'queued',
       });
-      requireStepCommit(ok);
-      triggerNext(db, jobId).catch(() => {});
-      return json({ jobId, executed: 'global_analysis', status: 'queued' });
+      clearInterval(heartbeat);
+      heartbeat = undefined;
+      if (saved.trigger) triggerNext(db, jobId).catch(() => {});
+      return json({ jobId, executed: 'global_analysis', status: saved.status });
     }
     if (step === 'finalize') {
       // Références seulement : dossier et analyse restent dans deux clés distinctes.

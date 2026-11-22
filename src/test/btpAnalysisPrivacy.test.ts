@@ -4,6 +4,46 @@ import ts from 'typescript';
 import { describe, expect, it, vi } from 'vitest';
 import { validateBtpFacts } from '../../supabase/functions/_shared/btpFactsContract';
 
+const workerSource = ts.transpileModule(readFileSync('supabase/functions/btp-analysis-job/index.ts', 'utf8'), {
+  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
+}).outputText.replace(/^import[\s\S]*?;\s*/gm, '').replace(/^export /gm, '');
+const classify = runInNewContext(workerSource + '\nclassifyPermanentProviderError;', {
+  Deno: { env: { get: () => 'local-test-only' }, serve: () => {} },
+}) as (status: number, body: string) => string | null;
+const providerError = (message: string, type = 'invalid_request_error') => JSON.stringify({ error: { type, message } });
+
+describe('Phase 2D — classification fermée des erreurs fournisseur', () => {
+  it.each([
+    ['messages: Field required', 'REQUEST_SCHEMA_INVALID'],
+    ['max_tokens: Field required', 'REQUEST_SCHEMA_INVALID'],
+    ['model: Field required', 'REQUEST_SCHEMA_INVALID'],
+    ['unknown_field: Extra inputs are not permitted', 'REQUEST_SCHEMA_INVALID'],
+    ["messages.0.role: Input should be 'user' or 'assistant'", 'MESSAGE_ROLE_INVALID'],
+    ['messages.1.content.0.image.source: Could not decode base64 image', 'IMAGE_SOURCE_INVALID'],
+    ['messages.1.content.0.image.source.data: Invalid base64 data', 'IMAGE_SOURCE_INVALID'],
+    ['messages.1.content.0.image.source.media_type: Unsupported media type', 'IMAGE_SOURCE_INVALID'],
+  ])('reconnaît le motif explicite %s sans restituer son texte', (message, category) => {
+    const body = providerError(message);
+    expect(classify(400, body)).toBe(category);
+    expect(classify(400, JSON.stringify({ error: { message: body } }))).toBe(category);
+    expect(classify(500, body)).toBeNull();
+  });
+  it.each([
+    'invalid', 'rate limit exceeded', 'organization spend limit reached', 'prompt is too long',
+    'messages: roles must alternate', 'temperature: must be between 0 and 1',
+    'CLIENT_CONFIDENTIEL messages: Field required', 'messages: Field required api-key=secret',
+    'messages.0.content.0.text: messages: Field required',
+  ])('préserve le caractère indéterminé du motif %s', message => {
+    expect(classify(400, providerError(message))).toBeNull();
+  });
+  it.each(['invalid JSON', '{}', '{"error":{"message":"messages: Field required"}}', '{"error":{"type":"invalid_request_error","message":42}}'])('ne classe pas un corps illisible/incomplet %s', body => {
+    expect(classify(400, body)).toBeNull();
+  });
+  it('ne classe pas un motif attribué à une autre catégorie fournisseur', () => {
+    expect(classify(400, providerError('messages: Field required', 'overloaded_error'))).toBeNull();
+  });
+});
+
 describe('4A BIS — confidentialité des journaux réels',()=>{
   it('le validateur conserve les faits mais ne journalise que des compteurs',()=>{
     const log=vi.spyOn(console,'log').mockImplementation(()=>{});

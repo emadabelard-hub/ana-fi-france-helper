@@ -66,6 +66,22 @@ describe('22 reprise interrompue — résultats sauvegardés et aucune régéné
 });
 
 describe('Reprise terminale sans rapport — raison et toast localisés', () => {
+  it.each([false, true])('le dossier vide reste sans rapport après sortie/retour et sans requête de génération (RTL=%s)', async rtl => {
+    state.rtl = rtl;
+    const dossier = buildProjectFactsDossier([{ docId: 'a', fileName: 'a.pdf', status: 'failed', attempts: 2, contract: null, error: 'source failed' }]);
+    state.row = { id: 'empty-dossier', status: 'completed_without_report', error_message: 'GLOBAL_ANALYSIS_FAILED', step_results: {
+      dossier: { data: { dossier } }, global_analysis: { data: { status: 'failed', text: null, factsCount: 0, failureCode: 'EMPTY_FACTUAL_DOSSIER', missingDocuments: dossier.missingDocuments } },
+    } };
+    const before = JSON.stringify(state.row); const send = vi.spyOn(globalThis, 'fetch');
+    try {
+      sessionStorage.setItem('anafypro_project_analysis_job', JSON.stringify({ id: state.row.id }));
+      const first = render(<ProjectAnalysisPage />); await screen.findByRole('status');
+      first.unmount(); render(<ProjectAnalysisPage />); await screen.findByRole('status');
+      expect(state.read).toHaveBeenCalledTimes(2); expect(send).not.toHaveBeenCalled();
+      expect(JSON.stringify(state.row)).toBe(before); expect(state.row.step_results.global_analysis.data.factsCount).toBe(0);
+      expect(state.toast.mock.calls[0][0].props.dir).toBe(rtl ? 'rtl' : 'ltr');
+    } finally { send.mockRestore(); }
+  });
   it.each([
     [false,'GLOBAL_ANALYSIS_TOO_LARGE'],[true,'GLOBAL_ANALYSIS_TOO_LARGE'],
     [false,'GLOBAL_ANALYSIS_FAILED'],[true,'GLOBAL_ANALYSIS_FAILED'],

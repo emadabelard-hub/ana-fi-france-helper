@@ -1,3 +1,8 @@
+# Phase 2F — anomalies bloquantes
+- [x] Vérifier le statut terminal : source déjà correcte, page publiée ancienne, aucune publication.
+- [x] Aligner la confirmation des sauvegardes sur JSON et tester les réponses ambiguës sans services réels.
+- [x] Exécuter les contrôles locaux : 362 tests réussis, types Deno validés en cache isolé ; diff et rapport remis sans activation.
+
 # Statut terminal sans rapport global
 - [x] Vérifier le type de statut et les décisions serveur/interface : texte sans CHECK, aucune migration.
 - [x] Réserver completed aux rapports sauvegardés et afficher la raison sans rapport.

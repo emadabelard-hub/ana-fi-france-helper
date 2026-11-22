@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import ProjectAnalysisPage from '../pages/ProjectAnalysisPage';
@@ -13,7 +13,7 @@ vi.mock('@/contexts/LanguageContext', () => ({ useLanguage: () => ({ isRTL: stat
 vi.mock('@/lib/pdfIngest', () => ({ ingestImage: vi.fn() }));
 vi.mock('@/lib/projectDocumentIngest', () => ({ extractProjectDocx: vi.fn(), ingestProjectPdf: vi.fn() }));
 vi.mock('@/integrations/supabase/client', () => ({ supabase: { from: () => ({ select: () => ({ eq: () => ({ maybeSingle: () => { state.read(); return Promise.resolve({ data: state.row, error: null }); } }) }) }) } }));
-afterEach(() => { cleanup(); sessionStorage.clear(); state.rtl = false; state.read.mockClear(); state.toast.mockClear(); });
+afterEach(() => { cleanup(); vi.useRealTimers(); sessionStorage.clear(); state.rtl = false; state.read.mockClear(); state.toast.mockClear(); });
 
 describe('22 reprise interrompue — résultats sauvegardés et aucune régénération', () => {
   it.each([false, true])('un échec au plafond reste terminal après sortie/retour et ne poursuit pas le polling (RTL=%s)', async rtl => {
@@ -66,6 +66,25 @@ describe('22 reprise interrompue — résultats sauvegardés et aucune régéné
 });
 
 describe('Reprise terminale sans rapport — raison et toast localisés', () => {
+  it.each([false, true])('arrête le polling après transition running → completed_without_report sans génération (RTL=%s)', async rtl => {
+    vi.useFakeTimers(); state.rtl = rtl;
+    const partial = { 'doc:0': { status: 'completed', contract: { facts: [{ reference: 'A', quantity: 25, evidenceText: 'BA13 25 m²' }] } } };
+    state.row = { id: 'transition', status: 'running', current_step: 'global_analysis', step_results: partial };
+    sessionStorage.setItem('anafypro_project_analysis_job', JSON.stringify({ id: 'transition' }));
+    const send = vi.spyOn(globalThis, 'fetch');
+    try {
+      await act(async () => { render(<ProjectAnalysisPage />); });
+      expect(state.read).toHaveBeenCalledTimes(1);
+      state.row = { ...state.row, status: 'completed_without_report', error_message: 'REPORT_SAVE_FAILED' };
+      await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+      expect(state.read).toHaveBeenCalledTimes(2);
+      await act(async () => { await vi.advanceTimersByTimeAsync(15_000); });
+      expect(state.read).toHaveBeenCalledTimes(2);
+      expect(send).not.toHaveBeenCalled();
+      expect(state.row.step_results).toEqual(partial);
+      expect(sessionStorage.getItem('anafypro_project_analysis_job')).toContain('transition');
+    } finally { send.mockRestore(); }
+  });
   it.each([false, true])('le dossier vide reste sans rapport après sortie/retour et sans requête de génération (RTL=%s)', async rtl => {
     state.rtl = rtl;
     const dossier = buildProjectFactsDossier([{ docId: 'a', fileName: 'a.pdf', status: 'failed', attempts: 2, contract: null, error: 'source failed' }]);

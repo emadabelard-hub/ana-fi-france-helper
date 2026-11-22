@@ -56,7 +56,7 @@ function harness(seed: ReturnType<typeof base> | Record<string, any>, options: {
         if(outcome.loseOwner) job.payload.lease_owner='another-worker';
         return outcome;
       }
-      job.step_results[args._step]=args._result; job.status=args._status;
+      job.step_results[args._step]=JSON.parse(JSON.stringify(args._result)); job.status=args._status;
       job.progress=args._progress; job.current_step=args._current_step;
       job.final_report=args._final_report ?? job.final_report;
       attempt={...attempt,job_id:job.id,worker_id:args._owner,step:args._step,status:'saved'};
@@ -274,6 +274,45 @@ const factualReply = () => new Response(JSON.stringify({ id: 'msg_factual', usag
 const globalReply = () => new Response(JSON.stringify({ id: 'msg_global', usage: { prompt_tokens: 33, completion_tokens: 44 }, choices: [{ message: { content: 'Rapport reçu sans recalcul' } }] }));
 const temporary = { data: null, error: { code: 'PGRST001', message: 'CLIENT_CONFIDENTIEL api-key=secret' } };
 const rpcCalls = (h: ReturnType<typeof harness>, name: string) => h.rpc.mock.calls.filter(([n]) => n === name);
+
+describe('Phase 2F — confirmation selon la représentation JSON persistée', () => {
+  const start = workerCode.indexOf('function sameSavedValue(');
+  const end = workerCode.indexOf('function temporarySaveError(', start);
+  const same = runInNewContext(`${workerCode.slice(start, end)}; sameSavedValue;`) as (a: unknown, b: unknown) => boolean;
+
+  it.each([
+    [{ quantity: 25, optional: undefined }, { quantity: 25 }],
+    [{ source: { reference: 'A', optional: undefined } }, { source: { reference: 'A' } }],
+    [[undefined, { quantity: 25, optional: undefined }, null], [null, { quantity: 25 }, null]],
+    [{ value: null, list: [] }, { list: [], value: null }],
+    [{ facts: [{ reference: 'A', quantity: 25, citation: 'BA13 25 m²' }] }, { facts: [{ citation: 'BA13 25 m²', quantity: 25, reference: 'A' }] }],
+  ])('confirme exactement les équivalences JSON %#', (memory, persisted) => {
+    expect(same(memory, persisted)).toBe(true);
+    expect(same(persisted, memory)).toBe(true);
+  });
+  it.each([
+    [{ quantity: 25 }, { quantity: 26 }],
+    [{ reference: 'A' }, { reference: 'B' }],
+    [{ citation: 'BA13 25 m²' }, { citation: 'BA13 26 m²' }],
+    [{ nested: { quantity: 25 } }, { nested: { quantity: 26 } }],
+    [[1, 2], [2, 1]], [[null], []],
+    [{ value: null }, {}], [{ value: null }, { value: undefined }],
+    [undefined, undefined], [undefined, null], [{ value: 25n }, { value: '25' }],
+  ])('refuse les divergences et valeurs non persistables %#', (memory, persisted) => {
+    expect(same(memory, persisted)).toBe(false);
+  });
+  it.each([false, null])('un RPC ambigu %s n’est confirmé que par la lecture JSON exacte', async data => {
+    const h = harness(globalSeed(), { commits: [{ data, error: null, applied: true }] });
+    h.provider.mockImplementation(async () => globalReply());
+    const result = await h.run();
+    expect(result.body.status).toBe('queued');
+    expect(h.job.step_results.global_analysis.data.text).toBe('Rapport reçu sans recalcul');
+    expect(rpcCalls(h, 'commit_analysis_step')).toHaveLength(1);
+    expect(h.provider).toHaveBeenCalledTimes(1);
+    expect(h.trigger).not.toHaveBeenCalled();
+    expect(h.delay).not.toHaveBeenCalled();
+  });
+});
 
 describe('Phase 2D — trois corrections isolées au parcours projet', () => {
   it.each(['messages: Field required', "messages.0.role: Input should be 'user' or 'assistant'", 'messages.1.content.0.image.source.data: Invalid base64 data'])(

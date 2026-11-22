@@ -352,11 +352,20 @@ export function classifyPermanentProviderError(status: number, full: string): Pe
 }
 
 function sameSavedValue(a: unknown, b: unknown): boolean {
-  if (a === b) return true;
-  if (!a || !b || typeof a !== 'object' || typeof b !== 'object' || Array.isArray(a) !== Array.isArray(b)) return false;
-  const left = a as Record<string, unknown>, right = b as Record<string, unknown>;
-  const keys = Object.keys(left);
-  return keys.length === Object.keys(right).length && keys.every(k => Object.prototype.hasOwnProperty.call(right, k) && sameSavedValue(left[k], right[k]));
+  // Compare the JSON actually sent to persistence, not optional in-memory keys.
+  // Missing/non-serializable roots cannot prove that a result was saved.
+  try {
+    const leftJson = JSON.stringify(a), rightJson = JSON.stringify(b);
+    if (leftJson === undefined || rightJson === undefined) return false;
+    const equal = (left: unknown, right: unknown): boolean => {
+      if (left === right) return true;
+      if (!left || !right || typeof left !== 'object' || typeof right !== 'object' || Array.isArray(left) !== Array.isArray(right)) return false;
+      const l = left as Record<string, unknown>, r = right as Record<string, unknown>;
+      const keys = Object.keys(l);
+      return keys.length === Object.keys(r).length && keys.every(k => Object.prototype.hasOwnProperty.call(r, k) && equal(l[k], r[k]));
+    };
+    return equal(JSON.parse(leftJson), JSON.parse(rightJson));
+  } catch { return false; }
 }
 
 /** Only recognized connection/availability/transaction failures are retried. */

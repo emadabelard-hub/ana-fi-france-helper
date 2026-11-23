@@ -114,7 +114,9 @@ const canonicalUnit = (u: string): string => {
   const x = normEv(u);
   if (/^(m2|metres? carres?)$/.test(x)) return "m²";
   if (/^m3$/.test(x)) return "m³";
-  if (/^(ml|metres? lineaires?|m)$/.test(x)) return "ml";
+  if (/^(ml|metres? lineaires?)$/.test(x)) return "ml";
+  // « m » seul reste « m » : hauteur, longueur ou linéaire ? Jamais converti sans contexte.
+  if (x === "m") return "m";
   if (/^(u|unites?|pieces?|pce)$/.test(x)) return "u";
   if (/^(ens)$/.test(x)) return "ens";
   if (/^(forfaits?|ft)$/.test(x)) return "forfait";
@@ -124,6 +126,12 @@ const canonicalUnit = (u: string): string => {
 };
 export const measuresIn = (text: string) => [...normEv(text).matchAll(MEASURE)]
   .map((m) => ({ value: Number(m[1].replace(",", ".")), unit: canonicalUnit(m[2]), raw: m[0] }));
+/** Unités dont l'équivalence ne peut être établie sans contexte (m seul / ml). */
+const AMBIGUOUS_UNIT_PAIRS = new Set(["m|ml", "ml|m"]);
+const unitsAmbiguous = (a: string, b: string) => AMBIGUOUS_UNIT_PAIRS.has(`${a}|${b}`);
+/** Dimensions composées (90 x 210 cm, 2,50 × 1,20 m) : rattachement de chaque valeur non établi. */
+const COMPOSITE_DIM = /\d+(?:[.,]\d+)?\s*(?:m|cm|mm)?\s*[x×*]\s*\d+(?:[.,]\d+)?/i;
+export const hasCompositeDimension = (text: string) => COMPOSITE_DIM.test(text.toLowerCase());
 const AMBIGUOUS_QTY = /\b(environ|approx\w*|estim\w*|minimum|maximum|mini|maxi|entre|jusqu\w*|a confirmer|a peu pres|plus de|moins de|au moins|au plus)\b/;
 
 // ------------------------------------------------------------ ancrage
@@ -174,7 +182,7 @@ export const verifyFactFields = (fact: VerifiableFact, units: SourceUnit[]): Omi
 
   // Citation
   if (exact) checks.push(check("citation", "verified", fact.evidenceText, "exact_quote_single_unit", "quote_found_in_single_unit", unit));
-  else if (anchor.status === "located_divergent") checks.push(check("citation", "demonstrated_error", fact.evidenceText, "located_passage_comparison", "quote_not_verbatim_in_located_passage", unit));
+  else if (anchor.status === "located_divergent") checks.push(check("citation", "unverifiable", fact.evidenceText, "located_passage_comparison", "quote_not_verbatim_in_located_passage", unit));
   else checks.push(check("citation", "unverifiable", fact.evidenceText || null, "none", noAnchorReason));
 
   // Prestation
@@ -192,9 +200,12 @@ export const verifyFactFields = (fact: VerifiableFact, units: SourceUnit[]): Omi
   const qtyValue = fact.quantity === null ? null : String(fact.quantity);
   const passageMeasures = located ? measuresIn(unit.text) : [];
   const ambiguousText = located && AMBIGUOUS_QTY.test(normEv(unit.text));
+  const compositeDim = located && (hasCompositeDimension(unit.text) || hasCompositeDimension(fact.evidenceText || ""));
   if (fact.quantity === null) checks.push(check("quantity", "not_applicable", null, "none", "no_quantity_in_fact"));
   else if (!located) checks.push(check("quantity", "unverifiable", qtyValue, "none", noAnchorReason));
   else if (ambiguousText) checks.push(check("quantity", "unverifiable", qtyValue, "single_measure_in_unit", "qualified_or_range_quantity", unit));
+  else if (compositeDim) checks.push(check("quantity", "unverifiable", qtyValue, "single_measure_in_unit", "composite_dimension_in_unit", unit));
+  else if (fact.unit && passageMeasures.length === 1 && unitsAmbiguous(passageMeasures[0].unit, fact.unit)) checks.push(check("quantity", "unverifiable", qtyValue, "single_measure_in_unit", `ambiguous_unit:${passageMeasures[0].unit}`, unit));
   else {
     const sameUnit = fact.unit ? passageMeasures.filter((m) => m.unit === fact.unit) : passageMeasures;
     if (sameUnit.length !== 1 || passageMeasures.length !== 1) {
@@ -209,6 +220,8 @@ export const verifyFactFields = (fact: VerifiableFact, units: SourceUnit[]): Omi
   }
   if (!fact.unit) checks.push(check("unit", "not_applicable", null, "none", "no_unit_in_fact"));
   else if (!located) checks.push(check("unit", "unverifiable", fact.unit, "none", noAnchorReason));
+  else if (compositeDim) checks.push(check("unit", "unverifiable", fact.unit, "single_measure_in_unit", "composite_dimension_in_unit", unit));
+  else if (passageMeasures.length === 1 && unitsAmbiguous(passageMeasures[0].unit, fact.unit)) checks.push(check("unit", "unverifiable", fact.unit, "single_measure_in_unit", `ambiguous_unit:${passageMeasures[0].unit}`, unit));
   else if (passageMeasures.length !== 1) checks.push(check("unit", "unverifiable", fact.unit, "single_measure_in_unit", passageMeasures.length === 0 ? "no_measure_in_unit" : "several_measures_in_unit", unit));
   else if (passageMeasures[0].unit === fact.unit) checks.push(exact
     ? check("unit", "verified", fact.unit, "single_measure_in_unit", "unit_equals_local_measure", unit)

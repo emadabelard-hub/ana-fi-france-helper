@@ -27,13 +27,14 @@ describe("Lot 3 — contrôle séparé des champs", () => {
   it("Hélène Delaplace : 6 m² au lieu de 4 m² est une erreur démontrée, pas un fait", () => {
     const r = verifyFactFields(fact({ descriptionExact: "Dépose carrelage au sol", evidenceText: "Dépose de 6 m² de carrelage au sol.", quantity: 6, unit: "m²", sourcePage: 4 }), units);
     expect(status(r, "quantity")).toBe("demonstrated_error");
-    expect(status(r, "citation")).toBe("demonstrated_error");
+    expect(status(r, "citation")).toBe("unverifiable");
     expect(r.verificationSummary).toBe("demonstrated_error");
   });
   it("Hélène Delaplace : « frisette » n'est pas validée contre « fresque »", () => {
     const r = verifyFactFields(fact({ descriptionExact: "Mise en place d'une frisette papier peint", evidenceText: "Mise en place d'une frisette papier peint sur 22 m² en remplacement de la fausse peinture.", quantity: 22, unit: "m²", sourcePage: 4 }), units);
     expect(status(r, "prestation")).toBe("unverifiable");
-    expect(status(r, "citation")).toBe("demonstrated_error");
+    expect(status(r, "citation")).toBe("unverifiable");
+    expect(r.verificationSummary).not.toBe("verified");
     expect(status(r, "quantity")).not.toBe("verified");
   });
   it("Hélène Delaplace : 65 m² absent de la page n'est pas vérifié", () => {

@@ -150,7 +150,7 @@ const checkSingleQuotedMeasure = (f: ValidatedBtpFact): string[] => {
     !f.unit || !f.evidenceText
   ) return [];
 
-  const expectedType = f.unit === "m²" ? "area" : f.unit === "ml" ? "length" : f.unit === "u" ? "count" : null;
+  const expectedType = f.unit === "m²" ? "area" : (f.unit === "ml" || f.unit === "m") ? "length" : f.unit === "u" ? "count" : null;
   if (!expectedType || f.quantityType !== expectedType) return [];
 
   const normalize = (s: string) => s.toLowerCase().normalize("NFD")
@@ -184,7 +184,8 @@ const checkSingleQuotedMeasure = (f: ValidatedBtpFact): string[] => {
 
   const canonical = (u: string) => {
     if (/^metres?\s*carres?$/.test(u)) return "m²";
-    if (/^metres?(?:\s*lineaires?)?$/.test(u)) return "ml";
+    if (/^metres?\s*lineaires?$/.test(u)) return "ml";
+    if (/^metres?$/.test(u)) return "m";
     return normalizeUnit(u);
   };
   if (canonical(quotedUnit) !== f.unit) return [];

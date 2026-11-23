@@ -31,6 +31,7 @@ export type BtpQuantityType =
 export type BtpUnit =
   | "u"
   | "ml"
+  | "m"
   | "m²"
   | "m³"
   | "h"
@@ -120,7 +121,8 @@ const UNIT_MAP: Record<string, Exclude<BtpUnit, null>> = {
   "u": "u", "un": "u", "unite": "u", "unité": "u", "unites": "u", "unités": "u",
   "pce": "u", "pièce": "u", "piece": "u", "pièces": "u", "pieces": "u", "nb": "u",
   "ml": "ml", "m/l": "ml", "mL": "ml", "metre lineaire": "ml", "mètre linéaire": "ml",
-  "m": "ml", "mètre": "ml", "metre": "ml", "mètres": "ml", "metres": "ml",
+  // « m » seul reste « m » (hauteur, longueur ou linéaire non établi) : jamais converti en « ml ».
+  "m": "m", "mètre": "m", "metre": "m", "mètres": "m", "metres": "m",
   "m2": "m²", "m²": "m²", "m^2": "m²", "metre carre": "m²", "mètre carré": "m²",
   "m3": "m³", "m³": "m³", "m^3": "m³",
   "h": "h", "heure": "h", "heures": "h",
@@ -132,6 +134,7 @@ const UNIT_MAP: Record<string, Exclude<BtpUnit, null>> = {
 const QTY_TYPE_BY_UNIT: Record<Exclude<BtpUnit, null>, BtpQuantityType> = {
   u: "count",
   ml: "length",
+  m: "length",
   "m²": "area",
   "m³": "volume",
   h: "time",

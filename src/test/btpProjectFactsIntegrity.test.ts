@@ -188,8 +188,8 @@ describe("Phase 1B proposée — quantité et citation, sans correction", () => 
   });
 
   it.each<[string, string, string]>([
-    ["Pose de plinthes 4 m", "m", "ml"],
-    ["Pose de plinthes 4 mètres", "mètre", "ml"],
+    ["Pose de plinthes 4 m", "m", "m"],
+    ["Pose de plinthes 4 mètres", "mètre", "m"],
     ["Pose de plinthes 4 mètres linéaires", "ml", "ml"],
     ["Pose de plinthes 4 m/l", "m/l", "ml"],
     ["Dépose de carrelage 4 m2", "m2", "m²"],

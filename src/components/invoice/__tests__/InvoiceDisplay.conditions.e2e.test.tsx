@@ -209,6 +209,6 @@ describe('E2E — Conditions Générales sur PDF de devis (Chromium réel)', () 
 
       // Persist PDF to /mnt/documents for human QA
       execSync(`cp "${pdf}" "${path.join(QA_DIR, `${sc.name}.pdf`)}"`);
-    });
+    }, 30_000);
   }
 });

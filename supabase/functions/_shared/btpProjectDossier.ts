@@ -10,6 +10,7 @@ import {
   consolidateBtpContracts,
   type ConsolidatedBtpContract,
 } from "./btpFactsConsolidation.ts";
+import { evaluateDossierReliability, type DossierReliability } from "./btpProjectReportGate.ts";
 import { isPartiallyCovered, type DocumentFactsResult, type DocumentFactsStatus } from "./btpDocumentSequence.ts";
 
 export type DossierDocumentStatus = DocumentFactsStatus | "missing";
@@ -25,6 +26,8 @@ export type DossierDocumentState = {
   /** Traitement réussi mais une partie du document n'a pas été transmise. */
   partial: boolean;
   unreadPages: number[];
+  untransmittedMedia?: number;
+  structureIssues?: string[];
   error: string | null;
   /** Bilan de validation des faits (null pour les résultats antérieurs sans bilan). */
   validation: { received: number; accepted: number; rejected: number; withAnomalies: number; partial: boolean;
@@ -35,13 +38,15 @@ export type ProjectFactsDossier = {
   version: 1;
   complete: boolean;
   documents: DossierDocumentState[];
-  missingDocuments: { index: number; fileName: string | null; status: DossierDocumentStatus; partial?: boolean; unreadPages?: number[]; rejectedEntries?: number }[];
+  missingDocuments: { index: number; fileName: string | null; status: DossierDocumentStatus; partial?: boolean; unreadPages?: number[]; untransmittedMedia?: number; rejectedEntries?: number }[];
   /** Niveaux de complétude distincts (aucune exhaustivité IA n'est revendiquée). */
   completeness: {
     transmitted: number; technicallyRead: number; extractionCompleted: number;
     factsFullyValidated: number; dossierBuilt: true; exhaustivenessProven: false;
   };
   contract: ConsolidatedBtpContract;
+  /** Fiabilité documentaire (P0), distincte de la complétude technique `complete`. */
+  reliability?: DossierReliability;
 };
 
 export const buildProjectFactsDossier = (
@@ -58,7 +63,9 @@ export const buildProjectFactsDossier = (
       factsCount: contributes ? r.contract!.facts.length : 0,
       contributesFacts: contributes,
       partial: isPartiallyCovered(r.coverage),
-      unreadPages: isPartiallyCovered(r.coverage) ? [...r.coverage!.unreadPages!] : [],
+      unreadPages: isPartiallyCovered(r.coverage) ? [...(r.coverage!.unreadPages ?? [])] : [],
+      ...(r.coverage?.untransmittedMedia ? { untransmittedMedia: r.coverage.untransmittedMedia } : {}),
+      ...(r.coverage?.structureIssues?.length ? { structureIssues: [...r.coverage.structureIssues] } : {}),
       error: r.error,
       validation: r.integrity ? {
         received: r.integrity.received, accepted: r.integrity.accepted, rejected: r.integrity.rejected,
@@ -83,6 +90,7 @@ export const buildProjectFactsDossier = (
     .map((d) => ({
       index: d.index, fileName: d.fileName, status: d.status,
       ...(d.partial ? { partial: true, unreadPages: d.unreadPages } : {}),
+      ...(d.untransmittedMedia ? { untransmittedMedia: d.untransmittedMedia } : {}),
       ...(d.contributesFacts && d.validation?.partial ? { rejectedEntries: d.validation.rejected } : {}),
     }));
 
@@ -96,5 +104,7 @@ export const buildProjectFactsDossier = (
     exhaustivenessProven: false as const,
   };
 
-  return { version: 1, complete: missingDocuments.length === 0, documents, missingDocuments, completeness, contract };
+  const complete = missingDocuments.length === 0;
+  const reliability = evaluateDossierReliability({ complete, contract, documents });
+  return { version: 1, complete, documents, missingDocuments, completeness, contract, reliability };
 };

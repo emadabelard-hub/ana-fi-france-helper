@@ -2,6 +2,29 @@ import { useMemo } from 'react';
 import { auditGlobalAnalysis, type GlobalAnalysisAudit } from '../../../supabase/functions/_shared/btpGlobalAnalysisAudit';
 import type { ProjectFactsDossier } from '../../../supabase/functions/_shared/btpProjectDossier';
 
+type EvidenceCheck = { field: string; status: string; value: string | null; sourceText?: string; reason: string };
+/** Écarts démontrés entre valeurs extraites et passages sources (P0). Aucune valeur corrigée. */
+export function EvidenceIssues({ dossier, isRTL }: { dossier?: ProjectFactsDossier; isRTL: boolean }) {
+  const issues = (dossier?.contract?.facts ?? []).flatMap((f: any) => {
+    const checks: EvidenceCheck[] = f?.evidence?.evidenceVersion === 1 && Array.isArray(f.evidence.fieldChecks) ? f.evidence.fieldChecks : [];
+    return checks.filter(c => c.status === 'demonstrated_error' && c.field !== 'citation').map(c => ({ id: String(f.factId), file: String(f.sourceFile ?? ''), ...c }));
+  });
+  if (!issues.length) return null;
+  const T = isRTL
+    ? { title: 'قيم مستخرجة مختلفة عن المستند', extracted: 'القيمة المستخرجة', source: 'النص في المستند', fields: { quantity: 'الكمية', unit: 'الوحدة', prestation: 'البند' } as Record<string, string> }
+    : { title: 'Valeurs extraites différentes du document', extracted: 'Valeur extraite', source: 'Passage du document', fields: { quantity: 'Quantité', unit: 'Unité', prestation: 'Prestation' } as Record<string, string> };
+  return <section dir={isRTL ? 'rtl' : 'ltr'} className="rounded-xl border border-border bg-card p-4 space-y-2 text-[16px]">
+    <p className="font-semibold text-foreground">{T.title} : {issues.length}</p>
+    <ul className="space-y-2 max-h-72 overflow-y-auto">
+      {issues.map((c, i) => <li key={i} className="border-s-2 border-primary ps-3 text-foreground break-words">
+        {T.fields[c.field] ?? c.field} — <bdi dir="ltr" lang="fr" className="break-all">{c.file}</bdi><br />
+        {T.extracted} : <bdi dir="ltr" lang="fr">{c.value ?? '—'}</bdi><br />
+        {T.source} : <bdi dir="ltr" lang="fr">« {c.sourceText ?? '—'} »</bdi>
+      </li>)}
+    </ul>
+  </section>;
+}
+
 type Props = { text: string; audit?: GlobalAnalysisAudit; dossier?: ProjectFactsDossier; isRTL: boolean };
 /** Existing reports are checked locally only when their saved diagnostic predates v2. */
 export default function ProjectReportDiagnostics({ text, audit: saved, dossier, isRTL }: Props) {

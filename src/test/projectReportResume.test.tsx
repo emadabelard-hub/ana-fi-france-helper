@@ -5,13 +5,14 @@ import ProjectAnalysisPage from '../pages/ProjectAnalysisPage';
 import { buildProjectFactsDossier } from '../../supabase/functions/_shared/btpProjectDossier';
 import { validateBtpFacts } from '../../supabase/functions/_shared/btpFactsContract';
 import { runGlobalAnalysis } from '../../supabase/functions/_shared/btpGlobalAnalysisPrompt';
+import { validateProjectExtraction } from '../../supabase/functions/_shared/btpProjectFactsIntegrity';
 
 const state = vi.hoisted(() => ({ rtl: false, row: null as any, read: vi.fn(), toast: vi.fn() }));
 vi.mock('sonner', () => ({ toast: { error: state.toast } }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
 vi.mock('@/contexts/LanguageContext', () => ({ useLanguage: () => ({ isRTL: state.rtl }) }));
 vi.mock('@/lib/pdfIngest', () => ({ ingestImage: vi.fn() }));
-vi.mock('@/lib/projectDocumentIngest', () => ({ extractProjectDocx: vi.fn(), ingestProjectPdf: vi.fn() }));
+vi.mock('@/lib/projectDocumentIngest', () => ({ extractProjectDocx: vi.fn(), extractProjectDocxStructured: vi.fn(), ingestProjectPdf: vi.fn() }));
 vi.mock('@/integrations/supabase/client', () => ({ supabase: { from: () => ({ select: () => ({ eq: () => ({ maybeSingle: () => { state.read(); return Promise.resolve({ data: state.row, error: null }); } }) }) }) } }));
 afterEach(() => { cleanup(); vi.useRealTimers(); sessionStorage.clear(); state.rtl = false; state.read.mockClear(); state.toast.mockClear(); });
 
@@ -114,5 +115,32 @@ describe('Reprise terminale sans rapport — raison et toast localisés', () => 
     first.unmount();render(<ProjectAnalysisPage />);await screen.findByRole('status');
     expect(state.read).toHaveBeenCalledTimes(2);expect(state.toast).toHaveBeenCalledTimes(2);
     expect(state.row.status).toBe('completed_without_report');expect(state.row.step_results['doc:0'].status).toBe('completed');
+  });
+});
+describe('P0 — restitution selon la vérification documentaire', () => {
+  const blockedDossier = () => buildProjectFactsDossier([{ docId: 'p', fileName: 'descriptif.pdf', status: 'completed', attempts: 1, error: null,
+    ...validateProjectExtraction(
+      `<ANAFYPRO_BTP_FACTS>${JSON.stringify({ facts: [{ factType: 'billable_work', descriptionExact: 'Dépose carrelage au sol', evidenceText: 'Dépose de 6 m² de carrelage au sol.', quantity: 6, unit: 'm²', sourcePage: 4 }] })}</ANAFYPRO_BTP_FACTS>`,
+      { fileName: 'descriptif.pdf', text: '--- Page 4 ---\nDépose de 4 m² de carrelage au sol.' }) }]);
+  it.each([false, true])('arrêt pour fiabilité : message dédié, valeur extraite et passage source affichés sans correction (RTL=%s)', async rtl => {
+    state.rtl = rtl;
+    const dossier = blockedDossier();
+    state.row = { id: 'blocked', status: 'completed_without_report', error_message: null,
+      step_results: { dossier: { data: { dossier } }, global_analysis: { data: { status: 'failed', text: null, failureCode: 'DOCUMENTARY_RELIABILITY_BLOCKED' } }, final: { data: { reason: 'DOCUMENTARY_RELIABILITY_BLOCKED' } } } };
+    sessionStorage.setItem('anafypro_project_analysis_job', JSON.stringify({ id: 'blocked' }));
+    render(<ProjectAnalysisPage />);
+    const msg = rtl ? 'فيه معلومات اتطلعت مش مطابقة للمستندات' : 'Certaines informations extraites ne correspondent pas aux documents';
+    expect((await screen.findAllByText(new RegExp(msg))).length).toBeGreaterThan(0);
+    expect(screen.getByText('6')).toBeInTheDocument();
+    expect(screen.getByText('« Dépose de 4 m² de carrelage au sol. »')).toBeInTheDocument();
+  });
+  it.each([
+    [undefined, 'legacy', 'vérification documentaire des informations n’est pas établie'], [{ approved: false }, 'false', 'Rapport non validé'], [{ approved: true }, 'true', 'Les informations essentielles du rapport'],
+  ])('bandeau de restitution %#', async (release, attr, text) => {
+    state.row = { id: 'rel', status: 'completed', step_results: { global_analysis: { data: { status: 'completed', text: '## 1. Résumé du projet\nTexte', ...(release ? { release } : {}) } } } };
+    sessionStorage.setItem('anafypro_project_analysis_job', JSON.stringify({ id: 'rel' }));
+    const { container } = render(<ProjectAnalysisPage />);
+    expect(await screen.findByText(new RegExp(text))).toBeInTheDocument();
+    expect(container.querySelector('[data-release]')?.getAttribute('data-release')).toBe(attr);
   });
 });

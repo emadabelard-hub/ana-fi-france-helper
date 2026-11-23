@@ -176,7 +176,11 @@ describe("Phase 1B proposée — transmission, budget et absence de retraitement
     const d = buildProjectFactsDossier([phase1bResult("source.docx", 1, "Dépose 4 m²")]);
     const before = JSON.stringify(d);
     const sent = transmittedContract(buildGlobalAnalysisMessages(d));
-    expect(sent).toEqual(d.contract);
+    // P0 : seule l'enveloppe `evidence` est remplacée par ses statuts compacts ; tout le reste est identique.
+    const strip = (c: any) => ({ ...c, facts: c.facts.map(({ evidence, verification, ...f }: any) => f) });
+    expect(strip(sent)).toEqual(strip(d.contract));
+    expect(sent.facts[0].verification.fields.quantity).toBe("demonstrated_error");
+    expect(sent.facts[0].evidence).toBeUndefined();
     expect(sent.facts[0]).toMatchObject({ quantity: 1, unit: "m²", sourceFile: "source.docx", evidenceText: "Dépose 4 m²", sourceCheck: "verified" });
     expect(sent.facts[0].integrityFlags).toContain("quantity_evidence_mismatch");
     expect(sent.facts[0].factId).toBe(d.contract.facts[0].factId);
@@ -189,6 +193,7 @@ describe("Phase 1B proposée — transmission, budget et absence de retraitement
     const d = buildProjectFactsDossier([ok("legacy", "ancien.docx")]);
     const sent = transmittedContract(buildGlobalAnalysisMessages(d));
     expect(sent).toEqual(d.contract);
+    expect(sent.facts[0]).not.toHaveProperty("verification");
     expect(sent.facts[0]).not.toHaveProperty("sourceCheck");
     expect(sent.facts[0]).not.toHaveProperty("integrityFlags");
   });

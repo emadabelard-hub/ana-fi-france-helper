@@ -255,6 +255,17 @@ describe('Simulations du parcours complet — fournisseur et base factices',()=>
     expect(JSON.stringify(h.job.step_results.dossier)).toBe(kept);expect(h.provider).toHaveBeenCalledTimes(1);
     console.log('SIMULATION',count,JSON.stringify({status:h.job.status,reason:h.job.step_results.final.data.reason,tokens:h.job.step_results.global_analysis.data.estimatedInputTokens}));
   });
+  it('P0 : erreur démontrée sur une quantité essentielle — un seul appel (document), aucun appel global, arrêt dédié',async()=>{
+    const h=harness({...base(),payload:{kind:'project_docs_facts',documents:[{docId:'d1',fileName:'descriptif.pdf',kind:'pdf',text:'--- Page 4 ---\nDépose de 4 m² de carrelage au sol.',coverage:{totalPages:4,textPages:[4],imagePages:[],unreadPages:[]}}]}});
+    const facts=[{id:'F1',factType:'billable_work',descriptionExact:'Dépose carrelage au sol',quantity:6,unit:'m²',sourcePage:4,evidenceText:'Dépose de 6 m² de carrelage au sol.'}];
+    h.provider.mockResolvedValue(new Response(JSON.stringify({choices:[{message:{content:`<ANAFYPRO_BTP_FACTS>${JSON.stringify({facts})}</ANAFYPRO_BTP_FACTS>`}}]})));
+    for(let i=0;i<6;i++) await h.run();
+    expect(h.provider).toHaveBeenCalledTimes(1);
+    expect(h.job.step_results.dossier.data.dossier.contract.facts[0].quantity).toBe(6);
+    expect(h.job.step_results.dossier.data.dossier.reliability.state).toBe('blocked');
+    expect(h.job.step_results.global_analysis.data).toMatchObject({status:'failed',text:null,failureCode:'DOCUMENTARY_RELIABILITY_BLOCKED'});
+    expect(h.job.status).toBe('completed_without_report');expect(h.job.step_results.final.data.reason).toBe('DOCUMENTARY_RELIABILITY_BLOCKED');
+  });
   it('un unique document hors budget reste needs_chunking et le dossier vide ne déclenche aucun global',async()=>{
     const h=harness({...base(),payload:{kind:'project_docs_facts',documents:[{docId:'d1',fileName:'big.pdf',kind:'pdf',text:'x'.repeat(300_000)}]}});
     h.provider.mockResolvedValue(new Response(JSON.stringify({choices:[{message:{content:'Rapport du dossier incomplet : document non exploité big.pdf'}}]})));

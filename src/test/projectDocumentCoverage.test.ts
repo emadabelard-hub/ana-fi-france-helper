@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 vi.mock("pdfjs-dist", () => ({ GlobalWorkerOptions: {}, version: "x" }));
 vi.mock("mammoth", () => ({ default: {} }));
-import { planPdfPages, assemblePdf, docxHtmlToStructuredText, type PdfPageProbe } from "@/lib/projectDocumentIngest";
+import { planPdfPages, assemblePdf, docxHtmlToStructuredText, docxHtmlToStructure, pdfItemsToLines, type PdfPageProbe } from "@/lib/projectDocumentIngest";
 import { processSingleDocument, processDocumentsSequentially, checkDocumentFits, IMAGE_TOKENS_MAX, type ProjectDocument } from "../../supabase/functions/_shared/btpDocumentSequence";
 import { buildProjectFactsDossier } from "../../supabase/functions/_shared/btpProjectDossier";
 
@@ -45,13 +45,44 @@ describe("DOCX : contenu intégral et tableaux", () => {
     expect(t.length).toBeGreaterThan(50_000);
     expect(t).toContain("Paragraphe 2999");
   });
-  it("DOCX avec tableaux : lignes, colonnes et en-têtes associés, ordre conservé", () => {
-    const html = `<p>Avant</p><table><tr><td>Désignation</td><td>Qté</td><td>PU</td></tr><tr><td>Cloison BA13</td><td>25</td><td>48</td></tr><tr><td></td><td>3</td><td>10</td></tr></table><p>Après</p>`;
+  it("DOCX avec en-tête explicite : colonnes associées, ordre conservé", () => {
+    const html = `<p>Avant</p><table><tr><th>Désignation</th><th>Qté</th><th>PU</th></tr><tr><td>Cloison BA13</td><td>25</td><td>48</td></tr><tr><td></td><td>3</td><td>10</td></tr></table><p>Après</p>`;
     const t = docxHtmlToStructuredText(html).split("\n");
     expect(t[0]).toBe("Avant");
+    expect(t).toContain("En-tête explicite : | Désignation | Qté | PU |");
     expect(t).toContain("Ligne 1 : | Désignation = Cloison BA13 | Qté = 25 | PU = 48 |");
     expect(t).toContain("Ligne 2 : | Désignation =  | Qté = 3 | PU = 10 |");
     expect(t[t.length - 1]).toBe("Après");
+  });
+  it("P0 : la première ligne n'est jamais supposée être un en-tête", () => {
+    const t = docxHtmlToStructuredText(`<table><tr><td>Peinture murs</td><td>30 m²</td></tr><tr><td>Plafond</td><td>12 m²</td></tr></table>`).split("\n");
+    expect(t).toContain("Ligne 1 : | Peinture murs | 30 m² |");
+    expect(t).toContain("Ligne 2 : | Plafond | 12 m² |");
+    expect(t.some((l) => l.startsWith("En-tête"))).toBe(false);
+  });
+  it("P0 : fusions signalées sans recopier la valeur", () => {
+    const r = docxHtmlToStructure(`<table><tr><td rowspan="2">Cuisine</td><td colspan="2">Carrelage 8 m²</td></tr><tr><td>Faïence</td><td>4 m²</td></tr></table>`);
+    expect(r.text).toContain("Cuisine (fusion verticale ×2)");
+    expect(r.text).toContain("Carrelage 8 m² (fusion horizontale ×2)");
+    expect(r.text.match(/Cuisine/g)?.length).toBe(1);
+    expect(r.coverage.structureIssues).toContain("table_1_vertical_merge");
+  });
+  it("P0 : images Word repérées à leur place, transmises ou signalées non lues", () => {
+    const r = docxHtmlToStructure(`<p>Plan cuisine</p><p><img src="data:image/png;base64,AAAA" alt="plan"/></p><p><img src="data:image/x-emf;base64,AAAA"/></p>`);
+    expect(r.images).toEqual(["data:image/png;base64,AAAA"]);
+    expect(r.coverage).toMatchObject({ mediaTotal: 2, untransmittedMedia: 1 });
+    expect(r.text).toContain("[Image 1 du document Word — transmise en pièce jointe n°1 — texte alternatif : plan]");
+    expect(r.text).toContain("[Image 2 du document Word — NON TRANSMISE (format non transmissible) : contenu non lu]");
+  });
+  it("P0 : PDF reconstruit par lignes et colonnes signalées", () => {
+    const it = (str: string, x: number, y: number) => ({ str, transform: [10, 0, 0, 10, x, y], width: str.length * 5, height: 10 });
+    const r = pdfItemsToLines([it("Dépose de 4 m²", 10, 700), it("de carrelage", 85, 700), it("Peinture 100 m²", 10, 680),
+      it("A", 10, 600), it("B", 400, 600), it("C", 10, 590), it("D", 400, 590), it("E", 10, 580), it("F", 400, 580)]);
+    const lines = r.text.split("\n");
+    expect(lines[0]).toBe("Dépose de 4 m² de carrelage");
+    expect(lines[1]).toBe("Peinture 100 m²");
+    expect(lines).toContain("A ‖ B");
+    expect(r.columnsSuspected).toBe(true);
   });
 });
 

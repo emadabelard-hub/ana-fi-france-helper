@@ -8,6 +8,8 @@ import {
 } from "./btpFactsConsolidation.ts";
 import type { ProjectFactsDossier } from "./btpProjectDossier.ts";
 import { auditGlobalAnalysis, type GlobalAnalysisAudit } from "./btpGlobalAnalysisAudit.ts";
+import { DOCUMENTARY_RELIABILITY_BLOCKED, evaluateDossierReliability, evaluateReportRelease, type DossierReliability, type ReportRelease } from "./btpProjectReportGate.ts";
+import { readFactEvidence } from "./btpProjectEvidence.ts";
 import {
   estimateTokensConservative,
   inputTokenBudget,
@@ -490,6 +492,21 @@ export type GlobalAnalysisMessages = [
 /** Réserve de fiabilité, sans modifier le Prompt n°2 système ni le contrat. */
 const DOCUMENTARY_RELIABILITY_INSTRUCTION = "FIABILITÉ DOCUMENTAIRE : sourceCheck=verified signifie uniquement que la citation normalisée a été retrouvée dans le texte disponible ; ni tous les champs, ni le rattachement exact à l'ouvrage ne sont ainsi prouvés. sourceCheck=unverifiable signifie que la fidélité documentaire n'a pas été établie ; inconsistent signale une incohérence de provenance ou de citation, et absent une citation vide. Un statut manquant dans un ancien fait ne vaut jamais verified. integrityFlags doit être interprété par motif : quantity_evidence_mismatch signale un écart entre quantité structurée et mesure textuelle comparable, sans désigner la valeur correcte ; un flag de relation, de description de repli ou d'identité ne prouve pas une erreur de quantité. Formule une réserve ciblée sur le champ ou le rattachement concerné, sans invalider les autres informations par défaut. Une divergence impliquant une provenance non établie, incohérente ou absente, ou un champ concerné par un flag, reste une divergence d'extraction ou un point à vérifier, jamais une contradiction documentaire certaine. L'absence de flag ne garantit pas l'exactitude. Conserve les contradictions effectivement étayées lorsque le même ouvrage, le même périmètre et la même caractéristique sont suffisamment établis ; ne masque aucune version ni aucune référence et n'arbitre aucune valeur. complete décrit la complétude technique du dossier selon les critères de sources contributrices et de lecture/validation partielle ; ce n'est ni le statut terminal du job, ni une garantie d'exhaustivité ou d'exactitude. Conserve tous les faits, quantités, unités, citations et sources, sans correction automatique, invention ou suppression ; garde les huit sections existantes du rapport.";
 
+/** Statuts de vérification par champ, sous forme compacte (les preuves complètes restent dans le dossier). */
+const FIELD_VERIFICATION_INSTRUCTION = "VÉRIFICATION LOCALISÉE (P0) : chaque fait peut porter `verification` = { summary, fields }. Seul un champ marqué verified a été retrouvé dans un passage source unique. unverifiable = non établi : présente-le comme « à vérifier », jamais comme un fait établi. demonstrated_error = la valeur extraite diffère du passage source localisé : signale-la comme erreur d'extraction, sans arbitrer ni corriger la valeur. Un fait sans `verification` a une vérification documentaire non établie.";
+
+/** Copie compacte du contrat pour l'appel : l'objet `evidence` complet est remplacé par ses statuts. */
+const compactContract = (contract: ProjectFactsDossier["contract"]): ProjectFactsDossier["contract"] => ({
+  ...contract,
+  facts: contract.facts.map((f) => {
+    const ev = readFactEvidence(f);
+    if (!ev) return f;
+    const { evidence: _evidence, ...rest } = f as typeof f & { evidence?: unknown };
+    return { ...rest, verification: { summary: ev.verificationSummary,
+      fields: Object.fromEntries(ev.fieldChecks.filter((c) => c.status !== "not_applicable").map((c) => [c.field, c.status])) } } as typeof f;
+  }),
+});
+
 export const buildGlobalAnalysisMessages = (d: ProjectFactsDossier): GlobalAnalysisMessages => {
   const input = buildGlobalAnalysisInput(d);
   const status = input.complete
@@ -505,7 +522,8 @@ export const buildGlobalAnalysisMessages = (d: ProjectFactsDossier): GlobalAnaly
         status,
         missing,
         DOCUMENTARY_RELIABILITY_INSTRUCTION,
-        `DOSSIER FACTUEL CONSOLIDÉ :\n${serializeConsolidatedContract(input.contract)}`,
+        ...(input.contract.facts.some((f) => readFactEvidence(f)) ? [FIELD_VERIFICATION_INSTRUCTION] : []),
+        `DOSSIER FACTUEL CONSOLIDÉ :\n${serializeConsolidatedContract(compactContract(input.contract))}`,
       ].join("\n\n"),
     },
   ];
@@ -513,7 +531,12 @@ export const buildGlobalAnalysisMessages = (d: ProjectFactsDossier): GlobalAnaly
 
 export type GlobalAnalysisResult = {
   version: 1;
-  status: "completed" | "needs_chunking";
+  status: "completed" | "needs_chunking" | "failed";
+  /** Arrêt déterministe sans appel IA (ex. DOCUMENTARY_RELIABILITY_BLOCKED). */
+  failureCode?: string;
+  reliability?: DossierReliability;
+  /** Verdict de restitution (P0) : le texte est conservé intégralement dans tous les cas. */
+  release?: ReportRelease;
   complete: boolean;
   missingDocuments: ProjectFactsDossier["missingDocuments"];
   factsCount: number;
@@ -544,11 +567,16 @@ export const runGlobalAnalysis = async (
   dossier: ProjectFactsDossier,
   call: (messages: GlobalAnalysisMessages) => Promise<string>,
 ): Promise<GlobalAnalysisResult> => {
-  const messages = buildGlobalAnalysisMessages(dossier);
+  const reliability = dossier.reliability ?? evaluateDossierReliability(dossier);
   const meta = {
     version: 1 as const, complete: dossier.complete,
-    missingDocuments: dossier.missingDocuments, factsCount: dossier.contract.counts.total,
+    missingDocuments: dossier.missingDocuments, factsCount: dossier.contract.counts.total, reliability,
   };
+  // Garde avant génération : une erreur démontrée sur un champ essentiel bloque l'appel.
+  if (reliability.state === "blocked") {
+    return { ...meta, status: "failed", text: null, error: DOCUMENTARY_RELIABILITY_BLOCKED, failureCode: DOCUMENTARY_RELIABILITY_BLOCKED };
+  }
+  const messages = buildGlobalAnalysisMessages(dossier);
   const size = checkGlobalAnalysisFits(messages);
   if (!size.ok) {
     return { ...meta, status: "needs_chunking", text: null, error: size.reason ?? "Trop volumineux", estimatedInputTokens: size.estimatedInputTokens };
@@ -564,5 +592,7 @@ export const runGlobalAnalysis = async (
     throw e;
   }
   if (!text.trim()) throw new Error("Analyse globale vide.");
-  return { ...meta, status: "completed", text, error: null, estimatedInputTokens: size.estimatedInputTokens, audit: auditGlobalAnalysis(text, dossier.contract, dossier) };
+  const audit = auditGlobalAnalysis(text, dossier.contract, dossier);
+  const release = evaluateReportRelease(text, reliability, audit, dossier.contract.facts.map((f) => f.factId));
+  return { ...meta, status: "completed", text, error: null, estimatedInputTokens: size.estimatedInputTokens, audit, release };
 };

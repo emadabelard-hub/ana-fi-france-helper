@@ -8,3 +8,5 @@
 - Exhausted factual documents close atomically as failed sources and advance the dossier; worker RPC outcomes require explicit confirmation and errors use a fixed metadata-only vocabulary.
 - Unapproved database changes live under supabase/pending rather than supabase/migrations so code preparation cannot silently apply them.
 - Project finalization uses completed only for a nonempty global report already persisted in step_results; confirmed terminal stops without a report use completed_without_report and a machine-readable reason, without changing retry budgets.
+- Project-analysis fact verification is rebuilt server-side from the transmitted text into localized units and checked per field; only a single local passage can verify or demonstrate an error, so visual-only sources stay unverifiable and AI or client claims never count as proof.
+- A demonstrated error on an essential field stops the global report before any AI call (DOCUMENTARY_RELIABILITY_BLOCKED); generated reports keep their full text and carry a separate release verdict, so technical completeness never implies reliability.

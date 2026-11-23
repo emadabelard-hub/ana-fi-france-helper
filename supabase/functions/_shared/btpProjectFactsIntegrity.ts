@@ -15,6 +15,7 @@
  * Aucune quantité n'est inventée, convertie ou recalculée. Aucun appel IA.
  */
 import { normalizeUnit, validateBtpFacts, type BtpFactsContract, type ValidatedBtpFact } from "./btpFactsContract.ts";
+import { buildFactEvidence, buildSourceUnits, type EvidenceSummary, type FactEvidence } from "./btpProjectEvidence.ts";
 
 export type SourceCheck = "verified" | "unverifiable" | "inconsistent" | "absent";
 
@@ -34,6 +35,8 @@ export type ProjectFact = ValidatedBtpFact & {
   preserved?: Record<string, unknown>;
   /** Anomalies déterministes (jamais une correction silencieuse). */
   integrityFlags: string[];
+  /** Preuves localisées par champ (P0). Absent sur les faits antérieurs : jamais vérifié. */
+  evidence?: FactEvidence;
 };
 
 export type RejectedEntry = { rawIndex: number; rawId: string | null; reason: string; raw: unknown };
@@ -48,6 +51,8 @@ export type ExtractionIntegrity = {
   auxiliary: Record<string, unknown>;
   sourceChecks: Record<SourceCheck, number>;
   relationIssues: { factId: string; parentRef: string; reason: string }[];
+  /** Bilan des vérifications localisées (P0), indépendant de sourceCheck. */
+  evidenceSummary?: Record<EvidenceSummary, number>;
   /** Vrai si au moins une entrée a été rejetée : validation partielle. */
   partial: boolean;
 };
@@ -230,6 +235,7 @@ export const validateProjectExtraction = (text: string, doc: DocumentRef): Proje
 
   // Identifiants d'occurrence uniques.
   const seen = new Map<string, number>();
+  const units = buildSourceUnits(doc.text);
   const facts: ProjectFact[] = base.facts.map((f, k) => {
     const meta = acceptedMeta[k];
     const flags: string[] = [];
@@ -269,6 +275,7 @@ export const validateProjectExtraction = (text: string, doc: DocumentRef): Proje
       ...(src.flags.includes("source_file_mismatch") ? { declaredSourceFile: declared } : {}),
       ...(Object.keys(preserved).length ? { preserved } : {}),
       integrityFlags: flags,
+      evidence: buildFactEvidence(meta.raw, f, units),
     };
   });
 
@@ -319,6 +326,8 @@ export const validateProjectExtraction = (text: string, doc: DocumentRef): Proje
 
   const sourceChecks: Record<SourceCheck, number> = { verified: 0, unverifiable: 0, inconsistent: 0, absent: 0 };
   facts.forEach((f) => { sourceChecks[f.sourceCheck]++; });
+  const evidenceSummary: Record<EvidenceSummary, number> = { verified: 0, partially_verified: 0, unverifiable: 0, demonstrated_error: 0 };
+  facts.forEach((f) => { if (f.evidence) evidenceSummary[f.evidence.verificationSummary]++; });
   const integrity: ExtractionIntegrity = {
     received: env.facts.length,
     accepted: facts.length,
@@ -328,6 +337,7 @@ export const validateProjectExtraction = (text: string, doc: DocumentRef): Proje
     auxiliary: env.auxiliary,
     sourceChecks,
     relationIssues,
+    evidenceSummary,
     partial: rejectedEntries.length > 0,
   };
   return { contract: { version: 1, facts, counts: base.counts }, integrity };

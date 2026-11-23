@@ -5,11 +5,11 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { ingestImage } from '@/lib/pdfIngest';
-import { extractProjectDocx, ingestProjectPdf } from '@/lib/projectDocumentIngest';
+import { extractProjectDocxStructured, ingestProjectPdf } from '@/lib/projectDocumentIngest';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { toast } from 'sonner';
-import ProjectReportDiagnostics from '@/components/assistant/ProjectReportDiagnostics';
+import ProjectReportDiagnostics, { EvidenceIssues } from '@/components/assistant/ProjectReportDiagnostics';
 import { Button } from '@/components/ui/button';
 import type { GlobalAnalysisAudit } from '../../supabase/functions/_shared/btpGlobalAnalysisAudit';
 import type { ProjectFactsDossier } from '../../supabase/functions/_shared/btpProjectDossier';
@@ -42,7 +42,7 @@ type JobRow = { id: string; status: string; current_step: string | null; progres
 type ServerDoc = {
   fileName: string; kind: 'pdf' | 'docx' | 'image' | 'text'; text?: string; dataUrl?: string;
   pageImages?: string[];
-  coverage?: { totalPages: number; textPages: number[]; imagePages: number[]; unreadPages: number[] };
+  coverage?: { totalPages?: number; textPages?: number[]; imagePages?: number[]; unreadPages?: number[]; mediaTotal?: number; untransmittedMedia?: number; structureIssues?: string[] };
   unreadable?: boolean; unreadableReason?: string;
 };
 
@@ -60,8 +60,11 @@ const readDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
 export async function toServerDoc(d: Selected): Promise<ServerDoc | null> {
   const fileName = d.file.name;
   if (d.kind === 'docx') {
-    const text = (await extractProjectDocx(d.file)).trim();
-    return text ? { fileName, kind: 'docx', text } : null;
+    const r = await extractProjectDocxStructured(d.file);
+    const text = r.text.trim();
+    if (!text && r.images.length === 0) return null;
+    const hasCoverage = r.coverage.mediaTotal > 0 || r.coverage.structureIssues.length > 0;
+    return { fileName, kind: 'docx', text, ...(r.images.length ? { pageImages: r.images } : {}), ...(hasCoverage ? { coverage: r.coverage } : {}) };
   }
   const dataUrl = await readDataUrl(d.file);
   if (d.kind === 'pdf') {
@@ -122,6 +125,10 @@ const ProjectAnalysisPage = () => {
         documentsProcessed: 'انتهت معالجة المستندات، لكن تعذّر إنتاج التقرير الشامل.',
         reportTechnicalFailure: 'تعذّر إنتاج التقرير الشامل أو حفظه بسبب مشكلة تقنية.',
         emptyDossier: 'لم تُستخرج أي معلومات قابلة للاستخدام من المستندات. لم يبدأ إعداد التقرير الشامل.',
+        reliabilityBlocked: 'فيه معلومات اتطلعت مش مطابقة للمستندات. ماعملناش التقرير الشامل علشان مانعرضش معلومات غلط. المعلومات اللي اتطلعت لسه محفوظة بس مش معتمدة.',
+        reportNotValidated: 'التقرير مش معتمد: فيه معلومات أساسية ماقدرناش نتأكد منها في المستندات. لازم تراجع محتوى التقرير قبل ما تستخدمه.',
+        reportValidated: 'المعلومات الأساسية في التقرير لقيناها في المستندات. التحقق الآلي ده مايغنيش عن مراجعتك.',
+        reportLegacy: 'تقرير قديم: التحقق من المعلومات في المستندات مش متأكد منه.',
         startFailed: 'تعذّر بدء التحليل. يُرجى المحاولة مرة أخرى.',
         nothing: 'تعذّرت قراءة أي من المستندات المختارة.',
         newAnalysis: 'تحليل جديد',
@@ -152,6 +159,10 @@ const ProjectAnalysisPage = () => {
         documentsProcessed: 'Le traitement des documents est terminé, mais le rapport global n’a pas pu être produit.',
         reportTechnicalFailure: 'Une erreur technique a empêché la production ou la sauvegarde du rapport global.',
         emptyDossier: 'Aucun fait exploitable n’a été obtenu à partir des documents. Le rapport global n’a pas été lancé.',
+        reliabilityBlocked: 'Certaines informations extraites ne correspondent pas aux documents. Le rapport global n’a pas été lancé, pour ne pas présenter d’informations erronées. Les informations extraites restent enregistrées comme non validées.',
+        reportNotValidated: 'Rapport non validé : certaines informations essentielles n’ont pas pu être vérifiées dans les documents. Les éléments du rapport sont à vérifier avant tout usage.',
+        reportValidated: 'Les informations essentielles du rapport ont été retrouvées dans les documents. Cette vérification automatique ne remplace pas votre relecture.',
+        reportLegacy: 'Rapport antérieur : la vérification documentaire des informations n’est pas établie.',
         startFailed: "L'analyse n'a pas pu démarrer. Réessayez.",
         nothing: "Aucun des documents sélectionnés n'a pu être lu.",
         newAnalysis: 'Nouvelle analyse',
@@ -184,7 +195,8 @@ const ProjectAnalysisPage = () => {
 
   const noReportReason = job?.error_message || job?.step_results?.final?.data?.reason;
   const emptyDossier = job?.step_results?.global_analysis?.data?.failureCode === 'EMPTY_FACTUAL_DOSSIER';
-  const noReportMessage = emptyDossier ? T.emptyDossier : `${T.documentsProcessed} ${noReportReason === 'GLOBAL_ANALYSIS_TOO_LARGE' ? T.tooBig : T.reportTechnicalFailure}`;
+  const noReportMessage = emptyDossier ? T.emptyDossier : noReportReason === 'DOCUMENTARY_RELIABILITY_BLOCKED' ? T.reliabilityBlocked
+    : `${T.documentsProcessed} ${noReportReason === 'GLOBAL_ANALYSIS_TOO_LARGE' ? T.tooBig : T.reportTechnicalFailure}`;
   useEffect(() => {
     if (job?.status !== 'completed_without_report') return;
     const key = `${job.id}:${noReportReason}:${isRTL}`;
@@ -273,14 +285,16 @@ const ProjectAnalysisPage = () => {
     const sr = job.step_results || {};
     const total = Array.isArray(sr.dossier?.data?.documents) ? sr.dossier.data.documents.length : undefined;
     const docEntries = Object.keys(sr).filter(k => k.startsWith('doc:')).map(k => sr[k]);
-    const analysis = sr.global_analysis?.data as { status?: string; text?: string | null; complete?: boolean; missingDocuments?: { fileName?: string }[]; audit?: GlobalAnalysisAudit } | undefined;
+    const analysis = sr.global_analysis?.data as { status?: string; text?: string | null; complete?: boolean; missingDocuments?: { fileName?: string }[]; audit?: GlobalAnalysisAudit; release?: { approved?: boolean } } | undefined;
+    const releaseNotice = !analysis?.release ? T.reportLegacy : analysis.release.approved === true ? T.reportValidated : T.reportNotValidated;
     const dossier = sr.dossier?.data?.dossier as ProjectFactsDossier | undefined;
     const serverMissing = docEntries
-      .filter((d: any) => (d?.status && d.status !== 'completed') || (Array.isArray(d?.coverage?.unreadPages) && d.coverage.unreadPages.length > 0) || (d?.integrity?.rejected > 0))
+      .filter((d: any) => (d?.status && d.status !== 'completed') || (Array.isArray(d?.coverage?.unreadPages) && d.coverage.unreadPages.length > 0) || d?.coverage?.untransmittedMedia > 0 || (d?.integrity?.rejected > 0))
       .map((d: any) => {
         if (d.status !== 'completed') return d.fileName as string;
         const parts: string[] = [];
         if (Array.isArray(d?.coverage?.unreadPages) && d.coverage.unreadPages.length > 0) parts.push(`${isRTL ? 'صفحات غير مقروءة' : 'pages non lues'} : ${d.coverage.unreadPages.join(', ')}`);
+        if (d?.coverage?.untransmittedMedia > 0) parts.push(isRTL ? `صور ماتقريتش : ${d.coverage.untransmittedMedia}` : `images non lues : ${d.coverage.untransmittedMedia}`);
         if (d?.integrity?.rejected > 0) parts.push(isRTL ? `معلومات غير مُعتمدة : ${d.integrity.rejected}` : `éléments non validés : ${d.integrity.rejected}`);
         return `${d.fileName} — ${parts.join(' ; ')}`;
       });
@@ -295,6 +309,7 @@ const ProjectAnalysisPage = () => {
             <div className="space-y-2" role="status">
               <p className="text-[16px] text-foreground">{job.status === 'completed_without_report' ? noReportMessage : job.error_message?.startsWith('ANALYSIS_ATTEMPT_LIMIT:') ? T.attemptLimit : T.failed}</p>
               <p className="text-[16px] text-muted-foreground">{T.preserved}</p>
+              {noReportReason === 'DOCUMENTARY_RELIABILITY_BLOCKED' && <EvidenceIssues dossier={dossier} isRTL={isRTL} />}
             </div>
           </div>
           <Button onClick={reset} className="w-full h-auto rounded-xl py-3.5 text-[16px] font-bold">{T.newAnalysis}</Button>
@@ -318,6 +333,13 @@ const ProjectAnalysisPage = () => {
               </ul>
             </div>
           )}
+          {analysis?.text && (
+            <div role="note" data-release={analysis.release ? String(analysis.release.approved === true) : 'legacy'} className="rounded-xl border border-border bg-muted/50 p-4 flex gap-3 items-start">
+              {analysis.release?.approved === true ? <CheckCircle2 size={20} className="text-primary shrink-0 mt-0.5" /> : <AlertTriangle size={20} className="text-muted-foreground shrink-0 mt-0.5" />}
+              <p className="text-[16px] text-foreground">{releaseNotice}</p>
+            </div>
+          )}
+          {analysis?.text && <EvidenceIssues dossier={dossier} isRTL={isRTL} />}
           {analysis?.text && <ProjectReportDiagnostics text={analysis.text} audit={analysis.audit} dossier={dossier} isRTL={isRTL} />}
           {analysis?.status === 'needs_chunking' || !analysis?.text ? (
             <div className="rounded-xl border border-border bg-card p-4 flex gap-3 items-start">

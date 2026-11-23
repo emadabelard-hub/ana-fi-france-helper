@@ -37,11 +37,18 @@ export type DocumentCoverage = {
   imagePages?: number[];
   /** Pages non exploitables ou non transmises (signalées, jamais ignorées). */
   unreadPages?: number[];
+  /** Images incorporées (Word) trouvées dans le document. */
+  mediaTotal?: number;
+  /** Images incorporées non transmises : couverture partielle, signalée. */
+  untransmittedMedia?: number;
+  /** Structures ambiguës signalées par la lecture locale (fusions, colonnes, repli texte brut). */
+  structureIssues?: string[];
 };
 
 /** Vrai si une partie du document n'a pas pu être transmise. */
 export const isPartiallyCovered = (c?: DocumentCoverage | null): boolean =>
-  !!c && Array.isArray(c.unreadPages) && c.unreadPages.length > 0;
+  !!c && ((Array.isArray(c.unreadPages) && c.unreadPages.length > 0)
+    || (typeof c.untransmittedMedia === "number" && c.untransmittedMedia > 0));
 
 export type DocumentFactsStatus = "completed" | "failed" | "needs_chunking";
 

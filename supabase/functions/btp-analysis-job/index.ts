@@ -225,6 +225,9 @@ async function handleCreate(req: Request): Promise<Response> {
       const coverage = c && typeof c === 'object' ? {
         totalPages: Number.isInteger(c.totalPages) ? c.totalPages as number : undefined,
         textPages: nums(c.textPages), imagePages: nums(c.imagePages), unreadPages: nums(c.unreadPages),
+        ...(Number.isInteger(c.mediaTotal) && (c.mediaTotal as number) >= 0 ? { mediaTotal: c.mediaTotal as number } : {}),
+        ...(Number.isInteger(c.untransmittedMedia) && (c.untransmittedMedia as number) >= 0 ? { untransmittedMedia: c.untransmittedMedia as number } : {}),
+        ...(Array.isArray(c.structureIssues) ? { structureIssues: (c.structureIssues as unknown[]).filter((x): x is string => typeof x === 'string').map(x => x.slice(0, 80)).slice(0, 50) } : {}),
       } : undefined;
       if (!fileName) return json({ error: `Document ${i} : nom manquant.` }, 400);
       if (d.unreadable === true) {
@@ -957,7 +960,9 @@ async function callFactualForOneDocument(db: Db, jobId: string, owner: string, s
   if (doc.dataUrl) parts.push({ type: 'image_url', image_url: { url: doc.dataUrl } });
   (doc.pageImages ?? []).forEach((url, k) => {
     const page = doc.coverage?.imagePages?.[k];
-    parts.push({ type: 'text', text: `IMAGE DE LA PAGE ${page ?? k + 1} de ${doc.fileName} :` });
+    parts.push({ type: 'text', text: doc.kind === 'docx'
+      ? `IMAGE INCORPORÉE (pièce jointe n°${k + 1}) de ${doc.fileName}, repérée dans le texte par son marqueur [Image … pièce jointe n°${k + 1}] :`
+      : `IMAGE DE LA PAGE ${page ?? k + 1} de ${doc.fileName} :` });
     parts.push({ type: 'image_url', image_url: { url } });
   });
   if (doc.text) parts.push({ type: 'text', text: `CONTENU DU FICHIER ${doc.fileName} :\n${doc.text}` });
@@ -1082,12 +1087,16 @@ async function workProjectDocs(
       const analysisStatus = savedAnalysis?.status ?? null;
       const hasReport = analysisStatus === 'completed' && typeof savedAnalysis?.text === 'string' && savedAnalysis.text.trim().length > 0;
       const status = hasReport ? 'completed' : 'completed_without_report';
-      const reason = hasReport ? null : analysisStatus === 'needs_chunking' ? 'GLOBAL_ANALYSIS_TOO_LARGE' : 'GLOBAL_ANALYSIS_FAILED';
+      const reason = hasReport ? null : analysisStatus === 'needs_chunking' ? 'GLOBAL_ANALYSIS_TOO_LARGE'
+        : savedAnalysis?.failureCode === 'DOCUMENTARY_RELIABILITY_BLOCKED' ? 'DOCUMENTARY_RELIABILITY_BLOCKED' : 'GLOBAL_ANALYSIS_FAILED';
+      const release = hasReport && savedAnalysis?.release && typeof savedAnalysis.release === 'object'
+        ? { approved: savedAnalysis.release.approved === true, reliability: savedAnalysis.release.reliability ?? null } : null;
       const ok = await db.rpc('commit_analysis_step', {
         _job_id: jobId, _owner: owner, _step: 'final',
-        _result: { kind: 'project_global_analysis_ready', data: { dossierStep: 'dossier', analysisStep: 'global_analysis', complete: dossier?.complete ?? false, analysisStatus, ...(reason ? { reason } : {}) } },
+        _result: { kind: 'project_global_analysis_ready', data: { dossierStep: 'dossier', analysisStep: 'global_analysis', complete: dossier?.complete ?? false, analysisStatus, ...(reason ? { reason } : {}), ...(release ? { release } : {}) } },
         _progress: hasReport ? 100 : 97, _current_step: status, _status: status,
-        _final_report: hasReport ? dossier?.complete ? 'Analyse globale terminée (dossier complet)' : 'Analyse globale terminée (dossier incomplet)' : null,
+        _final_report: hasReport ? release && !release.approved ? 'Analyse globale produite — rapport non validé (vérification documentaire insuffisante)'
+          : dossier?.complete ? 'Analyse globale terminée (dossier complet)' : 'Analyse globale terminée (dossier incomplet)' : null,
       });
       requireStepCommit(ok);
       return json({ jobId, executed: 'finalize', status, ...(reason ? { reason } : {}) });

@@ -40,6 +40,13 @@ export type BtpUnit =
   | "ens"
   | null;
 
+export type BtpQuantityEvidence =
+  | "quantity_and_unit"
+  | "counted_object_without_unit"
+  | "unit_missing"
+  | "quantity_missing"
+  | "quantity_unreadable";
+
 export type BtpTransferStatus = "ready" | "pending" | "excluded";
 
 export type ValidatedBtpFact = {
@@ -68,6 +75,10 @@ export type ValidatedBtpFact = {
   quantity: number | null;
   quantityType: BtpQuantityType;
   unit: BtpUnit;
+  /** Objet compté écrit dans le document (« 4 portes »), jamais converti en unité. Absent des anciens faits. */
+  countedObject?: string | null;
+  /** Nature de la preuve de quantité. Absent des anciens faits. */
+  quantityEvidence?: BtpQuantityEvidence;
 
   clientSupplied: boolean | null;
   /** Fourniture comprise (matériaux). */
@@ -391,29 +402,34 @@ export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
 
     const haystack = `${descriptionExact}\n${context}`;
 
-    // ── Unité canonique déterministe pour les quantités DÉNOMBRABLES ───────
-    // Une prestation facturable dont la quantité est un entier positif et dont
-    // la nature est explicitement dénombrable (quantityType « count » ou
-    // équipement identifié : porte, tablette, WC, douche, baignoire…) reçoit
-    // l'unité canonique « u ». Cette règle ne s'applique JAMAIS à une
-    // dimension, une portée, une charge, une section, une longueur isolée ni à
-    // une annotation technique : ces faits n'ont pas le type billable_work, ou
-    // portent un mot de dimension.
-    let resolvedUnit: BtpUnit = unit;
-    let resolvedQuantityType: BtpQuantityType = quantityType;
+    // ── Aucune unité déduite ───────────────────────────────────────────────
+    // L'unité n'est jamais déduite du type de prestation : absente du document,
+    // elle reste vide. Un objet compté explicitement écrit juste après la
+    // quantité (« 4 portes », « 3 tablettes ») est conservé séparément, sans
+    // devenir une unité et sans rendre le fait « ready ».
+    const resolvedUnit: BtpUnit = unit;
+    const resolvedQuantityType: BtpQuantityType = quantityType;
+    let countedObject: string | null = null;
     if (
-      resolvedUnit === null &&
-      factType === "billable_work" &&
-      quantity !== null &&
-      quantity > 0 &&
-      Number.isInteger(quantity) &&
-      !DIMENSION_WORD_RE.test(`${descriptionExact} ${dimensions}`) &&
-      (declaredQtyType === "count" || EQUIPMENT_RE.test(haystack))
+      unit === null && factType === "billable_work" &&
+      quantity !== null && quantity > 0 && Number.isInteger(quantity) &&
+      !DIMENSION_WORD_RE.test(`${descriptionExact} ${dimensions}`)
     ) {
-      resolvedUnit = "u";
-      resolvedQuantityType = "count";
-      reasons.push("countable_unit_canonical_u");
+      const re = new RegExp(`(?:^|[^\\d.,])${quantity}\\s+((?:[a-zàâäçéèêëîïôöûùüÿœ'’-]+)(?:\\s+[a-zàâäçéèêëîïôöûùüÿœ'’-]+)?)`, "i");
+      for (const t of [descriptionExact, evidenceText]) {
+        const m = t.match(re);
+        const head = m?.[1]?.split(/\s+/)[0] ?? "";
+        if (m && EQUIPMENT_RE.test(head)) { countedObject = m[1].trim(); break; }
+      }
+      if (countedObject) reasons.push("counted_object_without_unit");
     }
+    const rawQuantity = f.quantity ?? f.quantite ?? f.qty;
+    const quantityUnreadable = quantity === null && rawQuantity !== undefined && rawQuantity !== null && String(rawQuantity).trim() !== "";
+    const quantityEvidence: BtpQuantityEvidence =
+      quantity === null || quantity <= 0 ? (quantityUnreadable ? "quantity_unreadable" : "quantity_missing")
+        : resolvedUnit !== null ? "quantity_and_unit"
+        : countedObject ? "counted_object_without_unit"
+        : "unit_missing";
 
     const hasFinalBillableQuantity =
       quantity !== null && quantity > 0 && resolvedUnit !== null;
@@ -442,7 +458,7 @@ export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
         transferStatus = "ready";
       } else {
         transferStatus = "pending";
-        if (quantity === null || quantity <= 0) reasons.push("quantity_missing");
+        if (quantity === null || quantity <= 0) reasons.push(quantityUnreadable ? "quantity_unreadable" : "quantity_missing");
         if (resolvedUnit === null) reasons.push("unit_missing");
       }
     } else if (factType === "to_confirm") {
@@ -500,6 +516,8 @@ export const validateBtpFacts = (rawFacts: unknown): BtpFactsContract => {
       quantity,
       quantityType: resolvedQuantityType,
       unit: resolvedUnit,
+      countedObject,
+      quantityEvidence,
       clientSupplied,
       includesMaterials,
       includesLabor,

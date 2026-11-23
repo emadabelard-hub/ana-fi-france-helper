@@ -9,7 +9,7 @@ const factOf = (contract: ReturnType<typeof validateBtpFacts>, needle: string) =
   contract.facts.find((f) => f.descriptionExact.toLowerCase().includes(needle.toLowerCase()))!;
 
 describe('contrat BTP — formes de données réellement rencontrées', () => {
-  it('attribue u aux prestations dénombrables sans unité (portes, tablettes, sanitaires)', () => {
+  it('n’invente jamais « u » pour les prestations dénombrables sans unité (portes, tablettes, sanitaires)', () => {
     const c = validateBtpFacts([
       { id: 'p1', descriptionExact: 'Pose de 4 portes battantes', quantity: 4, unit: null, lot: 'Menuiseries intérieures' },
       { id: 'p2', descriptionExact: 'Fabrication de 3 tablettes', quantity: 3, unit: null, lot: 'Menuiseries intérieures' },
@@ -17,18 +17,19 @@ describe('contrat BTP — formes de données réellement rencontrées', () => {
       { id: 'p4', descriptionExact: 'Installation de douche', quantity: 1, unit: null, lot: 'Sanitaires' },
       { id: 'p5', descriptionExact: 'Pose de baignoire', quantity: 1, unit: null, lot: 'Sanitaires' },
     ]);
-    expect(c.facts.map((f) => f.unit)).toEqual(['u', 'u', 'u', 'u', 'u']);
-    expect(c.facts.map((f) => f.quantityType)).toEqual(['count', 'count', 'count', 'count', 'count']);
-    expect(c.facts.map((f) => f.transferStatus)).toEqual(['ready', 'ready', 'ready', 'ready', 'ready']);
+    expect(c.facts.map((f) => f.unit)).toEqual([null, null, null, null, null]);
+    expect(c.facts.map((f) => f.countedObject)).toEqual(['portes battantes', 'tablettes', null, null, null]);
+    expect(c.facts.map((f) => f.transferStatus)).toEqual(['pending', 'pending', 'pending', 'pending', 'pending']);
     expect(c.facts.map((f) => f.quantity)).toEqual([4, 3, 1, 1, 1]);
   });
 
-  it('respecte quantityType count déclaré sans unité', () => {
+  it('quantityType count déclaré sans unité : type conservé, unité jamais inventée', () => {
     const c = validateBtpFacts([
       { id: 'q1', descriptionExact: 'Création de points lumineux', quantity: 6, unit: null, quantityType: 'count' },
     ]);
-    expect(c.facts[0].unit).toBe('u');
-    expect(c.facts[0].transferStatus).toBe('ready');
+    expect(c.facts[0].unit).toBeNull();
+    expect(c.facts[0].quantityType).toBe('count');
+    expect(c.facts[0].transferStatus).toBe('pending');
   });
 
   it('exclut une portée de poutre de 5,4 m', () => {

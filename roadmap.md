@@ -37,4 +37,5 @@
 - [x] Définir l’ordre d’activation, les contrôles sans IA et les autorisations séparées.
 - [ ] Confirmer la sauvegarde réelle : horodatage UTC attendu de l’utilisateur.
 - [ ] Valider le retour arrière et la portée de publication : version réellement déployée non identifiée, archives correspondantes à vérifier.
-- [ ] Garantir une fenêtre sans nouveaux départs : exclusion ciblée non encore préparée ni autorisée.
+- [ ] Garantir une fenêtre sans nouveaux départs : exclusion ciblée non encore préparée ni autorisée.- [ ] Optimisation ciblée du message d’analyse globale (en attente : choix Gemini ou optimisation)
+- [x] Diagnostic lecture seule : absence de relais Gemini sur d86d5ae5
